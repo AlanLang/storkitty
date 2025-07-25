@@ -5,7 +5,7 @@ use std::{net::SocketAddr, sync::Arc};
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::cors::{CorsLayer, Any};
 
-use backend::{auth::AuthService, config::Config};
+use backend::{auth::AuthService, config::Config, files::FileService};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -20,13 +20,15 @@ async fn main() -> anyhow::Result<()> {
   // 加载配置
   let config = Arc::new(Config::load()?);
   let auth_service = Arc::new(AuthService::new(config.clone()));
+  let file_service = Arc::new(FileService::new(config.clone(), auth_service.clone()));
 
   // 构建静态文件服务（用于 serve ./web 目录）
   let serve_dir = ServeDir::new("./web").not_found_service(ServeFile::new("./web/index.html"));
 
   // 创建API路由
   let api_router = Router::new()
-    .nest("/auth", backend::auth::auth_router(auth_service));
+    .nest("/auth", backend::auth::auth_router(auth_service))
+    .nest("/files", backend::files::files_router(file_service));
 
   // 主应用路由
   let app = Router::new()

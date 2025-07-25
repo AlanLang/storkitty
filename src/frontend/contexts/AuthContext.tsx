@@ -1,4 +1,4 @@
-import { type ReactNode, createContext, useState, useEffect } from "react";
+import { type ReactNode, createContext, useEffect, useState } from "react";
 import {
   useLoginMutation,
   useLogout,
@@ -27,7 +27,9 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem("token"));
+  const [token, setToken] = useState<string | null>(() =>
+    localStorage.getItem("token"),
+  );
   const logoutFn = useLogout();
 
   // 监听 localStorage 变化
@@ -38,7 +40,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     // 监听 storage 事件（跨标签页）
     window.addEventListener("storage", handleStorageChange);
-    
+
     // 监听自定义事件（同一标签页）
     window.addEventListener("tokenChange", handleStorageChange);
 
@@ -50,7 +52,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // 使用 React Query hooks
   const loginMutation = useLoginMutation();
-  const { data: user, isLoading, error: verifyError } = useVerifyTokenQuery(token);
+  const {
+    data: user,
+    isLoading,
+    error: verifyError,
+  } = useVerifyTokenQuery(token);
 
   // 处理登录
   const login = async (credentials: LoginRequest): Promise<boolean> => {

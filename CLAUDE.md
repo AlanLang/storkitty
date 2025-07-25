@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a full-stack application called "storkitty" that combines a React frontend with a Rust backend. The application features user authentication and serves a protected dashboard interface.
+This is a full-stack application called "storkitty" that combines a React frontend with a Rust backend. The application is a lightweight file management system featuring user authentication and a modern file browser interface.
 
 ## Architecture
 
@@ -14,6 +14,7 @@ This is a full-stack application called "storkitty" that combines a React fronte
 - **Data Fetching**: TanStack Query for server state management, caching, and error handling
 - **UI Framework**: TailwindCSS 4.x + shadcn/ui components for modern, accessible design
 - **Database**: Configuration file-based user storage (no external database required)
+- **File Storage**: File system-based storage with configurable root directory
 - **Build System**: RSBuild for frontend bundling, Cargo for Rust compilation
 - **Package Manager**: Bun for frontend dependency management
 - **Code Quality**: Biome for TypeScript/React linting and formatting, rustfmt for Rust formatting
@@ -24,7 +25,8 @@ The application uses a dual-language architecture where:
 - Rust backend code is in `src/main.rs` with modular `src/backend/` directory
 - Built frontend assets are output to `web/` directory
 - Rust server serves files from `web/` directory and provides API endpoints on port 3330
-- User credentials are stored in `config/users.toml`
+- User credentials and configuration stored in `config.toml`
+- File storage in configurable `uploads/` directory (gitignored)
 
 ## Development Commands
 
@@ -79,8 +81,15 @@ The application uses a dual-language architecture where:
 - **Configuration-based users**: Simple TOML file for user management (no database required)
 
 ### API Endpoints
+
+#### Authentication
 - `POST /api/auth/login` - User authentication (returns JWT token)
 - `POST /api/auth/verify` - Token verification (returns user info)
+
+#### File Management
+- `GET /api/files/list` - Get root directory file list
+- `GET /api/files/list/{path}` - Get file list for specific path
+- `GET /api/files/storage` - Get storage space information
 
 ### File Structure
 ```
@@ -93,19 +102,23 @@ The application uses a dual-language architecture where:
 │   ├── backend/
 │   │   ├── mod.rs              # Backend module exports
 │   │   ├── auth.rs             # Authentication logic and handlers
+│   │   ├── files.rs            # File management logic and handlers
 │   │   └── config.rs           # Configuration file parsing
 │   └── frontend/
 │       ├── index.tsx           # Main app component with router
 │       ├── routeTree.gen.ts    # Auto-generated route tree (do not edit)
 │       ├── types/
-│       │   └── auth.ts         # Authentication type definitions
+│       │   ├── auth.ts         # Authentication type definitions
+│       │   └── files.ts        # File management type definitions
 │       ├── api/
-│       │   └── auth.ts         # API functions and error handling
+│       │   ├── auth.ts         # Authentication API functions and error handling
+│       │   └── files.ts        # File management API functions
 │       ├── contexts/
 │       │   └── AuthContext.tsx # Authentication state management
 │       ├── hooks/
 │       │   ├── useAuth.ts      # Authentication hook
-│       │   └── useAuthQueries.ts # TanStack Query hooks for auth
+│       │   ├── useAuthQueries.ts # TanStack Query hooks for auth
+│       │   └── useFiles.ts     # TanStack Query hooks for file management
 │       ├── lib/
 │       │   └── utils.ts        # Utility functions (cn, etc.)
 │       ├── styles/
@@ -122,7 +135,7 @@ The application uses a dual-language architecture where:
 │           ├── __root.tsx      # Root layout with AuthProvider
 │           ├── index.tsx       # Home route (auto-redirect)
 │           ├── login.tsx       # Login page route
-│           └── dashboard.tsx   # Protected dashboard route
+│           └── files.tsx       # File management interface route
 ```
 
 ### User Management
@@ -131,6 +144,14 @@ The application uses a dual-language architecture where:
 - To generate password hashes: Run `cargo run --bin hash_password`
 - JWT secret and expiration configurable in `config.toml` under `[jwt]` section
 - Server host and port configurable in `config.toml` under `[server]` section
+
+### File Management
+- File storage in configurable root directory (default: `./uploads`)
+- Automatic directory creation on startup
+- Path security: restricted to configured root directory
+- File size formatting and type detection
+- Real-time storage space calculation and display
+- Responsive file browser with grid/list view modes
 
 ### Dependencies
 **Backend**: axum, tokio, serde, jsonwebtoken, bcrypt, tower-http

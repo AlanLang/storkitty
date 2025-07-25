@@ -1,0 +1,27 @@
+export interface FileInfo {
+  name: string;
+  path: string;
+  file_type: "file" | "folder";
+  size?: number;
+  modified: string;
+  items?: number; // 文件夹中的项目数量
+}
+
+export interface FilesResponse {
+  success: boolean;
+  files: FileInfo[];
+  current_path: string;
+  message?: string;
+}
+
+export interface StorageInfo {
+  used_bytes: number;
+  total_bytes: number;
+  used_percentage: number;
+}
+
+export interface StorageResponse {
+  success: boolean;
+  storage: StorageInfo;
+  message?: string;
+}

@@ -9,6 +9,7 @@ import {
   HardDrive,
   Home,
   List,
+  Loader2,
   LogOut,
   MoreVertical,
   Search,
@@ -16,68 +17,64 @@ import {
   Upload,
   User as UserIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { useAuth } from "../hooks/useAuth";
+import { useFileListQuery, useStorageInfoQuery } from "../hooks/useFiles";
 
-// 模拟文件数据
-const mockFiles = [
-  {
-    id: 1,
-    name: "Documents",
-    type: "folder",
-    size: null,
-    modified: "2024-01-15",
-    items: 12,
-  },
-  {
-    id: 2,
-    name: "Images",
-    type: "folder",
-    size: null,
-    modified: "2024-01-14",
-    items: 8,
-  },
-  {
-    id: 3,
-    name: "project-report.pdf",
-    type: "file",
-    size: "2.4 MB",
-    modified: "2024-01-13",
-    items: null,
-  },
-  {
-    id: 4,
-    name: "presentation.pptx",
-    type: "file",
-    size: "8.1 MB",
-    modified: "2024-01-12",
-    items: null,
-  },
-  {
-    id: 5,
-    name: "data.xlsx",
-    type: "file",
-    size: "1.2 MB",
-    modified: "2024-01-11",
-    items: null,
-  },
-  {
-    id: 6,
-    name: "backup.zip",
-    type: "file",
-    size: "15.6 MB",
-    modified: "2024-01-10",
-    items: null,
-  },
-];
+// 格式化文件大小
+function formatFileSize(bytes: number): string {
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let size = bytes;
+  let unitIndex = 0;
+
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex++;
+  }
+
+  if (unitIndex === 0) {
+    return `${bytes} ${units[unitIndex]}`;
+  }
+  return `${size.toFixed(1)} ${units[unitIndex]}`;
+}
+
+// 格式化存储空间
+function formatStorageSpace(bytes: number): string {
+  return formatFileSize(bytes);
+}
 
 function FilesPage() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [currentPath] = useState<string>();
+
+  // 获取文件列表
+  const {
+    data: filesData,
+    isLoading: filesLoading,
+    error: filesError,
+  } = useFileListQuery(currentPath, isAuthenticated);
+
+  // 获取存储空间信息
+  const { data: storageData, isLoading: storageLoading } =
+    useStorageInfoQuery(isAuthenticated);
+
+  // 过滤和搜索文件
+  const filteredFiles = useMemo(() => {
+    if (!filesData?.files) return [];
+
+    if (!searchQuery.trim()) {
+      return filesData.files;
+    }
+
+    return filesData.files.filter((file) =>
+      file.name.toLowerCase().includes(searchQuery.toLowerCase().trim()),
+    );
+  }, [filesData?.files, searchQuery]);
 
   // 如果未登录，重定向到登录页
   if (!isAuthenticated && !isLoading) {
@@ -94,10 +91,6 @@ function FilesPage() {
       </div>
     );
   }
-
-  const filteredFiles = mockFiles.filter((file) =>
-    file.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
 
   return (
     <div className="h-screen bg-background flex flex-col">
@@ -157,21 +150,40 @@ function FilesPage() {
           <div className="mt-auto p-4">
             <div className="p-4 rounded-lg bg-muted/50">
               <h3 className="text-sm font-medium mb-2">存储空间</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span>已使用</span>
-                  <span>27.3 GB</span>
+              {storageLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 </div>
-                <div className="w-full bg-secondary rounded-full h-2">
-                  <div
-                    className="bg-primary h-2 rounded-full"
-                    style={{ width: "45%" }}
-                  />
+              ) : storageData?.success && storageData.storage ? (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span>已使用</span>
+                    <span>
+                      {formatStorageSpace(storageData.storage.used_bytes)}
+                    </span>
+                  </div>
+                  <div className="w-full bg-secondary rounded-full h-2">
+                    <div
+                      className="bg-primary h-2 rounded-full"
+                      style={{
+                        width: `${Math.min(storageData.storage.used_percentage, 100)}%`,
+                      }}
+                    />
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    剩余{" "}
+                    {formatStorageSpace(
+                      storageData.storage.total_bytes -
+                        storageData.storage.used_bytes,
+                    )}{" "}
+                    / {formatStorageSpace(storageData.storage.total_bytes)}
+                  </div>
                 </div>
+              ) : (
                 <div className="text-xs text-muted-foreground">
-                  剩余 32.7 GB / 60 GB
+                  无法获取存储信息
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </aside>
@@ -230,17 +242,30 @@ function FilesPage() {
 
           {/* 文件列表 - 可滚动区域 */}
           <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-4 md:pb-6">
-            {viewMode === "grid" ? (
+            {filesLoading ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">加载文件列表中...</p>
+              </div>
+            ) : filesError ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <FolderOpen className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">加载失败</h3>
+                <p className="text-muted-foreground text-center">
+                  无法获取文件列表，请检查网络连接或重试
+                </p>
+              </div>
+            ) : viewMode === "grid" ? (
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
-                {filteredFiles.map((file) => (
+                {filteredFiles.map((file, index) => (
                   <Card
-                    key={file.id}
+                    key={`${file.path}-${index}`}
                     className="hover:shadow-md transition-shadow cursor-pointer group"
                   >
                     <CardContent className="p-3">
                       <div className="flex flex-col items-center space-y-1.5">
                         <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-muted group-hover:bg-muted/80">
-                          {file.type === "folder" ? (
+                          {file.file_type === "folder" ? (
                             <FolderOpen className="h-5 w-5 text-primary" />
                           ) : (
                             <File className="h-5 w-5 text-muted-foreground" />
@@ -254,9 +279,11 @@ function FilesPage() {
                             {file.name}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {file.type === "folder"
-                              ? `${file.items} 项`
-                              : file.size}
+                            {file.file_type === "folder"
+                              ? `${file.items || 0} 项`
+                              : file.size
+                                ? formatFileSize(file.size)
+                                : "未知大小"}
                           </p>
                         </div>
                       </div>
@@ -266,14 +293,14 @@ function FilesPage() {
               </div>
             ) : (
               <div className="space-y-1">
-                {filteredFiles.map((file) => (
+                {filteredFiles.map((file, index) => (
                   <div
-                    key={file.id}
+                    key={`${file.path}-${index}`}
                     className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 cursor-pointer group"
                   >
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 flex items-center justify-center rounded bg-muted group-hover:bg-muted/80">
-                        {file.type === "folder" ? (
+                        {file.file_type === "folder" ? (
                           <FolderOpen className="h-4 w-4 text-primary" />
                         ) : (
                           <File className="h-4 w-4 text-muted-foreground" />
@@ -282,9 +309,11 @@ function FilesPage() {
                       <div>
                         <p className="text-sm font-medium">{file.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {file.type === "folder"
-                            ? `${file.items} 项目`
-                            : file.size}
+                          {file.file_type === "folder"
+                            ? `${file.items || 0} 项目`
+                            : file.size
+                              ? formatFileSize(file.size)
+                              : "未知大小"}
                         </p>
                       </div>
                     </div>
@@ -309,7 +338,7 @@ function FilesPage() {
               </div>
             )}
 
-            {filteredFiles.length === 0 && (
+            {!filesLoading && !filesError && filteredFiles.length === 0 && (
               <div className="flex flex-col items-center justify-center py-12">
                 <FolderOpen className="h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-medium mb-2">

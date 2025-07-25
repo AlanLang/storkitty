@@ -49,36 +49,65 @@
 
 ---
 
-### 2. 文件浏览模块 🔄 (规划中)
+### 2. 文件浏览模块 ✅ (已实现)
 
-**功能描述**: 展示服务器指定目录的文件和文件夹列表
+**功能描述**: 展示服务器指定目录的文件和文件夹列表，提供现代化的文件管理界面
 
 **实现方案**:
 - **后端**: 
-  - 使用 `std::fs` 读取目录内容
-  - 返回文件信息：名称、大小、修改时间、类型
-  - 支持路径导航和面包屑
-  - 权限控制：只允许访问配置的根目录及其子目录
+  - ✅ 使用 `std::fs` 读取目录内容
+  - ✅ 返回文件信息：名称、路径、大小、修改时间、类型、文件夹项目数量
+  - ✅ 支持RESTful路径导航 (`/api/files/list/{path}`)
+  - ✅ 权限控制：只允许访问配置的根目录及其子目录
+  - ✅ 路径安全检查，防止目录遍历攻击
+  - ✅ 文件按类型排序（文件夹优先）
 - **前端**:
-  - 表格或卡片式文件列表展示
-  - 文件类型图标识别
-  - 文件大小友好格式化
-  - 支持排序（按名称、大小、时间）
+  - ✅ 现代化文件管理界面，支持网格和列表两种视图模式
+  - ✅ 文件类型图标识别（文件夹/文件）
+  - ✅ 文件大小智能格式化 (B/KB/MB/GB/TB)
+  - ✅ 响应式设计，移动端自动隐藏侧边栏
+  - ✅ 实时搜索和过滤功能
+  - ✅ TanStack Query 缓存管理
+  - ✅ 加载状态和错误处理
+  - ✅ 存储空间信息实时显示
+
+**UI 设计特性**:
+- ✅ 侧边栏导航设计
+- ✅ 工具栏（搜索、上传、视图切换）
+- ✅ 面包屑导航
+- ✅ 紧凑的文件卡片设计
+- ✅ 悬浮交互效果
+- ✅ 存储空间进度条
+- ✅ 空状态友好提示
 
 **API 接口**:
 ```
-GET /api/files?path={directory_path}
+GET /api/files/list           # 获取根目录文件列表
+GET /api/files/list/{path}    # 获取指定路径文件列表
+GET /api/files/storage        # 获取存储空间信息
+
 Response: {
-  "current_path": "/uploads",
-  "parent_path": "/",
-  "items": [
+  "success": true,
+  "files": [
     {
-      "name": "document.pdf",
-      "type": "file",
-      "size": 1024000,
-      "modified": "2024-01-01T12:00:00Z"
+      "name": "documents",
+      "path": "documents", 
+      "file_type": "folder",
+      "size": null,
+      "modified": "2025-07-25",
+      "items": 12
+    },
+    {
+      "name": "report.pdf",
+      "path": "report.pdf",
+      "file_type": "file", 
+      "size": 2048576,
+      "modified": "2025-07-25",
+      "items": null
     }
-  ]
+  ],
+  "current_path": "",
+  "message": null
 }
 ```
 
@@ -221,30 +250,35 @@ Body: { "path": "/path/new_folder" }
 ### 目录结构规划
 ```
 src/backend/
+├── mod.rs           # 模块导出 ✅
 ├── auth.rs          # 认证模块 ✅
-├── files.rs         # 文件操作模块 🔄
+├── files.rs         # 文件操作模块 ✅ (浏览、存储信息)
 ├── upload.rs        # 文件上传模块 🔄
 ├── download.rs      # 文件下载模块 🔄
 └── config.rs        # 配置管理 ✅
 
 src/frontend/
 ├── api/                   # API 调用和错误处理
-│   └── auth.ts            ✅ (认证 API)
+│   ├── auth.ts            ✅ (认证 API)
+│   └── files.ts           ✅ (文件管理 API)
+├── types/                 # TypeScript 类型定义
+│   ├── auth.ts            ✅ (认证相关类型)
+│   └── files.ts           ✅ (文件管理类型)
 ├── routes/                # File-Based Routing
 │   ├── __root.tsx         ✅ (根布局 + Query Provider)
 │   ├── index.tsx          ✅ (首页重定向)
 │   ├── login.tsx          ✅ (登录页面)
-│   ├── dashboard.tsx      ✅ (仪表板)
-│   └── files.tsx          🔄 (文件管理页面)
+│   └── files.tsx          ✅ (文件管理页面)
 ├── hooks/                 # React Hooks
 │   ├── useAuth.ts         ✅ (认证 Hook)
-│   └── useAuthQueries.ts  ✅ (TanStack Query Hooks)
+│   ├── useAuthQueries.ts  ✅ (认证 TanStack Query Hooks)
+│   └── useFiles.ts        ✅ (文件管理 TanStack Query Hooks)
 ├── components/
-│   ├── LoginForm.tsx      ✅
-│   ├── FileList.tsx       🔄
-│   ├── FileUpload.tsx     🔄
-│   ├── FilePreview.tsx    🔮
-│   └── FileOperations.tsx 🔄
+│   ├── LoginForm.tsx      ✅ (登录表单)
+│   ├── FileList.tsx       🔄 (文件列表组件 - 集成在 files.tsx)
+│   ├── FileUpload.tsx     🔄 (文件上传组件)
+│   ├── FilePreview.tsx    🔮 (文件预览组件)
+│   └── FileOperations.tsx 🔄 (文件操作组件)
 ```
 
 ---
@@ -282,7 +316,7 @@ allow_download = true
 
 ### 第一阶段 (MVP)
 1. ✅ 用户认证系统
-2. 🔄 文件浏览功能
+2. ✅ 文件浏览功能
 3. 🔄 文件上传功能
 4. 🔄 文件下载功能
 

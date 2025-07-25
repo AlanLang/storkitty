@@ -1,0 +1,347 @@
+use axum::{
+    extract::{Path, State},
+    http::{HeaderMap, StatusCode},
+    response::Json,
+    routing::get,
+    Router,
+};
+use serde::Serialize;
+use std::{
+    fs,
+    path::{Path as StdPath, PathBuf},
+    sync::Arc,
+    time::SystemTime,
+};
+
+use crate::backend::{auth::AuthService, config::Config};
+
+#[derive(Debug, Serialize)]
+pub struct FileInfo {
+    pub name: String,
+    pub path: String,
+    pub file_type: String, // "file" or "folder"
+    pub size: Option<u64>,
+    pub modified: String,
+    pub items: Option<usize>, // 文件夹中的项目数量
+}
+
+#[derive(Debug, Serialize)]
+pub struct FilesResponse {
+    pub success: bool,
+    pub files: Vec<FileInfo>,
+    pub current_path: String,
+    pub message: Option<String>,
+}
+
+
+#[derive(Debug, Serialize)]
+pub struct StorageInfo {
+    pub used_bytes: u64,
+    pub total_bytes: u64,
+    pub used_percentage: f64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct StorageResponse {
+    pub success: bool,
+    pub storage: StorageInfo,
+    pub message: Option<String>,
+}
+
+pub struct FileService {
+    config: Arc<Config>,
+    auth_service: Arc<AuthService>,
+}
+
+impl FileService {
+    pub fn new(config: Arc<Config>, auth_service: Arc<AuthService>) -> Self {
+        Self {
+            config,
+            auth_service,
+        }
+    }
+
+    fn verify_auth(&self, headers: &HeaderMap) -> Result<String, StatusCode> {
+        let auth_header = headers
+            .get("Authorization")
+            .and_then(|value| value.to_str().ok())
+            .and_then(|value| value.strip_prefix("Bearer "));
+
+        let token = match auth_header {
+            Some(token) => token,
+            None => return Err(StatusCode::UNAUTHORIZED),
+        };
+
+        match self.auth_service.verify_token(token) {
+            Ok(token_data) => Ok(token_data.claims.sub),
+            Err(_) => Err(StatusCode::UNAUTHORIZED),
+        }
+    }
+
+    fn get_safe_path(&self, requested_path: Option<String>) -> Result<PathBuf, StatusCode> {
+        let root_dir = StdPath::new(&self.config.files.root_directory);
+        
+        // 确保根目录存在
+        if !root_dir.exists() {
+            if let Err(_) = fs::create_dir_all(root_dir) {
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        }
+
+        let target_path = match requested_path {
+            Some(path) if !path.is_empty() => {
+                let clean_path = path.trim_start_matches('/');
+                root_dir.join(clean_path)
+            }
+            _ => root_dir.to_path_buf(),
+        };
+
+        // 安全检查：确保路径在根目录内
+        match target_path.canonicalize() {
+            Ok(canonical_path) => {
+                let canonical_root = root_dir.canonicalize().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+                if canonical_path.starts_with(canonical_root) {
+                    Ok(canonical_path)
+                } else {
+                    Err(StatusCode::FORBIDDEN)
+                }
+            }
+            Err(_) => {
+                // 如果路径不存在，检查父目录是否安全
+                if let Some(parent) = target_path.parent() {
+                    if parent.starts_with(root_dir) {
+                        Ok(target_path)
+                    } else {
+                        Err(StatusCode::FORBIDDEN)
+                    }
+                } else {
+                    Err(StatusCode::BAD_REQUEST)
+                }
+            }
+        }
+    }
+
+    fn format_file_size(bytes: u64) -> String {
+        const UNITS: &[&str] = &["B", "KB", "MB", "GB", "TB"];
+        let mut size = bytes as f64;
+        let mut unit_index = 0;
+
+        while size >= 1024.0 && unit_index < UNITS.len() - 1 {
+            size /= 1024.0;
+            unit_index += 1;
+        }
+
+        if unit_index == 0 {
+            format!("{} {}", bytes, UNITS[unit_index])
+        } else {
+            format!("{:.1} {}", size, UNITS[unit_index])
+        }
+    }
+
+    fn format_modified_time(system_time: SystemTime) -> String {
+        match system_time.duration_since(SystemTime::UNIX_EPOCH) {
+            Ok(duration) => {
+                let timestamp = duration.as_secs();
+                // 简单格式化为 YYYY-MM-DD
+                let datetime = chrono::DateTime::from_timestamp(timestamp as i64, 0);
+                match datetime {
+                    Some(dt) => dt.format("%Y-%m-%d").to_string(),
+                    None => "未知".to_string(),
+                }
+            }
+            Err(_) => "未知".to_string(),
+        }
+    }
+
+    pub async fn list_files(&self, headers: &HeaderMap, file_path: Option<String>) -> Result<Json<FilesResponse>, StatusCode> {
+        // 验证认证
+        self.verify_auth(headers)?;
+
+        let requested_path = file_path.clone();
+        log::info!("Listing files for path: {:?}", requested_path);
+        
+        let safe_path = self.get_safe_path(requested_path.clone())?;
+        log::info!("Safe path resolved to: {:?}", safe_path);
+        
+        if !safe_path.exists() {
+            return Ok(Json(FilesResponse {
+                success: false,
+                files: vec![],
+                current_path: requested_path.unwrap_or_default(),
+                message: Some("路径不存在".to_string()),
+            }));
+        }
+
+        if !safe_path.is_dir() {
+            return Ok(Json(FilesResponse {
+                success: false,
+                files: vec![],
+                current_path: requested_path.unwrap_or_default(),
+                message: Some("不是有效的目录".to_string()),
+            }));
+        }
+
+        let mut files = Vec::new();
+        
+        match fs::read_dir(&safe_path) {
+            Ok(entries) => {
+                log::info!("Successfully opened directory: {:?}", safe_path);
+                for entry in entries {
+                    if let Ok(entry) = entry {
+                        let path = entry.path();
+                        log::info!("Processing entry: {:?}", path);
+                        let metadata = match entry.metadata() {
+                            Ok(metadata) => metadata,
+                            Err(e) => {
+                                log::warn!("Failed to get metadata for {:?}: {}", path, e);
+                                continue;
+                            }
+                        };
+
+                        let name = match path.file_name() {
+                            Some(name) => name.to_string_lossy().to_string(),
+                            None => continue,
+                        };
+
+                        let root_dir = StdPath::new(&self.config.files.root_directory).canonicalize().unwrap_or_else(|_| {
+                            StdPath::new(&self.config.files.root_directory).to_path_buf()
+                        });
+                        
+                        let relative_path = match path.strip_prefix(&root_dir) {
+                            Ok(rel_path) => rel_path.to_string_lossy().to_string(),
+                            Err(e) => {
+                                log::warn!("Failed to strip prefix for {:?} with root {:?}: {}", path, root_dir, e);
+                                continue;
+                            }
+                        };
+
+                        let (file_type, size, items) = if metadata.is_dir() {
+                            // 统计文件夹中的项目数量
+                            let item_count = fs::read_dir(&path).map(|entries| entries.count()).unwrap_or(0);
+                            ("folder".to_string(), None, Some(item_count))
+                        } else {
+                            ("file".to_string(), Some(metadata.len()), None)
+                        };
+
+                        let modified = Self::format_modified_time(
+                            metadata.modified().unwrap_or(SystemTime::UNIX_EPOCH)
+                        );
+
+                        let file_info = FileInfo {
+                            name: name.clone(),
+                            path: relative_path.clone(),
+                            file_type: file_type.clone(),
+                            size,
+                            modified: modified.clone(),
+                            items,
+                        };
+                        log::info!("Adding file: {:?}", file_info);
+                        files.push(file_info);
+                    }
+                }
+
+                // 按名称排序，文件夹在前
+                files.sort_by(|a, b| {
+                    match (a.file_type.as_str(), b.file_type.as_str()) {
+                        ("folder", "file") => std::cmp::Ordering::Less,
+                        ("file", "folder") => std::cmp::Ordering::Greater,
+                        _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+                    }
+                });
+
+                Ok(Json(FilesResponse {
+                    success: true,
+                    files,
+                    current_path: requested_path.unwrap_or_default(),
+                    message: None,
+                }))
+            }
+            Err(_) => Ok(Json(FilesResponse {
+                success: false,
+                files: vec![],
+                current_path: requested_path.unwrap_or_default(),
+                message: Some("无法读取目录".to_string()),
+            })),
+        }
+    }
+
+    pub async fn get_storage_info(&self, headers: &HeaderMap) -> Result<Json<StorageResponse>, StatusCode> {
+        // 验证认证
+        self.verify_auth(headers)?;
+
+        let root_path = StdPath::new(&self.config.files.root_directory);
+        
+        // 计算已使用空间
+        let used_bytes = self.calculate_directory_size(root_path).unwrap_or(0);
+        
+        // 获取磁盘总空间（简化实现，使用固定值或从配置读取）
+        let total_bytes = 64 * 1024 * 1024 * 1024; // 64GB 作为示例
+        
+        let used_percentage = if total_bytes > 0 {
+            (used_bytes as f64 / total_bytes as f64) * 100.0
+        } else {
+            0.0
+        };
+
+        Ok(Json(StorageResponse {
+            success: true,
+            storage: StorageInfo {
+                used_bytes,
+                total_bytes,
+                used_percentage,
+            },
+            message: None,
+        }))
+    }
+
+    fn calculate_directory_size(&self, path: &StdPath) -> Result<u64, std::io::Error> {
+        let mut total_size = 0;
+        
+        if path.is_dir() {
+            for entry in fs::read_dir(path)? {
+                let entry = entry?;
+                let path = entry.path();
+                
+                if path.is_dir() {
+                    total_size += self.calculate_directory_size(&path).unwrap_or(0);
+                } else {
+                    total_size += entry.metadata()?.len();
+                }
+            }
+        } else {
+            total_size += fs::metadata(path)?.len();
+        }
+        
+        Ok(total_size)
+    }
+}
+
+pub async fn list_files_handler(
+    State(file_service): State<Arc<FileService>>,
+    headers: HeaderMap,
+) -> Result<Json<FilesResponse>, StatusCode> {
+    file_service.list_files(&headers, None).await
+}
+
+pub async fn list_files_with_path_handler(
+    State(file_service): State<Arc<FileService>>,
+    headers: HeaderMap,
+    Path(file_path): Path<String>,
+) -> Result<Json<FilesResponse>, StatusCode> {
+    file_service.list_files(&headers, Some(file_path)).await
+}
+
+pub async fn storage_info_handler(
+    State(file_service): State<Arc<FileService>>,
+    headers: HeaderMap,
+) -> Result<Json<StorageResponse>, StatusCode> {
+    file_service.get_storage_info(&headers).await
+}
+
+pub fn files_router(file_service: Arc<FileService>) -> Router {
+    Router::new()
+        .route("/list", get(list_files_handler))
+        .route("/list/{*file_path}", get(list_files_with_path_handler))
+        .route("/storage", get(storage_info_handler))
+        .with_state(file_service)
+}
