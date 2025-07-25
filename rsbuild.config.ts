@@ -15,4 +15,12 @@ export default defineConfig({
       plugins: [TanStackRouterRspack()],
     },
   },
+  html: {
+    title: "Storkitty",
+  },
+  server: {
+    proxy: {
+      "/api": "http://localhost:3330",
+    },
+  },
 });
