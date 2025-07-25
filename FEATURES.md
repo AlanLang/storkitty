@@ -188,6 +188,7 @@ Body: { "path": "/path/new_folder" }
 - **UI 框架**: React 19 + TypeScript
 - **路由**: @tanstack/react-router (File-Based Routing)
 - **状态管理**: React Context API
+- **数据请求**: TanStack Query (React Query) - 服务器状态管理
 - **文件上传**: 原生 FormData + fetch
 - **UI 组件**: 自定义组件（保持轻量）
 - **包管理器**: Bun (快速依赖安装和构建)
@@ -202,12 +203,17 @@ src/backend/
 └── config.rs        # 配置管理 ✅
 
 src/frontend/
+├── api/                   # API 调用和错误处理
+│   └── auth.ts            ✅ (认证 API)
 ├── routes/                # File-Based Routing
-│   ├── __root.tsx         ✅ (根布局)
+│   ├── __root.tsx         ✅ (根布局 + Query Provider)
 │   ├── index.tsx          ✅ (首页重定向)
 │   ├── login.tsx          ✅ (登录页面)
 │   ├── dashboard.tsx      ✅ (仪表板)
 │   └── files.tsx          🔄 (文件管理页面)
+├── hooks/                 # React Hooks
+│   ├── useAuth.ts         ✅ (认证 Hook)
+│   └── useAuthQueries.ts  ✅ (TanStack Query Hooks)
 ├── components/
 │   ├── LoginForm.tsx      ✅
 │   ├── FileList.tsx       🔄

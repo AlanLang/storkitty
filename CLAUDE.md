@@ -11,6 +11,7 @@ This is a full-stack application called "storkitty" that combines a React fronte
 - **Frontend**: React 19 + TypeScript application built with RSBuild
 - **Backend**: Rust server using Axum framework with RESTful API and static file serving
 - **Authentication**: JWT-based authentication with bcrypt password hashing
+- **Data Fetching**: TanStack Query for server state management, caching, and error handling
 - **Database**: Configuration file-based user storage (no external database required)
 - **Build System**: RSBuild for frontend bundling, Cargo for Rust compilation
 - **Package Manager**: Bun for frontend dependency management
@@ -98,10 +99,13 @@ The application uses a dual-language architecture where:
 │       ├── routeTree.gen.ts    # Auto-generated route tree (do not edit)
 │       ├── types/
 │       │   └── auth.ts         # Authentication type definitions
+│       ├── api/
+│       │   └── auth.ts         # API functions and error handling
 │       ├── contexts/
 │       │   └── AuthContext.tsx # Authentication state management
 │       ├── hooks/
-│       │   └── useAuth.ts      # Authentication hook
+│       │   ├── useAuth.ts      # Authentication hook
+│       │   └── useAuthQueries.ts # TanStack Query hooks for auth
 │       ├── components/
 │       │   └── LoginForm.tsx   # Login form component
 │       └── routes/             # File-based route definitions
@@ -119,7 +123,7 @@ The application uses a dual-language architecture where:
 
 ### Dependencies
 **Backend**: axum, tokio, serde, jsonwebtoken, bcrypt, tower-http
-**Frontend**: react, @tanstack/react-router, @tanstack/router-cli, @tanstack/router-devtools
+**Frontend**: react, @tanstack/react-router, @tanstack/router-cli, @tanstack/router-devtools, @tanstack/react-query, @tanstack/react-query-devtools
 **Package Manager**: Bun (uses `bun.lockb` for dependency locking)
 
 ## Development Notes
@@ -129,6 +133,9 @@ The application uses a dual-language architecture where:
 - **TSX files do not need `import React from "react"`** - uses new JSX transform
 - Only import specific React hooks/types you need: `import { useState, useEffect } from "react"`
 - Keep hooks in separate files from components for better modularity
+- **TanStack Query handles all server state** - use query hooks for data fetching
+- API calls are centralized in `src/frontend/api/` with proper error handling
+- React Query DevTools available in development for debugging queries
 - Password hashes must be generated using the provided utility for security
 - JWT tokens expire after 24 hours by default (configurable)
 - CORS is enabled for development (all origins allowed)

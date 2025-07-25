@@ -4,28 +4,31 @@ import { useAuth } from "../hooks/useAuth";
 export function LoginForm() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const { login, state } = useAuth();
+  const [localError, setLocalError] = useState("");
+  const { login, isLoading, loginError } = useAuth();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError("");
+    setLocalError("");
 
     if (!username || !password) {
-      setError("请填写用户名和密码");
+      setLocalError("请填写用户名和密码");
       return;
     }
 
     const success = await login({ username, password });
-    if (!success) {
-      setError("登录失败，请检查用户名和密码");
+    if (!success && !loginError) {
+      setLocalError("登录失败，请检查用户名和密码");
     }
   };
 
-  if (state.isLoading) {
+  // 统一错误显示
+  const displayError = localError || loginError;
+
+  if (isLoading) {
     return (
       <div style={{ textAlign: "center", padding: "2rem" }}>
-        <div>加载中...</div>
+        <div>验证登录状态中...</div>
       </div>
     );
   }
@@ -90,7 +93,7 @@ export function LoginForm() {
           />
         </div>
 
-        {error && (
+        {displayError && (
           <div
             style={{
               color: "#d32f2f",
@@ -101,13 +104,13 @@ export function LoginForm() {
               borderRadius: "4px",
             }}
           >
-            {error}
+            {displayError}
           </div>
         )}
 
         <button
           type="submit"
-          disabled={state.isLoading}
+          disabled={isLoading}
           style={{
             width: "100%",
             padding: "0.75rem",
@@ -116,11 +119,11 @@ export function LoginForm() {
             border: "none",
             borderRadius: "4px",
             fontSize: "1rem",
-            cursor: state.isLoading ? "not-allowed" : "pointer",
-            opacity: state.isLoading ? 0.6 : 1,
+            cursor: isLoading ? "not-allowed" : "pointer",
+            opacity: isLoading ? 0.6 : 1,
           }}
         >
-          {state.isLoading ? "登录中..." : "登录"}
+          {isLoading ? "登录中..." : "登录"}
         </button>
       </form>
 

@@ -2,9 +2,9 @@ import { Navigate, createFileRoute } from "@tanstack/react-router";
 import { useAuth } from "../hooks/useAuth";
 
 function IndexPage() {
-  const { state } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
-  if (state.isLoading) {
+  if (isLoading) {
     return (
       <div
         style={{
@@ -20,7 +20,7 @@ function IndexPage() {
   }
 
   // 根据认证状态自动重定向
-  if (state.isAuthenticated) {
+  if (isAuthenticated) {
     return <Navigate to="/dashboard" />;
   }
   return <Navigate to="/login" />;

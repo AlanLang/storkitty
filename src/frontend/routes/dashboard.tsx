@@ -2,14 +2,14 @@ import { Navigate, createFileRoute } from "@tanstack/react-router";
 import { useAuth } from "../hooks/useAuth";
 
 function DashboardPage() {
-  const { state, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
 
   // 如果未登录，重定向到登录页
-  if (!state.isAuthenticated && !state.isLoading) {
+  if (!isAuthenticated && !isLoading) {
     return <Navigate to="/login" />;
   }
 
-  if (state.isLoading) {
+  if (isLoading) {
     return (
       <div
         style={{
@@ -41,7 +41,7 @@ function DashboardPage() {
         <div>
           <h1 style={{ margin: 0, color: "#333" }}>欢迎回来!</h1>
           <p style={{ margin: "0.5rem 0 0 0", color: "#666" }}>
-            用户: {state.user?.username} ({state.user?.email})
+            用户: {user?.username} ({user?.email})
           </p>
         </div>
         <button

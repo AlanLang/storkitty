@@ -3,14 +3,14 @@ import { LoginForm } from "../components/LoginForm";
 import { useAuth } from "../hooks/useAuth";
 
 function LoginPage() {
-  const { state } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   // 如果已经登录，重定向到仪表板
-  if (state.isAuthenticated) {
+  if (isAuthenticated) {
     return <Navigate to="/dashboard" />;
   }
 
-  if (state.isLoading) {
+  if (isLoading) {
     return (
       <div
         style={{
