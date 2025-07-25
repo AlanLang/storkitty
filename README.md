@@ -77,7 +77,7 @@ storkitty/
 │   │   ├── api/          # API 客户端
 │   │   └── styles/       # 样式文件
 │   └── main.rs           # Rust 入口文件
-├── config/               # 配置文件
+├── config.toml           # 应用配置文件（用户、服务器、文件管理等）
 ├── web/                  # 构建输出目录
 └── docs/                 # 文档
 ```

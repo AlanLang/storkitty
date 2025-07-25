@@ -1,0 +1,25 @@
+# Storkitty 配置文件
+
+[server]
+host = "0.0.0.0"
+port = 3330
+
+[user]
+username = "admin"
+password_hash = "$2b$12$Y6sTtekn3TUu3fs/rxKzlevMfAx2pRgG2MtMMcJCJWybNRLEC.F9e"  # admin123
+email = "admin@storkitty.com"
+
+[jwt]
+secret_key = "your-super-secret-jwt-key-change-this-in-production"
+expiration_hours = 24
+
+[files]
+root_directory = "./uploads"
+max_file_size = 100
+allowed_extensions = []
+blocked_extensions = [".exe", ".bat", ".sh"]
+
+[security]
+allow_mkdir = true
+allow_delete = true
+allow_download = true

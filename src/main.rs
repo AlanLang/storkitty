@@ -19,7 +19,7 @@ async fn main() -> anyhow::Result<()> {
 
   // 加载配置
   let config = Arc::new(Config::load()?);
-  let auth_service = Arc::new(AuthService::new(config));
+  let auth_service = Arc::new(AuthService::new(config.clone()));
 
   // 构建静态文件服务（用于 serve ./web 目录）
   let serve_dir = ServeDir::new("./web").not_found_service(ServeFile::new("./web/index.html"));
@@ -39,7 +39,10 @@ async fn main() -> anyhow::Result<()> {
         .allow_headers(Any),
     );
 
-  let addr = SocketAddr::from(([0, 0, 0, 0], 3330));
+  // 使用配置文件中的服务器设置
+  let addr = format!("{}:{}", config.server.host, config.server.port)
+    .parse::<SocketAddr>()
+    .unwrap_or_else(|_| SocketAddr::from(([0, 0, 0, 0], config.server.port)));
   let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
   log::info!("Listening on {}", addr);
   axum::serve(listener, app).await.unwrap();

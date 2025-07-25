@@ -84,8 +84,7 @@ The application uses a dual-language architecture where:
 
 ### File Structure
 ```
-├── config/
-│   └── users.toml              # User credentials and JWT configuration
+├── config.toml                  # Application configuration (users, server, files, security)
 ├── tsr.config.json             # Router configuration for file-based routing
 ├── src/
 │   ├── main.rs                 # Main server entry point
@@ -128,9 +127,10 @@ The application uses a dual-language architecture where:
 
 ### User Management
 - Default user: `admin` / `admin123`
-- To add/modify users: Edit `config/users.toml`
+- To add/modify users: Edit `config.toml` under `[user]` section  
 - To generate password hashes: Run `cargo run --bin hash_password`
-- JWT secret and expiration configurable in `config/users.toml`
+- JWT secret and expiration configurable in `config.toml` under `[jwt]` section
+- Server host and port configurable in `config.toml` under `[server]` section
 
 ### Dependencies
 **Backend**: axum, tokio, serde, jsonwebtoken, bcrypt, tower-http
