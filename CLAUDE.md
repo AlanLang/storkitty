@@ -185,7 +185,7 @@ The application uses a dual-language architecture where:
 - **TailwindCSS 4.x Configuration**: Uses `@tailwindcss/postcss` plugin with `@theme` configuration in globals.css
 - **CSS Variables for shadcn/ui**: All colors defined as CSS variables (--primary, --secondary, etc.) and referenced via `@theme` configuration
 - **NO custom CSS styles in components** - all styling must use TailwindCSS utility classes
-- **NO hover shadow effects** - avoid complex shadow animations and hover effects
+- **Subtle hover effects** - use simple shadow and scaling effects for better UX
 - **shadcn/ui components** - consistent, accessible components in `src/frontend/components/ui/`
 - **Use `cn()` utility** - for conditional classes with `clsx` and `tailwind-merge`
 - **Lucide React icons** - consistent icon system across the application
@@ -244,10 +244,13 @@ The project uses TailwindCSS 4.x with the following setup:
 
 ### UI Components
 - **Grid/List views**: Toggle between card grid and detailed list views
-- **File icons**: Lucide React icons for folders and files
+- **Smart file icons**: Color-coded Lucide React icons based on file type (images=green, videos=red, documents=blue, code=purple, archives=orange)
+- **Modern card design**: Rounded cards with gradient icon containers and smooth hover effects
+- **Interactive hover effects**: Subtle shadow and icon scaling on hover for enhanced UX
 - **File metadata**: Size, modification date, and item count for folders
 - **Search filter**: Real-time filtering of files and folders by name
 - **Storage display**: Real-time storage usage with progress bar
+- **Responsive layout**: Adaptive grid from 2-7 columns across different screen sizes
 
 ### Technical Implementation
 - **Shared component**: `FilesPageComponent` handles all file browser logic

@@ -4,6 +4,11 @@ import {
   ChevronRight,
   Download,
   File,
+  FileArchive,
+  FileCode,
+  FileImage,
+  FileText,
+  FileVideo,
   Folder,
   FolderOpen,
   Grid3X3,
@@ -45,6 +50,128 @@ function formatFileSize(bytes: number): string {
 // 格式化存储空间
 function formatStorageSpace(bytes: number): string {
   return formatFileSize(bytes);
+}
+
+// 根据文件扩展名获取图标
+function getFileIcon(fileName: string, fileType: string) {
+  if (fileType === "folder") {
+    return FolderOpen;
+  }
+
+  const extension = fileName.split(".").pop()?.toLowerCase();
+
+  // 图片文件
+  if (
+    ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg", "ico"].includes(
+      extension || "",
+    )
+  ) {
+    return FileImage;
+  }
+
+  // 视频文件
+  if (
+    ["mp4", "avi", "mov", "mkv", "flv", "webm", "m4v"].includes(extension || "")
+  ) {
+    return FileVideo;
+  }
+
+  // 文档文件
+  if (["txt", "doc", "docx", "pdf", "rtf", "md"].includes(extension || "")) {
+    return FileText;
+  }
+
+  // 代码文件
+  if (
+    [
+      "js",
+      "ts",
+      "jsx",
+      "tsx",
+      "html",
+      "css",
+      "scss",
+      "json",
+      "xml",
+      "py",
+      "java",
+      "cpp",
+      "c",
+      "rs",
+      "go",
+    ].includes(extension || "")
+  ) {
+    return FileCode;
+  }
+
+  // 压缩文件
+  if (["zip", "rar", "7z", "tar", "gz", "bz2"].includes(extension || "")) {
+    return FileArchive;
+  }
+
+  // 默认文件图标
+  return File;
+}
+
+// 根据文件类型获取图标颜色
+function getFileIconColor(fileName: string, fileType: string) {
+  if (fileType === "folder") {
+    return "text-primary";
+  }
+
+  const extension = fileName.split(".").pop()?.toLowerCase();
+
+  // 图片文件 - 绿色
+  if (
+    ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg", "ico"].includes(
+      extension || "",
+    )
+  ) {
+    return "text-green-500";
+  }
+
+  // 视频文件 - 红色
+  if (
+    ["mp4", "avi", "mov", "mkv", "flv", "webm", "m4v"].includes(extension || "")
+  ) {
+    return "text-red-500";
+  }
+
+  // 文档文件 - 蓝色
+  if (["txt", "doc", "docx", "pdf", "rtf", "md"].includes(extension || "")) {
+    return "text-blue-500";
+  }
+
+  // 代码文件 - 紫色
+  if (
+    [
+      "js",
+      "ts",
+      "jsx",
+      "tsx",
+      "html",
+      "css",
+      "scss",
+      "json",
+      "xml",
+      "py",
+      "java",
+      "cpp",
+      "c",
+      "rs",
+      "go",
+    ].includes(extension || "")
+  ) {
+    return "text-purple-500";
+  }
+
+  // 压缩文件 - 橙色
+  if (["zip", "rar", "7z", "tar", "gz", "bz2"].includes(extension || "")) {
+    return "text-orange-500";
+  }
+
+  // 默认颜色
+  return "text-muted-foreground";
 }
 
 interface FilesPageComponentProps {
@@ -325,36 +452,51 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
                 </p>
               </div>
             ) : viewMode === "grid" ? (
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4">
                 {filteredFiles.map((file, index) => (
                   <Card
                     key={`${file.path}-${index}`}
-                    className="hover:shadow-md transition-shadow cursor-pointer group"
+                    className="relative overflow-hidden border-0 bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50 hover:bg-card/70 hover:shadow-md transition-all duration-200 cursor-pointer group"
                     onClick={() => {
                       if (file.file_type === "folder") {
                         handleFolderClick(file.name);
                       }
                     }}
                   >
-                    <CardContent className="p-3">
-                      <div className="flex flex-col items-center space-y-1.5">
-                        <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-muted group-hover:bg-muted/80">
-                          {file.file_type === "folder" ? (
-                            <FolderOpen className="h-5 w-5 text-primary" />
-                          ) : (
-                            <File className="h-5 w-5 text-muted-foreground" />
-                          )}
+                    <CardContent className="p-4">
+                      <div className="flex flex-col items-center space-y-3">
+                        {/* 图标区域 */}
+                        <div className="relative">
+                          <div className="w-16 h-16 flex items-center justify-center rounded-2xl bg-gradient-to-br from-muted/50 to-muted group-hover:from-muted/60 group-hover:to-muted/80 transition-all duration-200">
+                            {(() => {
+                              const IconComponent = getFileIcon(
+                                file.name,
+                                file.file_type,
+                              );
+                              const iconColor = getFileIconColor(
+                                file.name,
+                                file.file_type,
+                              );
+                              return (
+                                <IconComponent
+                                  className={`h-8 w-8 ${iconColor} group-hover:scale-110 transition-all duration-200`}
+                                />
+                              );
+                            })()}
+                          </div>
                         </div>
-                        <div className="text-center w-full">
+
+                        {/* 文件信息 */}
+                        <div className="text-center w-full space-y-1">
                           <p
-                            className="text-xs font-medium truncate w-full"
+                            className="text-sm font-medium text-foreground leading-tight truncate w-full px-1"
                             title={file.name}
                           >
                             {file.name}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {file.file_type === "folder"
-                              ? `${file.items || 0} 项`
+                              ? `${file.items || 0} 项目`
                               : file.size
                                 ? formatFileSize(file.size)
                                 : "未知大小"}
@@ -425,16 +567,28 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
             )}
 
             {!filesLoading && !filesError && filteredFiles.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-12">
-                <FolderOpen className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">
+              <div className="flex flex-col items-center justify-center py-16">
+                <div className="w-24 h-24 flex items-center justify-center rounded-3xl bg-gradient-to-br from-muted/30 to-muted/50 mb-6">
+                  <FolderOpen className="h-12 w-12 text-muted-foreground/60" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2 text-foreground">
                   {searchQuery ? "未找到匹配的文件" : "文件夹为空"}
                 </h3>
-                <p className="text-muted-foreground text-center">
+                <p className="text-muted-foreground text-center max-w-sm">
                   {searchQuery
-                    ? "尝试使用不同的关键词搜索"
-                    : "上传一些文件来开始使用"}
+                    ? "尝试使用不同的关键词搜索，或检查文件名拼写"
+                    : "此文件夹中还没有任何文件。上传一些文件来开始使用吧"}
                 </p>
+                {!searchQuery && (
+                  <Button
+                    variant="outline"
+                    className="mt-4 gap-2"
+                    onClick={() => {}}
+                  >
+                    <Upload className="h-4 w-4" />
+                    上传文件
+                  </Button>
+                )}
               </div>
             )}
           </div>
