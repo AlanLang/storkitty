@@ -18,7 +18,7 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState("");
-  const { login, isLoading, loginError } = useAuth();
+  const { login, isLoggingIn, loginError } = useAuth();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -110,8 +110,8 @@ export function LoginForm() {
               )}
 
               {/* 登录按钮 */}
-              <Button type="submit" disabled={isLoading} className="w-full">
-                {isLoading ? (
+              <Button type="submit" disabled={isLoggingIn} className="w-full">
+                {isLoggingIn ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     登录中...

@@ -11,6 +11,7 @@ export interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isLoggingIn: boolean;
   login: (credentials: LoginRequest) => Promise<boolean>;
   logout: () => void;
   loginError: string | null;
@@ -75,7 +76,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     user: user || null,
     token,
     isAuthenticated,
-    isLoading: isLoading || loginMutation.isPending,
+    isLoading,
+    isLoggingIn: loginMutation.isPending,
     login,
     logout,
     loginError,
