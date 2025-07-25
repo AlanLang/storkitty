@@ -7,7 +7,7 @@ function LoginPage() {
 
   // 如果已经登录，重定向到仪表板
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" />;
+    return <Navigate to="/files" />;
   }
 
   if (isLoading) {

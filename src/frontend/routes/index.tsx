@@ -14,7 +14,7 @@ function IndexPage() {
 
   // 根据认证状态自动重定向
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" />;
+    return <Navigate to="/files" />;
   }
   return <Navigate to="/login" />;
 }
