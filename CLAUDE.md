@@ -130,12 +130,14 @@ The application uses a dual-language architecture where:
 │       │   │   ├── label.tsx   # Label component
 │       │   │   ├── card.tsx    # Card components
 │       │   │   └── alert.tsx   # Alert component
-│       │   └── LoginForm.tsx   # Login form component
+│       │   ├── LoginForm.tsx   # Login form component
+│       │   └── FilesPageComponent.tsx # Shared file management component
 │       └── routes/             # File-based route definitions
 │           ├── __root.tsx      # Root layout with AuthProvider
 │           ├── index.tsx       # Home route (auto-redirect)
 │           ├── login.tsx       # Login page route
-│           └── files.tsx       # File management interface route
+│           ├── files.index.tsx # Root directory file browser
+│           └── files.$path.tsx # Dynamic path file browser
 ```
 
 ### User Management
@@ -146,12 +148,16 @@ The application uses a dual-language architecture where:
 - Server host and port configurable in `config.toml` under `[server]` section
 
 ### File Management
-- File storage in configurable root directory (default: `./uploads`)
-- Automatic directory creation on startup
-- Path security: restricted to configured root directory
-- File size formatting and type detection
-- Real-time storage space calculation and display
-- Responsive file browser with grid/list view modes
+- **File storage**: Configurable root directory (default: `./uploads`)
+- **Automatic directory creation**: Creates upload directory on startup
+- **Path security**: Restricted to configured root directory with path validation
+- **File browser interface**: Modern responsive design with grid/list view modes
+- **Folder navigation**: Click folders to navigate into subdirectories with URL path reflection
+- **Breadcrumb navigation**: Interactive breadcrumb showing current path with clickable navigation
+- **File metadata**: File size formatting, type detection, and modification dates
+- **Real-time storage info**: Storage space calculation and usage display
+- **Search functionality**: Filter files and folders by name
+- **URL-based routing**: File paths reflected in browser URL for bookmarking and sharing
 
 ### Dependencies
 **Backend**: axum, tokio, serde, jsonwebtoken, bcrypt, tower-http
@@ -169,6 +175,12 @@ The application uses a dual-language architecture where:
 - **TanStack Query handles all server state** - use query hooks for data fetching
 - API calls are centralized in `src/frontend/api/` with proper error handling
 - React Query DevTools available in development for debugging queries
+- **Component architecture**: 
+  - Shared UI components in `src/frontend/components/ui/` (shadcn/ui)
+  - Business logic components in `src/frontend/components/`
+  - FilesPageComponent: Shared component for file browser functionality
+  - Route components: Thin wrappers that pass props to shared components
+  - Hooks: Custom hooks for API calls and state management in `src/frontend/hooks/`
 - **ONLY use TailwindCSS 4.x classes for styling** - no custom CSS classes, no inline styles, no CSS-in-JS
 - **TailwindCSS 4.x Configuration**: Uses `@tailwindcss/postcss` plugin with `@theme` configuration in globals.css
 - **CSS Variables for shadcn/ui**: All colors defined as CSS variables (--primary, --secondary, etc.) and referenced via `@theme` configuration
@@ -180,7 +192,17 @@ The application uses a dual-language architecture where:
 - Password hashes must be generated using the provided utility for security
 - JWT tokens expire after 24 hours by default (configurable)
 - CORS is enabled for development (all origins allowed)
-- File-based routing follows convention: routes in `src/frontend/routes/` become URL paths
+- **File-based routing**: Routes in `src/frontend/routes/` become URL paths with nested layout support
+- **Route structure**:
+  - `/` - Home page with authentication-based redirect
+  - `/login` - User authentication page  
+  - `/files` - Root directory file browser (files.index.tsx)
+  - `/files/folder` - Dynamic folder navigation (files.$path.tsx)
+  - `/files/folder/subfolder` - Deep folder navigation with URL encoding
+- **Index routes**: Uses `files.index.tsx` for `/files` to ensure proper route matching
+- **Dynamic parameters**: Path parameters automatically URL-encoded/decoded for special characters  
+- **Route protection**: Automatic redirect to login for unauthenticated users
+- **Route matching priority**: Index routes have higher priority than parameterized routes
 
 ## TailwindCSS 4.x Configuration
 
@@ -210,3 +232,28 @@ The project uses TailwindCSS 4.x with the following setup:
 - `postcss.config.js` - PostCSS configuration with TailwindCSS plugin
 - `src/frontend/styles/globals.css` - TailwindCSS imports and theme configuration
 - `rsbuild.config.ts` - Build system integration (if needed)
+
+## File Browser Features
+
+### Navigation System
+- **Folder clicking**: Click any folder to navigate into it
+- **URL reflection**: Current path is reflected in the browser URL (e.g., `/files/documents/projects`)
+- **Breadcrumb navigation**: Interactive breadcrumb trail with clickable path segments
+- **Deep navigation**: Support for unlimited folder depth
+- **Back navigation**: Use browser back/forward buttons or breadcrumb links
+
+### UI Components
+- **Grid/List views**: Toggle between card grid and detailed list views
+- **File icons**: Lucide React icons for folders and files
+- **File metadata**: Size, modification date, and item count for folders
+- **Search filter**: Real-time filtering of files and folders by name
+- **Storage display**: Real-time storage usage with progress bar
+
+### Technical Implementation
+- **Shared component**: `FilesPageComponent` handles all file browser logic
+- **Route separation**: 
+  - `files.index.tsx` - Root directory browser (index route)
+  - `files.$path.tsx` - Dynamic path navigation
+- **State management**: TanStack Query for caching and data fetching
+- **URL encoding**: Automatic encoding/decoding of special characters in paths
+- **Error handling**: Graceful handling of navigation errors and loading states

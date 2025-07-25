@@ -10,17 +10,13 @@
 
 import { Route as rootRouteImport } from "./routes/__root"
 import { Route as LoginRouteImport } from "./routes/login"
-import { Route as FilesRouteImport } from "./routes/files"
 import { Route as IndexRouteImport } from "./routes/index"
+import { Route as FilesIndexRouteImport } from "./routes/files.index"
+import { Route as FilesPathRouteImport } from "./routes/files.$path"
 
 const LoginRoute = LoginRouteImport.update({
   id: "/login",
   path: "/login",
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FilesRoute = FilesRouteImport.update({
-  id: "/files",
-  path: "/files",
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -28,35 +24,49 @@ const IndexRoute = IndexRouteImport.update({
   path: "/",
   getParentRoute: () => rootRouteImport,
 } as any)
+const FilesIndexRoute = FilesIndexRouteImport.update({
+  id: "/files/",
+  path: "/files/",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FilesPathRoute = FilesPathRouteImport.update({
+  id: "/files/$path",
+  path: "/files/$path",
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
-  "/files": typeof FilesRoute
   "/login": typeof LoginRoute
+  "/files/$path": typeof FilesPathRoute
+  "/files": typeof FilesIndexRoute
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute
-  "/files": typeof FilesRoute
   "/login": typeof LoginRoute
+  "/files/$path": typeof FilesPathRoute
+  "/files": typeof FilesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   "/": typeof IndexRoute
-  "/files": typeof FilesRoute
   "/login": typeof LoginRoute
+  "/files/$path": typeof FilesPathRoute
+  "/files/": typeof FilesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: "/" | "/files" | "/login"
+  fullPaths: "/" | "/login" | "/files/$path" | "/files"
   fileRoutesByTo: FileRoutesByTo
-  to: "/" | "/files" | "/login"
-  id: "__root__" | "/" | "/files" | "/login"
+  to: "/" | "/login" | "/files/$path" | "/files"
+  id: "__root__" | "/" | "/login" | "/files/$path" | "/files/"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  FilesRoute: typeof FilesRoute
   LoginRoute: typeof LoginRoute
+  FilesPathRoute: typeof FilesPathRoute
+  FilesIndexRoute: typeof FilesIndexRoute
 }
 
 declare module "@tanstack/react-router" {
@@ -68,13 +78,6 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/files": {
-      id: "/files"
-      path: "/files"
-      fullPath: "/files"
-      preLoaderRoute: typeof FilesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     "/": {
       id: "/"
       path: "/"
@@ -82,13 +85,28 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/files/": {
+      id: "/files/"
+      path: "/files"
+      fullPath: "/files"
+      preLoaderRoute: typeof FilesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/files/$path": {
+      id: "/files/$path"
+      path: "/files/$path"
+      fullPath: "/files/$path"
+      preLoaderRoute: typeof FilesPathRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  FilesRoute: FilesRoute,
   LoginRoute: LoginRoute,
+  FilesPathRoute: FilesPathRoute,
+  FilesIndexRoute: FilesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

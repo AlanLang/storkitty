@@ -1,6 +1,7 @@
-import { Navigate, createFileRoute } from "@tanstack/react-router";
+import { Navigate, useNavigate } from "@tanstack/react-router";
 import {
   Calendar,
+  ChevronRight,
   Download,
   File,
   Folder,
@@ -18,11 +19,11 @@ import {
   User as UserIcon,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Button } from "../components/ui/button";
-import { Card, CardContent } from "../components/ui/card";
-import { Input } from "../components/ui/input";
 import { useAuth } from "../hooks/useAuth";
 import { useFileListQuery, useStorageInfoQuery } from "../hooks/useFiles";
+import { Button } from "./ui/button";
+import { Card, CardContent } from "./ui/card";
+import { Input } from "./ui/input";
 
 // 格式化文件大小
 function formatFileSize(bytes: number): string {
@@ -46,11 +47,15 @@ function formatStorageSpace(bytes: number): string {
   return formatFileSize(bytes);
 }
 
-function FilesPage() {
+interface FilesPageComponentProps {
+  currentPath?: string;
+}
+
+export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [currentPath] = useState<string>();
 
   // 获取文件列表
   const {
@@ -58,6 +63,36 @@ function FilesPage() {
     isLoading: filesLoading,
     error: filesError,
   } = useFileListQuery(currentPath, isAuthenticated);
+
+  // 处理文件夹点击
+  const handleFolderClick = (folderName: string) => {
+    const newPath = currentPath ? `${currentPath}/${folderName}` : folderName;
+
+    navigate({
+      to: "/files/$path",
+      params: { path: encodeURIComponent(newPath) },
+    });
+  };
+
+  // 获取面包屑路径
+  const breadcrumbPaths = useMemo(() => {
+    if (!currentPath) return [];
+    return currentPath.split("/").filter(Boolean);
+  }, [currentPath]);
+
+  // 导航到特定路径
+  const navigateToPath = (pathIndex: number) => {
+    if (pathIndex === -1) {
+      // 导航到根目录
+      navigate({ to: "/files" });
+    } else {
+      const newPath = breadcrumbPaths.slice(0, pathIndex + 1).join("/");
+      navigate({
+        to: "/files/$path",
+        params: { path: encodeURIComponent(newPath) },
+      });
+    }
+  };
 
   // 获取存储空间信息
   const { data: storageData, isLoading: storageLoading } =
@@ -127,7 +162,11 @@ function FilesPage() {
         <aside className="hidden md:flex w-64 border-r bg-card/30 flex-col">
           <div className="p-4">
             <nav className="space-y-2">
-              <Button variant="default" className="w-full justify-start gap-2">
+              <Button
+                variant="default"
+                className="w-full justify-start gap-2"
+                onClick={() => navigate({ to: "/files" })}
+              >
                 <Home className="h-4 w-4" />
                 全部文件
               </Button>
@@ -171,11 +210,11 @@ function FilesPage() {
                     />
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    剩余{" "}
+                    剩余
                     {formatStorageSpace(
                       storageData.storage.total_bytes -
                         storageData.storage.used_bytes,
-                    )}{" "}
+                    )}
                     / {formatStorageSpace(storageData.storage.total_bytes)}
                   </div>
                 </div>
@@ -233,10 +272,40 @@ function FilesPage() {
             </div>
 
             {/* 面包屑导航 */}
-            <div className="flex items-center space-x-2 mb-4 text-sm text-muted-foreground">
-              <Home className="h-4 w-4" />
-              <span>/</span>
-              <span className="text-foreground">根目录</span>
+            <div className="flex items-center space-x-2 mb-4 text-sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigateToPath(-1)}
+                className="p-1 h-6 hover:bg-muted"
+              >
+                <Home className="h-4 w-4" />
+              </Button>
+
+              {breadcrumbPaths.map((pathPart, index) => (
+                <div key={pathPart} className="flex items-center space-x-2">
+                  <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigateToPath(index)}
+                    className={`p-1 h-6 text-sm hover:bg-muted ${
+                      index === breadcrumbPaths.length - 1
+                        ? "text-foreground font-medium"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {pathPart}
+                  </Button>
+                </div>
+              ))}
+
+              {breadcrumbPaths.length === 0 && (
+                <>
+                  <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-foreground font-medium">根目录</span>
+                </>
+              )}
             </div>
           </div>
 
@@ -261,6 +330,11 @@ function FilesPage() {
                   <Card
                     key={`${file.path}-${index}`}
                     className="hover:shadow-md transition-shadow cursor-pointer group"
+                    onClick={() => {
+                      if (file.file_type === "folder") {
+                        handleFolderClick(file.name);
+                      }
+                    }}
                   >
                     <CardContent className="p-3">
                       <div className="flex flex-col items-center space-y-1.5">
@@ -297,6 +371,18 @@ function FilesPage() {
                   <div
                     key={`${file.path}-${index}`}
                     className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 cursor-pointer group"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        if (file.file_type === "folder") {
+                          handleFolderClick(file.name);
+                        }
+                      }
+                    }}
+                    onClick={() => {
+                      if (file.file_type === "folder") {
+                        handleFolderClick(file.name);
+                      }
+                    }}
                   >
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 flex items-center justify-center rounded bg-muted group-hover:bg-muted/80">
@@ -357,7 +443,3 @@ function FilesPage() {
     </div>
   );
 }
-
-export const Route = createFileRoute("/files")({
-  component: FilesPage,
-});
