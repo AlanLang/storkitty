@@ -10,6 +10,7 @@
 - 🚀 **无数据库**: 基于文件系统和配置文件，部署简单
 - 🎨 **现代界面**: React + TypeScript 响应式前端
 - ⚡ **高性能**: Rust Axum 后端，异步处理
+- 📦 **快速构建**: Bun 包管理器，极速依赖安装
 
 ---
 
@@ -185,10 +186,11 @@ Body: { "path": "/path/new_folder" }
 
 ### 前端技术栈
 - **UI 框架**: React 19 + TypeScript
-- **路由**: @tanstack/react-router
+- **路由**: @tanstack/react-router (File-Based Routing)
 - **状态管理**: React Context API
 - **文件上传**: 原生 FormData + fetch
 - **UI 组件**: 自定义组件（保持轻量）
+- **包管理器**: Bun (快速依赖安装和构建)
 
 ### 目录结构规划
 ```
@@ -200,11 +202,14 @@ src/backend/
 └── config.rs        # 配置管理 ✅
 
 src/frontend/
-├── pages/
-│   ├── LoginPage.tsx      ✅
-│   ├── DashboardPage.tsx  ✅
-│   └── FilePage.tsx       🔄
+├── routes/                # File-Based Routing
+│   ├── __root.tsx         ✅ (根布局)
+│   ├── index.tsx          ✅ (首页重定向)
+│   ├── login.tsx          ✅ (登录页面)
+│   ├── dashboard.tsx      ✅ (仪表板)
+│   └── files.tsx          🔄 (文件管理页面)
 ├── components/
+│   ├── LoginForm.tsx      ✅
 │   ├── FileList.tsx       🔄
 │   ├── FileUpload.tsx     🔄
 │   ├── FilePreview.tsx    🔮

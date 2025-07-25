@@ -4,15 +4,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "rsbuild build",
+    "build": "bun run routes:gen && rsbuild build",
     "check": "biome check --write",
-    "dev": "rsbuild dev --open",
+    "dev": "bun run routes:gen && rsbuild dev --open",
     "format": "biome format --write",
-    "preview": "rsbuild preview"
+    "preview": "rsbuild preview",
+    "routes:gen": "tsr generate"
   },
   "dependencies": {
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "@tanstack/react-router": "^1.58.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
@@ -20,6 +22,8 @@
     "@rsbuild/plugin-react": "^1.1.1",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
+    "@tanstack/router-devtools": "^1.58.0",
+    "@tanstack/router-cli": "^1.58.0",
     "typescript": "^5.8.2"
   }
 }

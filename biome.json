@@ -3,7 +3,8 @@
   "files": {
     "ignore": [
       "packages/frontend/components/ui/**",
-      "packages/frontend/src/routeTree.gen.ts"
+      "packages/frontend/src/routeTree.gen.ts",
+      "src/frontend/routeTree.gen.ts"
     ]
   },
   "vcs": {
