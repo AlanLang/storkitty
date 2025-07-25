@@ -54,9 +54,9 @@ export function LoginForm() {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
               {/* 用户名输入 */}
-              <div className="space-y-2">
+              <div className="flex flex-col space-y-2">
                 <Label htmlFor="username">用户名</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -73,7 +73,7 @@ export function LoginForm() {
               </div>
 
               {/* 密码输入 */}
-              <div className="space-y-2">
+              <div className="flex flex-col space-y-2">
                 <Label htmlFor="password">密码</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
