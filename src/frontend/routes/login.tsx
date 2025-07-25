@@ -12,31 +12,13 @@ function LoginPage() {
 
   if (isLoading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
+      <div className="flex items-center justify-center min-h-screen">
         <div>加载中...</div>
       </div>
     );
   }
 
-  return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <LoginForm />
-    </div>
-  );
+  return <LoginForm />;
 }
 
 export const Route = createFileRoute("/login")({

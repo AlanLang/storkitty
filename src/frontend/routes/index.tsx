@@ -6,14 +6,7 @@ function IndexPage() {
 
   if (isLoading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
+      <div className="flex items-center justify-center min-h-screen">
         <div>加载中...</div>
       </div>
     );

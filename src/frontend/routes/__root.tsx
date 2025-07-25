@@ -2,6 +2,7 @@ import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { AuthProvider } from "../contexts/AuthContext";
+import "../styles/globals.css";
 
 // 创建 Query Client 实例
 const queryClient = new QueryClient({
@@ -21,7 +22,7 @@ export const Route = createRootRoute({
   component: () => (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <div style={{ minHeight: "100vh", backgroundColor: "#f5f5f5" }}>
+        <div className="min-h-screen bg-background">
           <Outlet />
           <ReactQueryDevtools initialIsOpen={false} />
         </div>

@@ -26,9 +26,26 @@
 - **配置**: TOML 文件存储用户凭据
 - **安全**: 自动 token 验证和路由保护
 
+**UI 设计**:
+- ✅ 现代化登录界面
+- ✅ 基于 shadcn/ui 设计系统
+- ✅ TailwindCSS 4.x 样式系统
+- ✅ 响应式布局设计
+- ✅ 暗色主题支持
+- ✅ 用户体验优化（去除焦点边框，简化交互）
+- ✅ 演示账号信息显示
+
 **API 接口**:
 - `POST /api/auth/login` - 用户登录
 - `POST /api/auth/verify` - token 验证
+
+**前端技术栈升级**:
+- ✅ React 19 + TypeScript
+- ✅ TanStack Router（文件路由系统）
+- ✅ TanStack Query（服务器状态管理）
+- ✅ TailwindCSS 4.x（最新样式系统）
+- ✅ shadcn/ui 组件库集成
+- ✅ Rsbuild 构建工具
 
 ---
 
@@ -187,11 +204,19 @@ Body: { "path": "/path/new_folder" }
 ### 前端技术栈
 - **UI 框架**: React 19 + TypeScript
 - **路由**: @tanstack/react-router (File-Based Routing)
-- **状态管理**: React Context API
+- **状态管理**: React Context API + TanStack Query
 - **数据请求**: TanStack Query (React Query) - 服务器状态管理
+- **样式系统**: TailwindCSS 4.x + shadcn/ui 组件库
+- **构建工具**: Rsbuild (替代 Webpack/Vite)
 - **文件上传**: 原生 FormData + fetch
-- **UI 组件**: 自定义组件（保持轻量）
 - **包管理器**: Bun (快速依赖安装和构建)
+
+**样式系统特性**:
+- ✅ TailwindCSS 4.x 最新特性支持
+- ✅ CSS 变量系统集成
+- ✅ 深色模式自动切换
+- ✅ shadcn/ui 组件库完整集成
+- ✅ 响应式设计支持
 
 ### 目录结构规划
 ```

@@ -4,28 +4,39 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "bun run routes:gen && rsbuild build",
+    "build": "rsbuild build",
     "check": "biome check --write",
-    "dev": "bun run routes:gen && rsbuild dev --open",
+    "dev": "rsbuild dev --open",
     "format": "biome format --write",
     "preview": "rsbuild preview",
     "routes:gen": "tsr generate"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.2.3",
     "@tanstack/react-query": "^5.83.0",
     "@tanstack/react-router": "^1.58.0",
+    "@tanstack/router-plugin": "^1.129.8",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.525.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@rsbuild/core": "^1.2.14",
     "@rsbuild/plugin-react": "^1.1.1",
+    "@tailwindcss/postcss": "^4.1.11",
+    "@tailwindcss/typography": "^0.5.16",
     "@tanstack/react-query-devtools": "^5.83.0",
     "@tanstack/router-cli": "^1.58.0",
     "@tanstack/router-devtools": "^1.58.0",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.11",
     "typescript": "^5.8.2"
   }
 }

@@ -2,8 +2,8 @@
   "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
   "files": {
     "ignore": [
-      "packages/frontend/components/ui/**",
-      "packages/frontend/src/routeTree.gen.ts",
+      "src/frontend/components/ui/**",
+      "src/frontend/src/routeTree.gen.ts",
       "src/frontend/routeTree.gen.ts"
     ]
   },

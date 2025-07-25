@@ -12,6 +12,7 @@ This is a full-stack application called "storkitty" that combines a React fronte
 - **Backend**: Rust server using Axum framework with RESTful API and static file serving
 - **Authentication**: JWT-based authentication with bcrypt password hashing
 - **Data Fetching**: TanStack Query for server state management, caching, and error handling
+- **UI Framework**: TailwindCSS 4.x + shadcn/ui components for modern, accessible design
 - **Database**: Configuration file-based user storage (no external database required)
 - **Build System**: RSBuild for frontend bundling, Cargo for Rust compilation
 - **Package Manager**: Bun for frontend dependency management
@@ -106,7 +107,17 @@ The application uses a dual-language architecture where:
 │       ├── hooks/
 │       │   ├── useAuth.ts      # Authentication hook
 │       │   └── useAuthQueries.ts # TanStack Query hooks for auth
+│       ├── lib/
+│       │   └── utils.ts        # Utility functions (cn, etc.)
+│       ├── styles/
+│       │   └── globals.css     # TailwindCSS 4.x imports and @theme configuration
 │       ├── components/
+│       │   ├── ui/             # shadcn/ui components
+│       │   │   ├── button.tsx  # Button component
+│       │   │   ├── input.tsx   # Input component
+│       │   │   ├── label.tsx   # Label component
+│       │   │   ├── card.tsx    # Card components
+│       │   │   └── alert.tsx   # Alert component
 │       │   └── LoginForm.tsx   # Login form component
 │       └── routes/             # File-based route definitions
 │           ├── __root.tsx      # Root layout with AuthProvider
@@ -124,6 +135,7 @@ The application uses a dual-language architecture where:
 ### Dependencies
 **Backend**: axum, tokio, serde, jsonwebtoken, bcrypt, tower-http
 **Frontend**: react, @tanstack/react-router, @tanstack/router-cli, @tanstack/router-devtools, @tanstack/react-query, @tanstack/react-query-devtools
+**UI Framework**: @tailwindcss/postcss (TailwindCSS 4.x), class-variance-authority, clsx, tailwind-merge, lucide-react, @radix-ui/react-slot, shadcn/ui components
 **Package Manager**: Bun (uses `bun.lockb` for dependency locking)
 
 ## Development Notes
@@ -136,7 +148,44 @@ The application uses a dual-language architecture where:
 - **TanStack Query handles all server state** - use query hooks for data fetching
 - API calls are centralized in `src/frontend/api/` with proper error handling
 - React Query DevTools available in development for debugging queries
+- **ONLY use TailwindCSS 4.x classes for styling** - no custom CSS classes, no inline styles, no CSS-in-JS
+- **TailwindCSS 4.x Configuration**: Uses `@tailwindcss/postcss` plugin with `@theme` configuration in globals.css
+- **CSS Variables for shadcn/ui**: All colors defined as CSS variables (--primary, --secondary, etc.) and referenced via `@theme` configuration
+- **NO custom CSS styles in components** - all styling must use TailwindCSS utility classes
+- **NO hover shadow effects** - avoid complex shadow animations and hover effects
+- **shadcn/ui components** - consistent, accessible components in `src/frontend/components/ui/`
+- **Use `cn()` utility** - for conditional classes with `clsx` and `tailwind-merge`
+- **Lucide React icons** - consistent icon system across the application
 - Password hashes must be generated using the provided utility for security
 - JWT tokens expire after 24 hours by default (configurable)
 - CORS is enabled for development (all origins allowed)
 - File-based routing follows convention: routes in `src/frontend/routes/` become URL paths
+
+## TailwindCSS 4.x Configuration
+
+The project uses TailwindCSS 4.x with the following setup:
+
+### PostCSS Configuration
+- Uses `@tailwindcss/postcss` plugin in `postcss.config.js`
+- Integrated with RSBuild build system
+
+### Color System
+- All colors defined as CSS variables in `globals.css`
+- shadcn/ui color system: `--primary`, `--secondary`, `--background`, etc.
+- Colors mapped to TailwindCSS classes via `@theme` configuration
+- Example: `bg-primary` becomes `background-color: hsl(var(--primary))`
+
+### Dark Mode Support
+- Automatic dark mode switching via CSS variables
+- No JavaScript theme switching required
+- Uses `.dark` class selector for dark theme variants
+
+### Component Integration
+- shadcn/ui components work seamlessly with TailwindCSS 4.x
+- All component styling uses TailwindCSS utility classes
+- No custom CSS classes or styles allowed
+
+### Key Files
+- `postcss.config.js` - PostCSS configuration with TailwindCSS plugin
+- `src/frontend/styles/globals.css` - TailwindCSS imports and theme configuration
+- `rsbuild.config.ts` - Build system integration (if needed)

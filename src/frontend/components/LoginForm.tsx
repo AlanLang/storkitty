@@ -1,9 +1,22 @@
+import { Eye, EyeOff, Loader2, Lock, LogIn, Shield, User } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
+import { Alert, AlertDescription } from "./ui/alert";
+import { Button } from "./ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
 
 export function LoginForm() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState("");
   const { login, isLoading, loginError } = useAuth();
 
@@ -25,122 +38,117 @@ export function LoginForm() {
   // 统一错误显示
   const displayError = localError || loginError;
 
-  if (isLoading) {
-    return (
-      <div style={{ textAlign: "center", padding: "2rem" }}>
-        <div>验证登录状态中...</div>
-      </div>
-    );
-  }
-
   return (
-    <div
-      style={{
-        maxWidth: "400px",
-        margin: "2rem auto",
-        padding: "2rem",
-        border: "1px solid #ddd",
-        borderRadius: "8px",
-        backgroundColor: "#fff",
-      }}
-    >
-      <h2 style={{ textAlign: "center", marginBottom: "1.5rem" }}>登录</h2>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+      <div className="w-full max-w-md">
+        <Card>
+          <CardHeader className="space-y-1 text-center">
+            {/* Logo 和标题区域 */}
+            <div className="flex justify-center mb-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[hsl(var(--primary))]">
+                <Shield className="h-6 w-6 text-primary-foreground" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl">欢迎回来</CardTitle>
+            <CardDescription>请登录您的 Storkitty 账户</CardDescription>
+          </CardHeader>
 
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: "1rem" }}>
-          <label
-            htmlFor="username"
-            style={{ display: "block", marginBottom: "0.5rem" }}
-          >
-            用户名:
-          </label>
-          <input
-            id="username"
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "0.75rem",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              fontSize: "1rem",
-            }}
-            placeholder="请输入用户名"
-          />
-        </div>
+          <CardContent className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* 用户名输入 */}
+              <div className="space-y-2">
+                <Label htmlFor="username">用户名</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="请输入用户名"
+                    className="pl-10"
+                    autoComplete="username"
+                  />
+                </div>
+              </div>
 
-        <div style={{ marginBottom: "1rem" }}>
-          <label
-            htmlFor="password"
-            style={{ display: "block", marginBottom: "0.5rem" }}
-          >
-            密码:
-          </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "0.75rem",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              fontSize: "1rem",
-            }}
-            placeholder="请输入密码"
-          />
-        </div>
+              {/* 密码输入 */}
+              <div className="space-y-2">
+                <Label htmlFor="password">密码</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="请输入密码"
+                    className="pl-10 pr-10"
+                    autoComplete="current-password"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-muted/50"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
 
-        {displayError && (
-          <div
-            style={{
-              color: "#d32f2f",
-              marginBottom: "1rem",
-              padding: "0.5rem",
-              backgroundColor: "#ffebee",
-              border: "1px solid #ffcdd2",
-              borderRadius: "4px",
-            }}
-          >
-            {displayError}
-          </div>
-        )}
+              {/* 错误提示 */}
+              {displayError && (
+                <Alert variant="destructive">
+                  <AlertDescription>{displayError}</AlertDescription>
+                </Alert>
+              )}
 
-        <button
-          type="submit"
-          disabled={isLoading}
-          style={{
-            width: "100%",
-            padding: "0.75rem",
-            backgroundColor: "#1976d2",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            fontSize: "1rem",
-            cursor: isLoading ? "not-allowed" : "pointer",
-            opacity: isLoading ? 0.6 : 1,
-          }}
-        >
-          {isLoading ? "登录中..." : "登录"}
-        </button>
-      </form>
+              {/* 登录按钮 */}
+              <Button type="submit" disabled={isLoading} className="w-full">
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    登录中...
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="mr-2 h-4 w-4" />
+                    登录
+                  </>
+                )}
+              </Button>
+            </form>
 
-      <div
-        style={{
-          marginTop: "1rem",
-          padding: "1rem",
-          backgroundColor: "#f5f5f5",
-          borderRadius: "4px",
-          fontSize: "0.875rem",
-        }}
-      >
-        <strong>测试账号:</strong>
-        <br />
-        用户名: admin
-        <br />
-        密码: admin123
+            {/* 测试账号信息 */}
+            <div className="rounded-lg bg-muted/50 p-4">
+              <div className="text-center space-y-2">
+                <div className="text-sm font-medium text-muted-foreground">
+                  演示账号
+                </div>
+                <div className="text-sm space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span>用户名:</span>
+                    <code className="text-xs bg-muted px-2 py-1 rounded border font-mono">
+                      admin
+                    </code>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>密码:</span>
+                    <code className="text-xs bg-muted px-2 py-1 rounded border font-mono">
+                      admin123
+                    </code>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
