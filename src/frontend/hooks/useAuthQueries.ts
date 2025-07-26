@@ -22,11 +22,8 @@ export function useLoginMutation() {
         // 触发自定义事件通知 token 变化
         window.dispatchEvent(new Event("tokenChange"));
 
-        // 预填充用户验证查询缓存
-        queryClient.setQueryData(authKeys.verify(data.token), async () => {
-          // biome-ignore lint/style/noNonNullAssertion: <explanation>
-          return authApi.verify(data.token!);
-        });
+        // 使查询失效，强制重新获取用户信息
+        queryClient.invalidateQueries({ queryKey: authKeys.verify(data.token) });
       }
     },
     onError: (error) => {
