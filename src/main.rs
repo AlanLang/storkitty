@@ -22,18 +22,23 @@ async fn main() -> anyhow::Result<()> {
   let auth_service = Arc::new(AuthService::new(config.clone()));
   let file_service = Arc::new(FileService::new(config.clone(), auth_service.clone()));
 
-  // 构建静态文件服务（用于 serve ./web 目录）
-  let serve_dir = ServeDir::new("./web").not_found_service(ServeFile::new("./web/index.html"));
-
   // 创建API路由
   let api_router = Router::new()
     .nest("/auth", backend::auth::auth_router(auth_service))
     .nest("/files", backend::files::files_router(file_service));
 
-  // 主应用路由
+  // 主应用路由 - 使用 Axum 推荐的 SPA 模式
   let app = Router::new()
     .nest("/api", api_router)
-    .fallback_service(get_service(serve_dir))
+    .fallback_service(
+      get_service(
+        ServeDir::new("./web")
+          .fallback(ServeFile::new("./web/index.html"))
+      )
+      .handle_error(|_| async {
+        (axum::http::StatusCode::INTERNAL_SERVER_ERROR, "Internal server error")
+      })
+    )
     .layer(
       CorsLayer::new()
         .allow_origin(Any)
