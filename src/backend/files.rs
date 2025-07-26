@@ -62,6 +62,27 @@ impl FileService {
         }
     }
 
+    // 判断是否为系统文件或目录，需要过滤掉
+    fn is_system_file(&self, name: &str) -> bool {
+        // 定义需要过滤的系统文件和目录
+        const SYSTEM_FILES: &[&str] = &[
+            ".DS_Store",      // macOS 系统文件
+            ".chunks",        // 分片上传临时目录
+            "Thumbs.db",      // Windows 缩略图缓存
+            ".gitkeep",       // Git 保持空目录文件
+            "desktop.ini",    // Windows 桌面配置
+            ".tmp",           // 临时文件目录
+            ".temp",          // 临时文件目录
+            "__pycache__",    // Python 缓存目录
+            ".git",           // Git 版本控制目录
+            ".svn",           // SVN 版本控制目录
+            "node_modules",   // Node.js 依赖目录（可选）
+        ];
+
+        // 只检查精确匹配
+        SYSTEM_FILES.contains(&name)
+    }
+
     fn verify_auth(&self, headers: &HeaderMap) -> Result<String, StatusCode> {
         let auth_header = headers
             .get("Authorization")
@@ -204,6 +225,12 @@ impl FileService {
                             None => continue,
                         };
 
+                        // 过滤系统文件
+                        if self.is_system_file(&name) {
+                            log::debug!("Filtering out system file: {}", name);
+                            continue;
+                        }
+
                         let root_dir = StdPath::new(&self.config.files.root_directory).canonicalize().unwrap_or_else(|_| {
                             StdPath::new(&self.config.files.root_directory).to_path_buf()
                         });
@@ -302,6 +329,14 @@ impl FileService {
             for entry in fs::read_dir(path)? {
                 let entry = entry?;
                 let path = entry.path();
+                
+                // 检查是否为系统文件，如果是则跳过
+                if let Some(name) = path.file_name() {
+                    let name_str = name.to_string_lossy();
+                    if self.is_system_file(&name_str) {
+                        continue;
+                    }
+                }
                 
                 if path.is_dir() {
                     total_size += self.calculate_directory_size(&path).unwrap_or(0);
