@@ -205,8 +205,8 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
     const newPath = currentPath ? `${currentPath}/${folderName}` : folderName;
 
     navigate({
-      to: "/files/$path",
-      params: { path: encodeURIComponent(newPath) },
+      to: "/files/$",
+      params: { _splat: newPath },
     });
   };
 
@@ -239,8 +239,8 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
     } else {
       const newPath = breadcrumbPaths.slice(0, pathIndex + 1).join("/");
       navigate({
-        to: "/files/$path",
-        params: { path: encodeURIComponent(newPath) },
+        to: "/files/$",
+        params: { _splat: newPath },
       });
     }
   };
@@ -506,6 +506,7 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
                                 file.name,
                                 file.file_type,
                               );
+
                               return (
                                 <IconComponent
                                   className={`h-8 w-8 ${iconColor} group-hover:scale-110 transition-all duration-200`}

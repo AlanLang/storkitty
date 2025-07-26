@@ -12,7 +12,7 @@ import { Route as rootRouteImport } from "./routes/__root"
 import { Route as LoginRouteImport } from "./routes/login"
 import { Route as IndexRouteImport } from "./routes/index"
 import { Route as FilesIndexRouteImport } from "./routes/files.index"
-import { Route as FilesPathRouteImport } from "./routes/files.$path"
+import { Route as FilesSplatRouteImport } from "./routes/files.$"
 
 const LoginRoute = LoginRouteImport.update({
   id: "/login",
@@ -29,43 +29,43 @@ const FilesIndexRoute = FilesIndexRouteImport.update({
   path: "/files/",
   getParentRoute: () => rootRouteImport,
 } as any)
-const FilesPathRoute = FilesPathRouteImport.update({
-  id: "/files/$path",
-  path: "/files/$path",
+const FilesSplatRoute = FilesSplatRouteImport.update({
+  id: "/files/$",
+  path: "/files/$",
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
   "/login": typeof LoginRoute
-  "/files/$path": typeof FilesPathRoute
+  "/files/$": typeof FilesSplatRoute
   "/files": typeof FilesIndexRoute
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute
   "/login": typeof LoginRoute
-  "/files/$path": typeof FilesPathRoute
+  "/files/$": typeof FilesSplatRoute
   "/files": typeof FilesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   "/": typeof IndexRoute
   "/login": typeof LoginRoute
-  "/files/$path": typeof FilesPathRoute
+  "/files/$": typeof FilesSplatRoute
   "/files/": typeof FilesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: "/" | "/login" | "/files/$path" | "/files"
+  fullPaths: "/" | "/login" | "/files/$" | "/files"
   fileRoutesByTo: FileRoutesByTo
-  to: "/" | "/login" | "/files/$path" | "/files"
-  id: "__root__" | "/" | "/login" | "/files/$path" | "/files/"
+  to: "/" | "/login" | "/files/$" | "/files"
+  id: "__root__" | "/" | "/login" | "/files/$" | "/files/"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
-  FilesPathRoute: typeof FilesPathRoute
+  FilesSplatRoute: typeof FilesSplatRoute
   FilesIndexRoute: typeof FilesIndexRoute
 }
 
@@ -92,11 +92,11 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof FilesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/files/$path": {
-      id: "/files/$path"
-      path: "/files/$path"
-      fullPath: "/files/$path"
-      preLoaderRoute: typeof FilesPathRouteImport
+    "/files/$": {
+      id: "/files/$"
+      path: "/files/$"
+      fullPath: "/files/$"
+      preLoaderRoute: typeof FilesSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -105,7 +105,7 @@ declare module "@tanstack/react-router" {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
-  FilesPathRoute: FilesPathRoute,
+  FilesSplatRoute: FilesSplatRoute,
   FilesIndexRoute: FilesIndexRoute,
 }
 export const routeTree = rootRouteImport
