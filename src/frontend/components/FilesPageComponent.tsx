@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { Navigate, useNavigate } from "@tanstack/react-router";
 import {
   Calendar,
@@ -23,9 +24,15 @@ import {
   Upload,
   User as UserIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { UploadResponse } from "../api/upload";
 import { useAuth } from "../hooks/useAuth";
-import { useFileListQuery, useStorageInfoQuery } from "../hooks/useFiles";
+import {
+  filesKeys,
+  useFileListQuery,
+  useStorageInfoQuery,
+} from "../hooks/useFiles";
+import { useUpload } from "../hooks/useUploadContext";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Input } from "./ui/input";
@@ -183,6 +190,8 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const { setIsDrawerOpen, setOnUploadComplete } = useUpload();
+  const queryClient = useQueryClient();
 
   // 获取文件列表
   const {
@@ -200,6 +209,21 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
       params: { path: encodeURIComponent(newPath) },
     });
   };
+
+  // 设置上传完成回调
+  const handleUploadComplete = useCallback(
+    (_results: UploadResponse[]) => {
+      // 刷新文件列表
+      queryClient.invalidateQueries({ queryKey: filesKeys.list(currentPath) });
+      queryClient.invalidateQueries({ queryKey: filesKeys.storage() });
+    },
+    [currentPath, queryClient],
+  );
+
+  // 设置上传完成回调到上传上下文
+  useEffect(() => {
+    setOnUploadComplete(handleUploadComplete);
+  }, [setOnUploadComplete, handleUploadComplete]);
 
   // 获取面包屑路径
   const breadcrumbPaths = useMemo(() => {
@@ -372,7 +396,12 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
               </div>
 
               <div className="flex items-center space-x-2">
-                <Button variant="outline" size="sm" className="gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => setIsDrawerOpen(true)}
+                >
                   <Upload className="h-4 w-4" />
                   <span className="hidden sm:inline">上传</span>
                 </Button>
@@ -583,7 +612,7 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
                   <Button
                     variant="outline"
                     className="mt-4 gap-2"
-                    onClick={() => {}}
+                    onClick={() => setIsDrawerOpen(true)}
                   >
                     <Upload className="h-4 w-4" />
                     上传文件

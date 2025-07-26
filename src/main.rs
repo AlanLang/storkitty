@@ -5,7 +5,7 @@ use std::{net::SocketAddr, sync::Arc};
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::cors::{CorsLayer, Any};
 
-use backend::{auth::AuthService, config::Config, files::FileService};
+use backend::{auth::AuthService, config::Config, files::FileService, upload::UploadService};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -21,11 +21,13 @@ async fn main() -> anyhow::Result<()> {
   let config = Arc::new(Config::load()?);
   let auth_service = Arc::new(AuthService::new(config.clone()));
   let file_service = Arc::new(FileService::new(config.clone(), auth_service.clone()));
+  let upload_service = Arc::new(UploadService::new(config.clone(), auth_service.clone()));
 
   // 创建API路由
   let api_router = Router::new()
     .nest("/auth", backend::auth::auth_router(auth_service))
-    .nest("/files", backend::files::files_router(file_service));
+    .nest("/files", backend::files::files_router(file_service))
+    .nest("/upload", backend::upload::upload_router(upload_service.clone(), config.files.max_file_size));
 
   // 主应用路由 - 使用 Axum 推荐的 SPA 模式
   let app = Router::new()
@@ -45,6 +47,16 @@ async fn main() -> anyhow::Result<()> {
         .allow_methods(Any)
         .allow_headers(Any),
     );
+
+  // 启动清理任务
+  let cleanup_store = upload_service.get_store();
+  tokio::spawn(async move {
+    let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(3600)); // 每小时清理一次
+    loop {
+      interval.tick().await;
+      backend::upload::cleanup_expired_sessions(cleanup_store.clone()).await;
+    }
+  });
 
   // 使用配置文件中的服务器设置
   let addr = format!("{}:{}", config.server.host, config.server.port)

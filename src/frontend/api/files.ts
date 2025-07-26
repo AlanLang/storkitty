@@ -73,4 +73,6 @@ export const filesApi = {
       method: "GET",
     });
   },
+
+  // Note: File config is now included in auth/verify response
 };

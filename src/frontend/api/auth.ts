@@ -1,4 +1,8 @@
-import type { LoginRequest, LoginResponse, UserInfo } from "../types/auth";
+import type {
+  LoginRequest,
+  LoginResponse,
+  VerifyResponse,
+} from "../types/auth";
 
 // API 基础配置
 const API_BASE_URL = "/api";
@@ -62,8 +66,8 @@ export const authApi = {
   },
 
   // 验证 token
-  async verify(token: string): Promise<UserInfo> {
-    return apiRequest<UserInfo>("/auth/verify", {
+  async verify(token: string): Promise<VerifyResponse> {
+    return apiRequest<VerifyResponse>("/auth/verify", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,

@@ -48,6 +48,7 @@ pub struct StorageResponse {
     pub message: Option<String>,
 }
 
+
 pub struct FileService {
     config: Arc<Config>,
     auth_service: Arc<AuthService>,
@@ -314,6 +315,7 @@ impl FileService {
         
         Ok(total_size)
     }
+
 }
 
 pub async fn list_files_handler(
@@ -338,10 +340,12 @@ pub async fn storage_info_handler(
     file_service.get_storage_info(&headers).await
 }
 
+
 pub fn files_router(file_service: Arc<FileService>) -> Router {
     Router::new()
         .route("/list", get(list_files_handler))
         .route("/list/{*file_path}", get(list_files_with_path_handler))
         .route("/storage", get(storage_info_handler))
+        // Note: /config endpoint removed - file config now included in auth/verify
         .with_state(file_service)
 }

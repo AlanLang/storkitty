@@ -30,3 +30,6 @@ export function useStorageInfoQuery(enabled = true) {
     gcTime: 5 * 60 * 1000, // 5 minutes
   });
 }
+
+// Note: File config is now included in auth/verify response
+// useFileConfigQuery removed - use useAuth().fileConfig instead

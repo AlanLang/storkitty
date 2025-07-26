@@ -25,3 +25,5 @@ export interface StorageResponse {
   storage: StorageInfo;
   message?: string;
 }
+
+// Note: File config is now included in auth/verify response (types/auth.ts)

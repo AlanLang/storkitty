@@ -84,12 +84,15 @@ The application uses a dual-language architecture where:
 
 #### Authentication
 - `POST /api/auth/login` - User authentication (returns JWT token)
-- `POST /api/auth/verify` - Token verification (returns user info)
+- `POST /api/auth/verify` - Token verification (returns user info + file configuration)
 
 #### File Management
 - `GET /api/files/list` - Get root directory file list
 - `GET /api/files/list/{path}` - Get file list for specific path
 - `GET /api/files/storage` - Get storage space information
+
+#### File Upload
+- `POST /api/upload/simple` - Simple file upload with multipart form data
 
 ### File Structure
 ```
@@ -103,6 +106,7 @@ The application uses a dual-language architecture where:
 │   │   ├── mod.rs              # Backend module exports
 │   │   ├── auth.rs             # Authentication logic and handlers
 │   │   ├── files.rs            # File management logic and handlers
+│   │   ├── upload.rs           # File upload logic and handlers
 │   │   └── config.rs           # Configuration file parsing
 │   └── frontend/
 │       ├── index.tsx           # Main app component with router
@@ -112,13 +116,18 @@ The application uses a dual-language architecture where:
 │       │   └── files.ts        # File management type definitions
 │       ├── api/
 │       │   ├── auth.ts         # Authentication API functions and error handling
-│       │   └── files.ts        # File management API functions
+│       │   ├── files.ts        # File management API functions
+│       │   ├── upload.ts       # Simple file upload API functions and utilities
+│       │   └── chunkedUpload.ts # Chunked upload API for large files
 │       ├── contexts/
-│       │   └── AuthContext.tsx # Authentication state management
+│       │   ├── AuthContext.tsx # Authentication state management
+│       │   ├── UploadContext.tsx # Upload state management and operations
+│       │   └── UploadContextDefinition.ts # Upload context types and definitions
 │       ├── hooks/
 │       │   ├── useAuth.ts      # Authentication hook
 │       │   ├── useAuthQueries.ts # TanStack Query hooks for auth
-│       │   └── useFiles.ts     # TanStack Query hooks for file management
+│       │   ├── useFiles.ts     # TanStack Query hooks for file management
+│       │   └── useUploadContext.ts # Upload context hook
 │       ├── lib/
 │       │   └── utils.ts        # Utility functions (cn, etc.)
 │       ├── styles/
@@ -131,6 +140,8 @@ The application uses a dual-language architecture where:
 │       │   │   ├── card.tsx    # Card components
 │       │   │   └── alert.tsx   # Alert component
 │       │   ├── LoginForm.tsx   # Login form component
+│       │   ├── UploadDrawer.tsx # Upload drawer component with progress tracking
+│       │   ├── UploadIndicator.tsx # Floating upload indicator button
 │       │   └── FilesPageComponent.tsx # Shared file management component
 │       └── routes/             # File-based route definitions
 │           ├── __root.tsx      # Root layout with AuthProvider
@@ -149,6 +160,8 @@ The application uses a dual-language architecture where:
 
 ### File Management
 - **File storage**: Configurable root directory (default: `./uploads`)
+- **Upload limits**: Configurable maximum file size (default: 100MB)
+- **File type restrictions**: Configurable allowed/blocked file extensions
 - **Automatic directory creation**: Creates upload directory on startup
 - **Path security**: Restricted to configured root directory with path validation
 - **File browser interface**: Modern responsive design with grid/list view modes
@@ -160,8 +173,8 @@ The application uses a dual-language architecture where:
 - **URL-based routing**: File paths reflected in browser URL for bookmarking and sharing
 
 ### Dependencies
-**Backend**: axum, tokio, serde, jsonwebtoken, bcrypt, tower-http
-**Frontend**: react, @tanstack/react-router, @tanstack/router-cli, @tanstack/router-devtools, @tanstack/react-query, @tanstack/react-query-devtools
+**Backend**: axum (with multipart), tokio, serde, jsonwebtoken, bcrypt, tower-http, uuid, mime, bytes, futures-util
+**Frontend**: react, @tanstack/react-router, @tanstack/router-cli, @tanstack/router-devtools, @tanstack/react-query, @tanstack/react-query-devtools, react-dropzone
 **UI Framework**: @tailwindcss/postcss (TailwindCSS 4.x), class-variance-authority, clsx, tailwind-merge, lucide-react, @radix-ui/react-slot, shadcn/ui components
 **Package Manager**: Bun (uses `bun.lockb` for dependency locking)
 
@@ -179,8 +192,11 @@ The application uses a dual-language architecture where:
   - Shared UI components in `src/frontend/components/ui/` (shadcn/ui)
   - Business logic components in `src/frontend/components/`
   - FilesPageComponent: Shared component for file browser functionality
+  - UploadDrawer: Modern slide-out upload interface with drag-and-drop support
+  - UploadIndicator: Floating upload status button with progress visualization
   - Route components: Thin wrappers that pass props to shared components
   - Hooks: Custom hooks for API calls and state management in `src/frontend/hooks/`
+  - **AuthContext优化**: 现在包含用户信息和文件配置，减少了对独立配置API的依赖
 - **ONLY use TailwindCSS 4.x classes for styling** - no custom CSS classes, no inline styles, no CSS-in-JS
 - **TailwindCSS 4.x Configuration**: Uses `@tailwindcss/postcss` plugin with `@theme` configuration in globals.css
 - **CSS Variables for shadcn/ui**: All colors defined as CSS variables (--primary, --secondary, etc.) and referenced via `@theme` configuration
@@ -260,3 +276,77 @@ The project uses TailwindCSS 4.x with the following setup:
 - **State management**: TanStack Query for caching and data fetching
 - **URL encoding**: Automatic encoding/decoding of special characters in paths
 - **Error handling**: Graceful handling of navigation errors and loading states
+
+## File Upload System
+
+### Upload Interface
+- **Upload Drawer**: Modern slide-out panel triggered by floating upload button
+- **Smooth Animations**: 300ms slide transitions with backdrop blur effects
+- **Smart File Detection**: Automatic chunked upload for files larger than 10MB
+- **Drag & Drop**: Full-screen drop zone with visual feedback during drag operations
+- **Upload Indicator**: Floating button with progress ring and status badges
+- **Multi-file Support**: Upload up to 20 files simultaneously with individual progress tracking
+
+### Upload Features
+- **Progress Tracking**: Individual file progress with speed and ETA estimates
+- **Error Handling**: Comprehensive error reporting with retry mechanisms
+- **File Validation**: Dynamic size limits from config.toml, filename checks, and type validation
+- **Path-aware Uploads**: Automatically uploads to current folder location
+- **Upload Management**: Cancel individual uploads, clear completed items, or reset all
+- **Real-time Updates**: Live progress updates with visual status indicators
+
+### Technical Architecture
+- **Upload Context**: Centralized state management for all upload operations
+- **Chunked Upload API**: Handles large files via 1MB chunks with 3 concurrent uploads
+- **Query Integration**: Automatic file list refresh after successful uploads
+- **Storage Updates**: Real-time storage space recalculation
+- **Component Separation**: Clean separation between upload logic and UI components
+- **Dynamic Configuration**: File size limits and restrictions loaded from config.toml
+
+### User Experience
+- **Auto-refresh**: File list automatically updates when upload drawer is closed
+- **Status Feedback**: Color-coded progress indicators (blue=uploading, green=complete, red=error)
+- **Responsive Design**: Drawer adapts to different screen sizes (28rem width)
+- **Keyboard Support**: ESC key to close drawer, proper focus management
+- **Accessibility**: ARIA labels, semantic markup, and screen reader support
+
+## API 优化
+
+### 合并认证与配置请求
+为了提升应用性能和减少网络请求，我们将文件配置信息合并到认证验证响应中：
+
+#### 优化前
+- 用户登录后需要两个独立请求：
+  1. `POST /api/auth/verify` - 获取用户信息
+  2. `GET /api/files/config` - 获取文件配置（上传限制等）
+
+#### 优化后
+- 只需一个请求：
+  1. `POST /api/auth/verify` - 同时返回用户信息和文件配置
+
+#### 响应格式
+```json
+{
+  "user": {
+    "username": "admin",
+    "email": "admin@storkitty.com"
+  },
+  "file_config": {
+    "max_file_size_mb": 100,
+    "allowed_extensions": [],
+    "blocked_extensions": [".exe", ".bat", ".sh"]
+  }
+}
+```
+
+#### 技术实现
+- **后端变更**: 修改 `auth.rs` 中的 `VerifyResponse` 结构体，包含 `FileConfigInfo`
+- **前端变更**: 更新 `AuthContext` 暴露 `fileConfig` 属性，组件直接从认证上下文获取配置
+- **类型安全**: 统一在 `types/auth.ts` 中定义相关类型，移除重复定义
+- **向后兼容**: 保持现有API结构，只是数据更丰富
+
+#### 性能收益
+- **减少网络请求**: 从2个请求优化为1个请求
+- **降低延迟**: 用户登录后立即获得所有必要信息
+- **简化状态管理**: 统一在认证上下文中管理用户和配置信息
+- **改善用户体验**: 更快的界面响应和配置加载

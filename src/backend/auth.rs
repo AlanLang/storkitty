@@ -39,6 +39,19 @@ pub struct UserInfo {
     pub email: String,
 }
 
+#[derive(Debug, Serialize)]
+pub struct FileConfigInfo {
+    pub max_file_size_mb: u64,
+    pub allowed_extensions: Vec<String>,
+    pub blocked_extensions: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct VerifyResponse {
+    pub user: UserInfo,
+    pub file_config: FileConfigInfo,
+}
+
 pub struct AuthService {
     config: Arc<Config>,
 }
@@ -118,7 +131,7 @@ pub async fn login_handler(
 pub async fn verify_handler(
     State(auth_service): State<Arc<AuthService>>,
     headers: HeaderMap,
-) -> Result<Json<UserInfo>, StatusCode> {
+) -> Result<Json<VerifyResponse>, StatusCode> {
     let auth_header = headers
         .get("Authorization")
         .and_then(|value| value.to_str().ok())
@@ -135,7 +148,19 @@ pub async fn verify_handler(
                 username: token_data.claims.sub,
                 email: auth_service.config.user.email.clone(),
             };
-            Ok(Json(user_info))
+            
+            let file_config = FileConfigInfo {
+                max_file_size_mb: auth_service.config.files.max_file_size,
+                allowed_extensions: auth_service.config.files.allowed_extensions.clone(),
+                blocked_extensions: auth_service.config.files.blocked_extensions.clone(),
+            };
+            
+            let response = VerifyResponse {
+                user: user_info,
+                file_config,
+            };
+            
+            Ok(Json(response))
         }
         Err(_) => Err(StatusCode::UNAUTHORIZED),
     }

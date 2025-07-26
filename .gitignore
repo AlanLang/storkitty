@@ -5,4 +5,4 @@
 /uploads
 .DS_Store
 !.vscode
-backend.log
+backend.logserver.log

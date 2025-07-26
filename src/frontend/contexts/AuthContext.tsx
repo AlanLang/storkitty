@@ -4,10 +4,11 @@ import {
   useLogout,
   useVerifyTokenQuery,
 } from "../hooks/useAuthQueries";
-import type { LoginRequest, UserInfo } from "../types/auth";
+import type { FileConfigInfo, LoginRequest, UserInfo } from "../types/auth";
 
 export interface AuthContextType {
   user: UserInfo | null;
+  fileConfig: FileConfigInfo | null;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -53,7 +54,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // 使用 React Query hooks
   const loginMutation = useLoginMutation();
   const {
-    data: user,
+    data: verifyResponse,
     isLoading,
     error: verifyError,
   } = useVerifyTokenQuery(token);
@@ -75,11 +76,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   // 构建认证状态
+  const user = verifyResponse?.user || null;
+  const fileConfig = verifyResponse?.file_config || null;
   const isAuthenticated = !!user && !!token && !verifyError;
   const loginError = loginMutation.error?.message || null;
 
   const value: AuthContextType = {
-    user: user || null,
+    user,
+    fileConfig,
     token,
     isAuthenticated,
     isLoading,
