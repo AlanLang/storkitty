@@ -157,7 +157,7 @@ async fn handle_pseudo_chunked_upload(
         .as_str()
         .ok_or("Missing uploadId in marker")?;
     
-    // Find the chunks directory
+    // Find the chunks directory - always in root .chunks directory
     let chunks_dir = root_dir.join(".chunks").join(upload_id);
     if !chunks_dir.exists() {
         return Ok(None); // No chunks directory found
@@ -604,7 +604,9 @@ pub async fn simple_upload_handler(
                 }));
             }
             Ok(None) => {
-                // Not a valid pseudo-chunked upload, treat as normal file
+                // Not a valid pseudo-chunked upload, return error instead of saving marker file
+                eprintln!("Upload completion marker found but no chunks available for: {}", file_name);
+                return Err(StatusCode::BAD_REQUEST);
             }
             Err(e) => {
                 eprintln!("Failed to handle pseudo-chunked upload: {}", e);

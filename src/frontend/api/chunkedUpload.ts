@@ -137,14 +137,8 @@ export async function startChunkedUpload(
         const formData = new FormData();
         formData.append("file", chunk, chunkFileName);
         formData.append("fileName", chunkFileName);
-        if (session.targetPath) {
-          formData.append(
-            "targetPath",
-            `${session.targetPath}/.chunks/${session.uploadId}`,
-          );
-        } else {
-          formData.append("targetPath", `.chunks/${session.uploadId}`);
-        }
+        // Always upload chunks to root .chunks directory regardless of target path
+        formData.append("targetPath", `.chunks/${session.uploadId}`);
 
         const response = await fetch("/api/upload/simple", {
           method: "POST",
