@@ -116,7 +116,7 @@ export function CreateDirectoryDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md animate-in fade-in-0 zoom-in-95 duration-300">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 animate-in zoom-in-75 duration-300 delay-150">
@@ -131,7 +131,7 @@ export function CreateDirectoryDialog({
           </div>
         </DialogHeader>
 
-        <div className="space-y-4 animate-in slide-in-from-top-2 duration-300 delay-100">
+        <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="directory-name" className="text-sm font-medium">
               文件夹名称
@@ -164,7 +164,7 @@ export function CreateDirectoryDialog({
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0 animate-in slide-in-from-bottom-2 duration-300 delay-200">
+        <DialogFooter>
           <Button
             variant="outline"
             onClick={handleClose}

@@ -59,7 +59,7 @@ export function DeleteConfirmDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md animate-in fade-in-0 zoom-in-95 duration-300">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10 animate-in zoom-in-75 duration-300 delay-150">
@@ -77,7 +77,7 @@ export function DeleteConfirmDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="rounded-lg bg-muted/50 p-4 animate-in slide-in-from-top-2 duration-300 delay-100">
+          <div className="rounded-lg bg-muted/50 p-4">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded bg-muted">
                 {isFolder ? (
@@ -141,7 +141,7 @@ export function DeleteConfirmDialog({
           )}
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0 animate-in slide-in-from-bottom-2 duration-300 delay-200">
+        <DialogFooter>
           <Button
             variant="outline"
             onClick={handleClose}

@@ -197,13 +197,14 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [deleteFile, setDeleteFile] = useState<FileInfo | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isCreateDirectoryDialogOpen, setIsCreateDirectoryDialogOpen] = useState(false);
+  const [isCreateDirectoryDialogOpen, setIsCreateDirectoryDialogOpen] =
+    useState(false);
   const { setIsDrawerOpen, setOnUploadComplete } = useUpload();
   const queryClient = useQueryClient();
 
   // 删除文件 mutation
   const deleteFileMutation = useDeleteFileMutation();
-  
+
   // 创建目录 mutation
   const createDirectoryMutation = useCreateDirectoryMutation();
 
@@ -267,6 +268,11 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
       ? `${currentPath}/${directoryName}`
       : directoryName;
     await createDirectoryMutation.mutateAsync(directoryPath);
+  };
+
+  // 处理创建目录按钮点击
+  const handleCreateDirectoryClick = () => {
+    setIsCreateDirectoryDialogOpen(true);
   };
 
   // 关闭创建目录对话框
@@ -449,12 +455,12 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
                   variant="outline"
                   size="sm"
                   className="gap-2"
-                  onClick={() => setIsCreateDirectoryDialogOpen(true)}
+                  onClick={handleCreateDirectoryClick}
                 >
                   <FolderOpen className="h-4 w-4" />
                   <span className="hidden sm:inline">新建文件夹</span>
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   size="sm"

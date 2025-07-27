@@ -51,15 +51,16 @@ export function UploadDrawer({ targetPath }: UploadDrawerProps = {}) {
   useEffect(() => {
     if (isDrawerOpen) {
       setIsVisible(true);
-      // Use double requestAnimationFrame to ensure DOM is updated
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setIsAnimating(true);
-        });
-      });
-    } else if (isVisible) {
+      // Force a layout reflow before starting animation
+      const timer = setTimeout(() => {
+        setIsAnimating(true);
+      }, 10); // Small delay to ensure DOM is ready
+      return () => clearTimeout(timer);
+    }
+    if (isVisible) {
       setIsAnimating(false);
-      setTimeout(() => setIsVisible(false), 300);
+      const timer = setTimeout(() => setIsVisible(false), 300);
+      return () => clearTimeout(timer);
     }
   }, [isDrawerOpen, isVisible]);
 
