@@ -46,5 +46,20 @@ export function useDeleteFileMutation() {
   });
 }
 
+// 创建目录 mutation
+export function useCreateDirectoryMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (directoryPath: string) => filesApi.createDirectory(directoryPath),
+    onSuccess: () => {
+      // 刷新所有文件列表查询
+      queryClient.invalidateQueries({ queryKey: filesKeys.lists() });
+      // 刷新存储空间信息
+      queryClient.invalidateQueries({ queryKey: filesKeys.storage() });
+    },
+  });
+}
+
 // Note: File config is now included in auth/verify response
 // useFileConfigQuery removed - use useAuth().fileConfig instead

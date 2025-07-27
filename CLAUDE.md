@@ -91,6 +91,7 @@ The application uses a dual-language architecture where:
 - `GET /api/files/list/{path}` - Get file list for specific path
 - `GET /api/files/storage` - Get storage space information
 - `DELETE /api/files/delete/{path}` - Delete file or directory (requires allow_delete permission)
+- `POST /api/files/mkdir/{path}` - Create new directory (requires allow_mkdir permission)
 
 #### File Upload
 - `POST /api/upload/simple` - Simple file upload with multipart form data
@@ -142,6 +143,7 @@ The application uses a dual-language architecture where:
 │       │   │   ├── alert.tsx   # Alert component
 │       │   │   └── dialog.tsx  # Dialog component
 │       │   ├── LoginForm.tsx   # Login form component
+│       │   ├── CreateDirectoryDialog.tsx # Directory creation dialog with validation
 │       │   ├── DeleteConfirmDialog.tsx # File deletion confirmation dialog
 │       │   ├── UploadDrawer.tsx # Upload drawer component with progress tracking
 │       │   ├── UploadIndicator.tsx # Floating upload indicator button
@@ -160,6 +162,7 @@ The application uses a dual-language architecture where:
 - To generate password hashes: Run `cargo run --bin hash_password`
 - JWT secret and expiration configurable in `config.toml` under `[jwt]` section
 - Server host and port configurable in `config.toml` under `[server]` section
+- Security permissions configurable in `config.toml` under `[security]` section (allow_mkdir, allow_delete, allow_download)
 
 ### File Management
 - **File storage**: Configurable root directory (default: `./uploads`)
@@ -176,6 +179,8 @@ The application uses a dual-language architecture where:
 - **URL-based routing**: File paths reflected in browser URL for bookmarking and sharing
 - **File deletion**: Secure file and folder deletion with confirmation dialogs
 - **Deletion safety**: Special confirmation required for non-empty folders
+- **Directory creation**: Create new folders with validation and security checks
+- **Name validation**: Automatic validation of directory names against illegal characters and system reserved names
 
 ### Dependencies
 **Backend**: axum (with multipart), tokio, serde, jsonwebtoken, bcrypt, tower-http, uuid, mime, bytes, futures-util
@@ -198,6 +203,8 @@ The application uses a dual-language architecture where:
   - Shared UI components in `src/frontend/components/ui/` (shadcn/ui)
   - Business logic components in `src/frontend/components/`
   - FilesPageComponent: Shared component for file browser functionality
+  - CreateDirectoryDialog: Dialog for creating new folders with input validation and error handling
+  - DeleteConfirmDialog: Confirmation dialog for file/folder deletion with safety features
   - UploadDrawer: Modern slide-out upload interface with drag-and-drop support
   - UploadIndicator: Floating upload status button with progress visualization
   - Route components: Thin wrappers that pass props to shared components
@@ -335,6 +342,35 @@ The project uses TailwindCSS 4.x with the following setup:
 - **State management**: TanStack Query for caching and data fetching
 - **URL encoding**: Automatic encoding/decoding of special characters in paths
 - **Error handling**: Graceful handling of navigation errors and loading states
+
+## Directory Management System
+
+### Create Directory Features
+- **Modern Dialog Interface**: CreateDirectoryDialog component with smooth animations and validation
+- **Real-time Validation**: Input validation for directory names with immediate error feedback
+- **Security Checks**: Prevents creation of directories with illegal characters or system reserved names
+- **Path-aware Creation**: Automatically creates directories in the current folder location
+- **Animation Timeline**: Consistent animation timing with staggered element entry (0ms, 150ms, 100ms, 200ms delays)
+- **Error Handling**: Comprehensive validation and error messages for user guidance
+
+### Directory Creation Process
+- **Input Validation**: Checks for empty names, illegal characters (`/ \ : * ? " < > |`), and reserved names
+- **Length Limits**: Directory names restricted to 255 characters maximum
+- **Reserved Names**: Prevents creation of system directories (`.DS_Store`, `.chunks`, `Thumbs.db`, `.gitkeep`, `desktop.ini`, `.tmp`, `.temp`, `__pycache__`, `.git`, `.svn`, `node_modules`)
+- **Backend Security**: Server-side validation and permission checking (`allow_mkdir` configuration)
+- **Automatic Refresh**: File list automatically updates after successful directory creation
+- **User Feedback**: Loading states, success/error messages, and visual confirmation
+- **Keyboard Support**: Enter key to confirm, Escape key to cancel, proper focus management
+
+### Technical Implementation
+- **API Endpoint**: `POST /api/files/mkdir/{path}` for secure directory creation
+- **Mutation Hook**: `useCreateDirectoryMutation` for TanStack Query integration
+- **Path Construction**: Automatic path building based on current navigation location
+- **Permission System**: Configurable `allow_mkdir` permission in `config.toml`
+- **State Management**: Centralized dialog state with proper cleanup and error handling
+- **TypeScript Integration**: Proper type definitions for `KeyboardEvent<HTMLInputElement>` and component props
+- **Real-time Validation**: `validateDirectoryName` function with immediate error clearing on input change
+- **Accessibility**: Auto-focus on input, proper ARIA labels, and semantic HTML structure
 
 ## File Upload System
 

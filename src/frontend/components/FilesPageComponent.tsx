@@ -29,12 +29,14 @@ import type { UploadResponse } from "../api/upload";
 import { useAuth } from "../hooks/useAuth";
 import {
   filesKeys,
+  useCreateDirectoryMutation,
   useDeleteFileMutation,
   useFileListQuery,
   useStorageInfoQuery,
 } from "../hooks/useFiles";
 import { useUpload } from "../hooks/useUploadContext";
 import type { FileInfo } from "../types/files";
+import { CreateDirectoryDialog } from "./CreateDirectoryDialog";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
@@ -195,11 +197,15 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [deleteFile, setDeleteFile] = useState<FileInfo | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isCreateDirectoryDialogOpen, setIsCreateDirectoryDialogOpen] = useState(false);
   const { setIsDrawerOpen, setOnUploadComplete } = useUpload();
   const queryClient = useQueryClient();
 
   // 删除文件 mutation
   const deleteFileMutation = useDeleteFileMutation();
+  
+  // 创建目录 mutation
+  const createDirectoryMutation = useCreateDirectoryMutation();
 
   // 获取文件列表
   const {
@@ -253,6 +259,19 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
   const handleDeleteDialogClose = () => {
     setIsDeleteDialogOpen(false);
     setDeleteFile(null);
+  };
+
+  // 处理创建目录确认
+  const handleCreateDirectoryConfirm = async (directoryName: string) => {
+    const directoryPath = currentPath
+      ? `${currentPath}/${directoryName}`
+      : directoryName;
+    await createDirectoryMutation.mutateAsync(directoryPath);
+  };
+
+  // 关闭创建目录对话框
+  const handleCreateDirectoryDialogClose = () => {
+    setIsCreateDirectoryDialogOpen(false);
   };
 
   // 获取面包屑路径
@@ -426,6 +445,16 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
               </div>
 
               <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => setIsCreateDirectoryDialogOpen(true)}
+                >
+                  <FolderOpen className="h-4 w-4" />
+                  <span className="hidden sm:inline">新建文件夹</span>
+                </Button>
+                
                 <Button
                   variant="outline"
                   size="sm"
@@ -686,6 +715,14 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
         onConfirm={handleDeleteConfirm}
         file={deleteFile}
         isDeleting={deleteFileMutation.isPending}
+      />
+
+      {/* 创建目录对话框 */}
+      <CreateDirectoryDialog
+        isOpen={isCreateDirectoryDialogOpen}
+        onClose={handleCreateDirectoryDialogClose}
+        onConfirm={handleCreateDirectoryConfirm}
+        isCreating={createDirectoryMutation.isPending}
       />
     </div>
   );

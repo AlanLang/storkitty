@@ -1,4 +1,5 @@
 import type {
+  CreateDirectoryResponse,
   DeleteResponse,
   FilesResponse,
   StorageResponse,
@@ -84,6 +85,16 @@ export const filesApi = {
       `/files/delete/${encodeURIComponent(filePath)}`,
       {
         method: "DELETE",
+      },
+    );
+  },
+
+  // 创建目录
+  async createDirectory(directoryPath: string): Promise<CreateDirectoryResponse> {
+    return apiRequest<CreateDirectoryResponse>(
+      `/files/mkdir/${encodeURIComponent(directoryPath)}`,
+      {
+        method: "POST",
       },
     );
   },

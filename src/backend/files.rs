@@ -2,7 +2,7 @@ use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::Json,
-    routing::{delete, get},
+    routing::{delete, get, post},
     Router,
 };
 use serde::Serialize;
@@ -50,6 +50,12 @@ pub struct StorageResponse {
 
 #[derive(Debug, Serialize)]
 pub struct DeleteResponse {
+    pub success: bool,
+    pub message: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CreateDirectoryResponse {
     pub success: bool,
     pub message: String,
 }
@@ -408,6 +414,83 @@ impl FileService {
         }
     }
 
+    pub async fn create_directory(&self, headers: &HeaderMap, directory_path: String) -> Result<Json<CreateDirectoryResponse>, StatusCode> {
+        // 验证认证
+        self.verify_auth(headers)?;
+
+        // 检查创建目录权限
+        if !self.config.security.allow_mkdir {
+            return Ok(Json(CreateDirectoryResponse {
+                success: false,
+                message: "目录创建功能已被禁用".to_string(),
+            }));
+        }
+
+        log::info!("Attempting to create directory: {}", directory_path);
+        
+        let safe_path = self.get_safe_path(Some(directory_path.clone()))?;
+        log::info!("Safe path resolved to: {:?}", safe_path);
+        
+        // 检查目录是否已存在
+        if safe_path.exists() {
+            return Ok(Json(CreateDirectoryResponse {
+                success: false,
+                message: "目录已存在".to_string(),
+            }));
+        }
+
+        // 验证目录名是否合法
+        if let Some(dir_name) = safe_path.file_name() {
+            let dir_name_str = dir_name.to_string_lossy();
+            
+            // 检查是否包含非法字符
+            if dir_name_str.contains('/') || dir_name_str.contains('\\') || 
+               dir_name_str.contains(':') || dir_name_str.contains('*') ||
+               dir_name_str.contains('?') || dir_name_str.contains('"') ||
+               dir_name_str.contains('<') || dir_name_str.contains('>') ||
+               dir_name_str.contains('|') {
+                return Ok(Json(CreateDirectoryResponse {
+                    success: false,
+                    message: "目录名包含非法字符".to_string(),
+                }));
+            }
+
+            // 检查是否为空或只包含空格
+            if dir_name_str.trim().is_empty() {
+                return Ok(Json(CreateDirectoryResponse {
+                    success: false,
+                    message: "目录名不能为空".to_string(),
+                }));
+            }
+
+            // 检查是否为系统文件名
+            if self.is_system_file(&dir_name_str) {
+                return Ok(Json(CreateDirectoryResponse {
+                    success: false,
+                    message: "不能创建系统保留的目录名".to_string(),
+                }));
+            }
+        }
+
+        // 执行创建目录操作
+        match fs::create_dir_all(&safe_path) {
+            Ok(_) => {
+                log::info!("Successfully created directory: {:?}", safe_path);
+                Ok(Json(CreateDirectoryResponse {
+                    success: true,
+                    message: "目录创建成功".to_string(),
+                }))
+            }
+            Err(e) => {
+                log::error!("Failed to create directory {:?}: {}", safe_path, e);
+                Ok(Json(CreateDirectoryResponse {
+                    success: false,
+                    message: format!("目录创建失败: {}", e),
+                }))
+            }
+        }
+    }
+
 }
 
 pub async fn list_files_handler(
@@ -440,6 +523,14 @@ pub async fn delete_file_handler(
     file_service.delete_file(&headers, file_path).await
 }
 
+pub async fn create_directory_handler(
+    State(file_service): State<Arc<FileService>>,
+    headers: HeaderMap,
+    Path(directory_path): Path<String>,
+) -> Result<Json<CreateDirectoryResponse>, StatusCode> {
+    file_service.create_directory(&headers, directory_path).await
+}
+
 
 pub fn files_router(file_service: Arc<FileService>) -> Router {
     Router::new()
@@ -447,6 +538,7 @@ pub fn files_router(file_service: Arc<FileService>) -> Router {
         .route("/list/{*file_path}", get(list_files_with_path_handler))
         .route("/storage", get(storage_info_handler))
         .route("/delete/{*file_path}", delete(delete_file_handler))
+        .route("/mkdir/{*directory_path}", post(create_directory_handler))
         // Note: /config endpoint removed - file config now included in auth/verify
         .with_state(file_service)
 }
