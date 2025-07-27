@@ -256,8 +256,21 @@ impl FileService {
                         };
 
                         let (file_type, size, items) = if metadata.is_dir() {
-                            // 统计文件夹中的项目数量
-                            let item_count = fs::read_dir(&path).map(|entries| entries.count()).unwrap_or(0);
+                            // 统计文件夹中的项目数量，排除系统文件
+                            let item_count = fs::read_dir(&path)
+                                .map(|entries| {
+                                    entries
+                                        .filter_map(|entry| entry.ok())
+                                        .filter(|entry| {
+                                            if let Some(name) = entry.file_name().to_str() {
+                                                !self.is_system_file(name)
+                                            } else {
+                                                false
+                                            }
+                                        })
+                                        .count()
+                                })
+                                .unwrap_or(0);
                             ("folder".to_string(), None, Some(item_count))
                         } else {
                             ("file".to_string(), Some(metadata.len()), None)
