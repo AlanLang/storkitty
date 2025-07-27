@@ -90,6 +90,7 @@ The application uses a dual-language architecture where:
 - `GET /api/files/list` - Get root directory file list
 - `GET /api/files/list/{path}` - Get file list for specific path
 - `GET /api/files/storage` - Get storage space information
+- `DELETE /api/files/delete/{path}` - Delete file or directory (requires allow_delete permission)
 
 #### File Upload
 - `POST /api/upload/simple` - Simple file upload with multipart form data
@@ -138,8 +139,10 @@ The application uses a dual-language architecture where:
 │       │   │   ├── input.tsx   # Input component
 │       │   │   ├── label.tsx   # Label component
 │       │   │   ├── card.tsx    # Card components
-│       │   │   └── alert.tsx   # Alert component
+│       │   │   ├── alert.tsx   # Alert component
+│       │   │   └── dialog.tsx  # Dialog component
 │       │   ├── LoginForm.tsx   # Login form component
+│       │   ├── DeleteConfirmDialog.tsx # File deletion confirmation dialog
 │       │   ├── UploadDrawer.tsx # Upload drawer component with progress tracking
 │       │   ├── UploadIndicator.tsx # Floating upload indicator button
 │       │   └── FilesPageComponent.tsx # Shared file management component
@@ -171,11 +174,14 @@ The application uses a dual-language architecture where:
 - **Real-time storage info**: Storage space calculation and usage display
 - **Search functionality**: Filter files and folders by name
 - **URL-based routing**: File paths reflected in browser URL for bookmarking and sharing
+- **File deletion**: Secure file and folder deletion with confirmation dialogs
+- **Deletion safety**: Special confirmation required for non-empty folders
 
 ### Dependencies
 **Backend**: axum (with multipart), tokio, serde, jsonwebtoken, bcrypt, tower-http, uuid, mime, bytes, futures-util
 **Frontend**: react, @tanstack/react-router, @tanstack/router-cli, @tanstack/router-devtools, @tanstack/react-query, @tanstack/react-query-devtools, react-dropzone
-**UI Framework**: @tailwindcss/postcss (TailwindCSS 4.x), class-variance-authority, clsx, tailwind-merge, lucide-react, @radix-ui/react-slot, shadcn/ui components
+**UI Framework**: @tailwindcss/postcss (TailwindCSS 4.x), class-variance-authority, clsx, tailwind-merge, lucide-react, @radix-ui/react-slot, @radix-ui/react-dialog, shadcn/ui components
+**Animation**: TailwindCSS animate classes, CSS transitions and transforms for smooth user interactions
 **Package Manager**: Bun (uses `bun.lockb` for dependency locking)
 
 ## Development Notes
@@ -205,6 +211,7 @@ The application uses a dual-language architecture where:
 - **shadcn/ui components** - consistent, accessible components in `src/frontend/components/ui/`
 - **Use `cn()` utility** - for conditional classes with `clsx` and `tailwind-merge`
 - **Lucide React icons** - consistent icon system across the application
+- **Animation Guidelines**: Follow consistent animation patterns across components
 - Password hashes must be generated using the provided utility for security
 - JWT tokens expire after 24 hours by default (configurable)
 - CORS is enabled for development (all origins allowed)
@@ -219,6 +226,58 @@ The application uses a dual-language architecture where:
 - **Dynamic parameters**: Path parameters automatically URL-encoded/decoded for special characters  
 - **Route protection**: Automatic redirect to login for unauthenticated users
 - **Route matching priority**: Index routes have higher priority than parameterized routes
+
+## UI/UX Design Guidelines
+
+### Animation & Transition Standards
+- **Consistent Duration**: Use standardized animation durations across the application
+  - Fast interactions: `duration-200` (200ms) for hover effects and button states
+  - Standard transitions: `duration-300` (300ms) for modal/drawer appearances
+  - Slow transitions: `duration-500` (500ms) for complex state changes
+- **Easing Functions**: Use `ease-in-out` for natural feeling animations
+- **Staggered Animations**: Implement layered timing for complex components
+  - Primary content: 0ms delay
+  - Secondary elements: 100-150ms delay  
+  - Tertiary elements: 200-250ms delay
+
+### Modal & Overlay Consistency
+- **Backdrop Effect**: All modals and drawers use consistent backdrop styling
+  - Background: `bg-black/20` (20% opacity black)
+  - Blur effect: `backdrop-blur-sm` for depth perception
+  - Animation: `duration-300` fade in/out
+- **Content Behavior**: Modal content should have layered animation entrance
+  - Main container: Fade + zoom effect (`fade-in-0 zoom-in-95`)
+  - Content sections: Slide in from appropriate directions
+  - Action buttons: Slide in from bottom with delay
+
+### Interactive Element Standards
+- **Hover Effects**: Consistent micro-interactions for all interactive elements
+  - Scale effect: `hover:scale-105` for buttons and cards
+  - Shadow enhancement: `hover:shadow-lg` for elevated elements
+  - Transition: `transition-all duration-200` for smooth effects
+- **Loading States**: Provide clear feedback during async operations
+  - Spinner animations: Use `animate-spin` for loading indicators
+  - Button states: Disable and show loading spinner during actions
+  - Progressive disclosure: Show loading states before content appears
+
+### Visual Hierarchy & Spacing
+- **Glass Morphism**: Use consistent backdrop blur effects for layered UI
+  - Component backgrounds: `bg-background/95 backdrop-blur-sm`
+  - Overlay elements: `bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50`
+- **Shadow System**: Implement consistent depth perception
+  - Cards: `shadow-md` for standard elevation
+  - Modals: `shadow-2xl` for prominent elevation
+  - Interactive hover: `hover:shadow-lg` for dynamic elevation
+
+### Component Animation Patterns
+- **Entry Animations**: Components should animate in with purpose
+  - Slide in from logical directions (top for warnings, bottom for actions)
+  - Use appropriate delays to create natural reading flow
+  - Scale effects for emphasis (icons, important elements)
+- **Exit Animations**: Smooth exit transitions prevent jarring changes
+  - Fade out with slight scale reduction
+  - Respect user's motion preferences
+  - Clean up animation states properly
 
 ## TailwindCSS 4.x Configuration
 
@@ -282,6 +341,9 @@ The project uses TailwindCSS 4.x with the following setup:
 ### Upload Interface
 - **Upload Drawer**: Modern slide-out panel triggered by floating upload button
 - **Smooth Animations**: 300ms slide transitions with backdrop blur effects
+  - Backdrop: `bg-black/20 backdrop-blur-sm` for depth and focus
+  - Drawer: `translate-x-full` to `translate-x-0` slide transition
+  - Header: `bg-background/95 backdrop-blur-sm` for glass morphism effect
 - **Smart File Detection**: Automatic chunked upload for files larger than 10MB
 - **Drag & Drop**: Full-screen drop zone with visual feedback during drag operations
 - **Upload Indicator**: Floating button with progress ring and status badges
@@ -309,6 +371,41 @@ The project uses TailwindCSS 4.x with the following setup:
 - **Responsive Design**: Drawer adapts to different screen sizes (28rem width)
 - **Keyboard Support**: ESC key to close drawer, proper focus management
 - **Accessibility**: ARIA labels, semantic markup, and screen reader support
+
+## File Deletion System
+
+### Deletion Interface
+- **Context-sensitive Delete Buttons**: Hover-activated delete buttons in both grid and list views
+- **Grid View**: Floating delete button in top-right corner of file cards
+- **List View**: Delete button in action menu that appears on hover
+- **Visual Feedback**: Red destructive styling with trash icon for clear identification
+
+### Deletion Features
+- **Confirmation Dialog**: Modern modal dialog with detailed information about deletion
+- **Safety Warnings**: Special warnings for non-empty folders with item counts
+- **Name Confirmation**: Required typing of folder name for non-empty folder deletion
+- **File Preview**: Shows file icon, name, size, and metadata in confirmation dialog
+- **Loading States**: Visual feedback during deletion process with disabled UI
+- **Layered Animations**: Staggered entrance animations for better visual hierarchy
+  - Dialog backdrop: `bg-black/20 backdrop-blur-sm` with 300ms fade
+  - Main dialog: Fade + zoom entrance with `animate-in fade-in-0 zoom-in-95`
+  - Warning icon: Delayed zoom effect with `delay-150`
+  - File preview: Slide from top with `delay-100`
+  - Action buttons: Slide from bottom with `delay-200`
+
+### Security & Safety
+- **Permission Check**: Respects `allow_delete` configuration setting
+- **Path Validation**: Ensures deletion is restricted to configured storage directory
+- **Recursive Deletion**: Safely removes directories and all contents
+- **Error Handling**: Comprehensive error reporting with user-friendly messages
+- **No Recovery**: Clear messaging that deletions are permanent
+
+### Technical Implementation
+- **Backend API**: `DELETE /api/files/delete/{path}` endpoint with authentication
+- **Frontend Hook**: `useDeleteFileMutation` with automatic cache invalidation
+- **UI Components**: Reusable `DeleteConfirmDialog` with TypeScript support
+- **State Management**: TanStack Query for optimistic updates and error handling
+- **Real-time Updates**: Automatic refresh of file lists and storage information
 
 ## API 优化
 

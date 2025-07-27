@@ -29,10 +29,13 @@ import type { UploadResponse } from "../api/upload";
 import { useAuth } from "../hooks/useAuth";
 import {
   filesKeys,
+  useDeleteFileMutation,
   useFileListQuery,
   useStorageInfoQuery,
 } from "../hooks/useFiles";
 import { useUpload } from "../hooks/useUploadContext";
+import type { FileInfo } from "../types/files";
+import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Input } from "./ui/input";
@@ -190,8 +193,13 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [deleteFile, setDeleteFile] = useState<FileInfo | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { setIsDrawerOpen, setOnUploadComplete } = useUpload();
   const queryClient = useQueryClient();
+
+  // 删除文件 mutation
+  const deleteFileMutation = useDeleteFileMutation();
 
   // 获取文件列表
   const {
@@ -224,6 +232,28 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
   useEffect(() => {
     setOnUploadComplete(handleUploadComplete);
   }, [setOnUploadComplete, handleUploadComplete]);
+
+  // 处理删除文件点击
+  const handleDeleteClick = (file: FileInfo) => {
+    setDeleteFile(file);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // 处理删除确认
+  const handleDeleteConfirm = async () => {
+    if (!deleteFile) return;
+
+    const filePath = currentPath
+      ? `${currentPath}/${deleteFile.name}`
+      : deleteFile.name;
+    await deleteFileMutation.mutateAsync(filePath);
+  };
+
+  // 关闭删除对话框
+  const handleDeleteDialogClose = () => {
+    setIsDeleteDialogOpen(false);
+    setDeleteFile(null);
+  };
 
   // 获取面包屑路径
   const breadcrumbPaths = useMemo(() => {
@@ -492,6 +522,19 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
                       }
                     }}
                   >
+                    {/* 删除按钮 */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10 z-10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteClick(file);
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+
                     <CardContent className="p-4">
                       <div className="flex flex-col items-center space-y-3">
                         {/* 图标区域 */}
@@ -586,6 +629,17 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
                         <Button variant="ghost" size="sm">
                           <Download className="h-4 w-4" />
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(file);
+                          }}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                         <Button variant="ghost" size="sm">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
@@ -624,6 +678,15 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
           </div>
         </main>
       </div>
+
+      {/* 删除确认对话框 */}
+      <DeleteConfirmDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={handleDeleteDialogClose}
+        onConfirm={handleDeleteConfirm}
+        file={deleteFile}
+        isDeleting={deleteFileMutation.isPending}
+      />
     </div>
   );
 }

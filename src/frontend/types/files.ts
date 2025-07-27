@@ -26,4 +26,9 @@ export interface StorageResponse {
   message?: string;
 }
 
+export interface DeleteResponse {
+  success: boolean;
+  message: string;
+}
+
 // Note: File config is now included in auth/verify response (types/auth.ts)

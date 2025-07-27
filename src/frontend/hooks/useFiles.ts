@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { filesApi } from "../api/files";
 
 // Query Keys
@@ -28,6 +28,21 @@ export function useStorageInfoQuery(enabled = true) {
     enabled,
     staleTime: 60 * 1000, // 1 minute
     gcTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+// 删除文件 mutation
+export function useDeleteFileMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (filePath: string) => filesApi.deleteFile(filePath),
+    onSuccess: () => {
+      // 刷新所有文件列表查询
+      queryClient.invalidateQueries({ queryKey: filesKeys.lists() });
+      // 刷新存储空间信息
+      queryClient.invalidateQueries({ queryKey: filesKeys.storage() });
+    },
   });
 }
 

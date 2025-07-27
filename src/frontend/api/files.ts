@@ -1,4 +1,8 @@
-import type { FilesResponse, StorageResponse } from "../types/files";
+import type {
+  DeleteResponse,
+  FilesResponse,
+  StorageResponse,
+} from "../types/files";
 
 // API 基础配置
 const API_BASE_URL = "/api";
@@ -72,6 +76,16 @@ export const filesApi = {
     return apiRequest<StorageResponse>("/files/storage", {
       method: "GET",
     });
+  },
+
+  // 删除文件或目录
+  async deleteFile(filePath: string): Promise<DeleteResponse> {
+    return apiRequest<DeleteResponse>(
+      `/files/delete/${encodeURIComponent(filePath)}`,
+      {
+        method: "DELETE",
+      },
+    );
   },
 
   // Note: File config is now included in auth/verify response

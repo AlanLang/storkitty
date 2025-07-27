@@ -2,7 +2,7 @@ use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::Json,
-    routing::get,
+    routing::{delete, get},
     Router,
 };
 use serde::Serialize;
@@ -46,6 +46,12 @@ pub struct StorageResponse {
     pub success: bool,
     pub storage: StorageInfo,
     pub message: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DeleteResponse {
+    pub success: bool,
+    pub message: String,
 }
 
 
@@ -351,6 +357,57 @@ impl FileService {
         Ok(total_size)
     }
 
+    pub async fn delete_file(&self, headers: &HeaderMap, file_path: String) -> Result<Json<DeleteResponse>, StatusCode> {
+        // 验证认证
+        self.verify_auth(headers)?;
+
+        // 检查删除权限
+        if !self.config.security.allow_delete {
+            return Ok(Json(DeleteResponse {
+                success: false,
+                message: "文件删除功能已被禁用".to_string(),
+            }));
+        }
+
+        log::info!("Attempting to delete file: {}", file_path);
+        
+        let safe_path = self.get_safe_path(Some(file_path.clone()))?;
+        log::info!("Safe path resolved to: {:?}", safe_path);
+        
+        if !safe_path.exists() {
+            return Ok(Json(DeleteResponse {
+                success: false,
+                message: "文件或目录不存在".to_string(),
+            }));
+        }
+
+        // 执行删除操作
+        let result = if safe_path.is_dir() {
+            // 删除目录及其所有内容
+            fs::remove_dir_all(&safe_path)
+        } else {
+            // 删除单个文件
+            fs::remove_file(&safe_path)
+        };
+
+        match result {
+            Ok(_) => {
+                log::info!("Successfully deleted: {:?}", safe_path);
+                Ok(Json(DeleteResponse {
+                    success: true,
+                    message: "删除成功".to_string(),
+                }))
+            }
+            Err(e) => {
+                log::error!("Failed to delete {:?}: {}", safe_path, e);
+                Ok(Json(DeleteResponse {
+                    success: false,
+                    message: format!("删除失败: {}", e),
+                }))
+            }
+        }
+    }
+
 }
 
 pub async fn list_files_handler(
@@ -375,12 +432,21 @@ pub async fn storage_info_handler(
     file_service.get_storage_info(&headers).await
 }
 
+pub async fn delete_file_handler(
+    State(file_service): State<Arc<FileService>>,
+    headers: HeaderMap,
+    Path(file_path): Path<String>,
+) -> Result<Json<DeleteResponse>, StatusCode> {
+    file_service.delete_file(&headers, file_path).await
+}
+
 
 pub fn files_router(file_service: Arc<FileService>) -> Router {
     Router::new()
         .route("/list", get(list_files_handler))
         .route("/list/{*file_path}", get(list_files_with_path_handler))
         .route("/storage", get(storage_info_handler))
+        .route("/delete/{*file_path}", delete(delete_file_handler))
         // Note: /config endpoint removed - file config now included in auth/verify
         .with_state(file_service)
 }

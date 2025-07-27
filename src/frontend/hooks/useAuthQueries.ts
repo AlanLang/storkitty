@@ -23,7 +23,9 @@ export function useLoginMutation() {
         window.dispatchEvent(new Event("tokenChange"));
 
         // 使查询失效，强制重新获取用户信息
-        queryClient.invalidateQueries({ queryKey: authKeys.verify(data.token) });
+        queryClient.invalidateQueries({
+          queryKey: authKeys.verify(data.token),
+        });
       }
     },
     onError: (error) => {
