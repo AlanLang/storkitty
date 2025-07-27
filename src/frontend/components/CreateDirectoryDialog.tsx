@@ -119,7 +119,7 @@ export function CreateDirectoryDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 animate-in zoom-in-75 duration-300 delay-150">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
               <FolderPlus className="h-5 w-5 text-primary" />
             </div>
             <div>
