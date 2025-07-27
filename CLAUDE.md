@@ -92,6 +92,7 @@ The application uses a dual-language architecture where:
 - `GET /api/files/storage` - Get storage space information
 - `DELETE /api/files/delete/{path}` - Delete file or directory (requires allow_delete permission)
 - `POST /api/files/mkdir/{path}` - Create new directory (requires allow_mkdir permission)
+- `GET /api/files/download/{path}` - Download file with streaming support (no authentication required)
 
 #### File Upload
 - `POST /api/upload/simple` - Simple file upload with multipart form data
@@ -121,6 +122,8 @@ The application uses a dual-language architecture where:
 │       │   ├── files.ts        # File management API functions
 │       │   ├── upload.ts       # Simple file upload API functions and utilities
 │       │   └── chunkedUpload.ts # Chunked upload API for large files
+│       ├── utils/
+│       │   └── download.ts     # File download utilities and link generation
 │       ├── contexts/
 │       │   ├── AuthContext.tsx # Authentication state management
 │       │   ├── UploadContext.tsx # Upload state management and operations
@@ -141,7 +144,8 @@ The application uses a dual-language architecture where:
 │       │   │   ├── label.tsx   # Label component
 │       │   │   ├── card.tsx    # Card components
 │       │   │   ├── alert.tsx   # Alert component
-│       │   │   └── dialog.tsx  # Dialog component
+│       │   │   ├── dialog.tsx  # Dialog component
+│       │   │   └── dropdown-menu.tsx # Dropdown menu component
 │       │   ├── LoginForm.tsx   # Login form component
 │       │   ├── CreateDirectoryDialog.tsx # Directory creation dialog with validation
 │       │   ├── DeleteConfirmDialog.tsx # File deletion confirmation dialog
@@ -177,16 +181,26 @@ The application uses a dual-language architecture where:
 - **Real-time storage info**: Storage space calculation and usage display
 - **Search functionality**: Filter files and folders by name
 - **URL-based routing**: File paths reflected in browser URL for bookmarking and sharing
+
+### File Download System
+- **Direct download**: Click-to-download functionality for all file types
+- **Copy download links**: Generate shareable download URLs with clipboard integration
+- **No authentication required**: Download links work without login for easy sharing
+- **Streaming support**: Efficient file download using tokio-util ReaderStream for large files
+- **Proper headers**: Automatic Content-Disposition and Content-Type headers for downloads
+- **Download utilities**: Centralized download functions in `src/frontend/utils/download.ts`
+- **Toast notifications**: User feedback for copy link success/failure using sonner
+- **Clipboard API**: Modern clipboard integration with fallback detection
 - **File deletion**: Secure file and folder deletion with confirmation dialogs
 - **Deletion safety**: Special confirmation required for non-empty folders
 - **Directory creation**: Create new folders with validation and security checks
 - **Name validation**: Automatic validation of directory names against illegal characters and system reserved names
 
 ### Dependencies
-**Backend**: axum (with multipart), tokio, serde, jsonwebtoken, bcrypt, tower-http, uuid, mime, bytes, futures-util
-**Frontend**: react, @tanstack/react-router, @tanstack/router-cli, @tanstack/router-devtools, @tanstack/react-query, @tanstack/react-query-devtools, react-dropzone
-**UI Framework**: @tailwindcss/postcss (TailwindCSS 4.x), class-variance-authority, clsx, tailwind-merge, lucide-react, @radix-ui/react-slot, @radix-ui/react-dialog, shadcn/ui components
-**Animation**: TailwindCSS animate classes, CSS transitions and transforms for smooth user interactions
+**Backend**: axum (with multipart), tokio, tokio-util, serde, jsonwebtoken, bcrypt, tower-http, uuid, mime, bytes, futures-util
+**Frontend**: react, @tanstack/react-router, @tanstack/router-cli, @tanstack/router-devtools, @tanstack/react-query, @tanstack/react-query-devtools, react-dropzone, sonner
+**UI Framework**: @tailwindcss/postcss (TailwindCSS 4.x), class-variance-authority, clsx, tailwind-merge, lucide-react, @radix-ui/react-slot, @radix-ui/react-dialog, @radix-ui/react-dropdown-menu, shadcn/ui components
+**Animation**: TailwindCSS animate classes, CSS transitions and transforms for smooth user interactions, custom CSS keyframes for heartbeat effects
 **Package Manager**: Bun (uses `bun.lockb` for dependency locking)
 
 ## Development Notes
@@ -333,6 +347,9 @@ The project uses TailwindCSS 4.x with the following setup:
 - **Search filter**: Real-time filtering of files and folders by name
 - **Storage display**: Real-time storage usage with progress bar
 - **Responsive layout**: Adaptive grid from 2-7 columns across different screen sizes
+- **File action menus**: Radix UI dropdown menus for file operations (download, copy link, delete)
+- **Smart menu positioning**: Grid mode menus expand right-down, list mode menus expand naturally
+- **Toast notifications**: Sonner-based notifications for user feedback and status updates
 
 ### Technical Implementation
 - **Shared component**: `FilesPageComponent` handles all file browser logic

@@ -51,7 +51,8 @@ export function useCreateDirectoryMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (directoryPath: string) => filesApi.createDirectory(directoryPath),
+    mutationFn: (directoryPath: string) =>
+      filesApi.createDirectory(directoryPath),
     onSuccess: () => {
       // 刷新所有文件列表查询
       queryClient.invalidateQueries({ queryKey: filesKeys.lists() });

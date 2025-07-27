@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
+import { Toaster } from "sonner";
 import { UploadDrawer } from "../components/UploadDrawer";
 import { UploadIndicator } from "../components/UploadIndicator";
 import { AuthProvider } from "../contexts/AuthContext";
@@ -33,6 +34,9 @@ export const Route = createRootRoute({
             {/* Global upload components */}
             <UploadDrawer />
             <UploadIndicator />
+
+            {/* Toast notifications */}
+            <Toaster richColors position="top-right" />
           </div>
         </UploadProvider>
       </AuthProvider>

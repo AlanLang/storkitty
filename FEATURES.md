@@ -79,6 +79,10 @@
 - ✅ 悬浮交互效果
 - ✅ 存储空间进度条
 - ✅ 空状态友好提示
+- ✅ 文件操作下拉菜单（Radix UI）
+- ✅ Toast通知系统（Sonner）
+- ✅ 心跳动画效果（删除警告）
+- ✅ 智能菜单定位（网格模式右下展开）
 
 **API 接口**:
 ```
@@ -113,85 +117,95 @@ Response: {
 
 ---
 
-### 3. 文件上传模块 🔄 (规划中)
+### 3. 文件上传模块 ✅ (已实现)
 
 **功能描述**: 支持单文件和多文件上传到服务器
 
 **实现方案**:
 - **后端**:
-  - 使用 `axum::extract::Multipart` 处理文件上传
-  - 文件大小限制和类型验证
-  - 自动处理文件名冲突（重命名策略）
-  - 上传进度支持
+  - ✅ 使用 `axum::extract::Multipart` 处理文件上传
+  - ✅ 文件大小限制和类型验证（通过config.toml配置）
+  - ✅ 自动处理文件名冲突（UUID重命名策略）
+  - ✅ 分片上传支持大文件（>10MB自动分片）
+  - ✅ 支持子目录上传（路径感知）
 - **前端**:
-  - 拖拽上传界面
-  - 上传进度条显示
-  - 批量文件选择
-  - 上传预览和取消功能
+  - ✅ 现代化上传抽屉界面（UploadDrawer）
+  - ✅ 拖拽上传支持（react-dropzone）
+  - ✅ 实时上传进度显示
+  - ✅ 批量文件选择（最多20个文件）
+  - ✅ 上传管理：暂停、取消、重试
+  - ✅ 智能分片上传（1MB分片，3并发）
+  - ✅ 浮动上传指示器（UploadIndicator）
 
 **API 接口**:
 ```
-POST /api/files/upload
-Content-Type: multipart/form-data
-Form fields: 
-  - files: File[]
-  - path: string (目标路径)
+POST /api/upload/simple          # 简单文件上传
+POST /api/upload/chunked/init    # 分片上传初始化
+POST /api/upload/chunked/chunk   # 分片数据上传
+POST /api/upload/chunked/finish  # 分片上传完成
 ```
 
 ---
 
-### 4. 文件下载模块 🔄 (规划中)
+### 4. 文件下载模块 ✅ (已实现)
 
-**功能描述**: 提供文件下载功能，支持单文件下载
+**功能描述**: 提供文件下载功能，支持直接下载和链接分享
 
 **实现方案**:
 - **后端**:
-  - 使用 `tower-http::services::ServeFile` 流式下载
-  - 设置正确的 Content-Type 和 Content-Disposition
-  - 支持断点续传（Range requests）
-  - 下载权限验证
+  - ✅ 使用 `tokio-util::io::ReaderStream` 流式下载
+  - ✅ 设置正确的 Content-Type 和 Content-Disposition 头
+  - ✅ 支持所有文件类型下载
+  - ✅ 无需认证的下载链接（便于分享）
+  - ✅ 路径安全验证和权限控制
 - **前端**:
-  - 直接链接下载
-  - 下载进度显示（大文件）
-  - 右键菜单集成
+  - ✅ 集成在文件操作下拉菜单中
+  - ✅ 直接下载功能（点击即下载）
+  - ✅ 复制下载链接到剪贴板
+  - ✅ Toast通知反馈（成功/失败提示）
+  - ✅ 剪贴板API支持检测
 
 **API 接口**:
 ```
-GET /api/files/download?path={file_path}
-Headers: 
-  - Authorization: Bearer {token}
+GET /api/files/download/{path}   # 无需认证的文件下载
+Content-Disposition: attachment; filename="..."
+Content-Type: application/octet-stream
 ```
 
 ---
 
-### 5. 文件操作模块 🔄 (规划中)
+### 5. 文件操作模块 ✅ (已实现)
 
-**功能描述**: 文件和文件夹的移动、重命名、删除操作
+**功能描述**: 文件和文件夹的删除、创建操作
 
-#### 5.1 文件移动/重命名
+#### 5.1 文件移动/重命名 🔄 (规划中)
 **实现方案**:
 - **后端**: 使用 `std::fs::rename` 进行文件移动
 - **前端**: 拖拽操作 + 重命名对话框
 
-#### 5.2 文件删除
+#### 5.2 文件删除 ✅ (已实现)
 **实现方案**:
-- **后端**: 使用 `std::fs::remove_file` 和 `std::fs::remove_dir_all`
-- **前端**: 删除确认对话框 + 批量删除支持
+- **后端**: ✅ 使用 `std::fs::remove_file` 和 `std::fs::remove_dir_all`
+- **前端**: ✅ 删除确认对话框（DeleteConfirmDialog）
+- **安全特性**: ✅ 非空文件夹需要输入名称确认
+- **动画效果**: ✅ 心跳动画警告图标
+- **UI优化**: ✅ 集成在文件操作下拉菜单
 
-#### 5.3 新建文件夹
+#### 5.3 新建文件夹 ✅ (已实现)
 **实现方案**:
-- **后端**: 使用 `std::fs::create_dir_all`
-- **前端**: 新建文件夹对话框
+- **后端**: ✅ 使用 `std::fs::create_dir_all`
+- **前端**: ✅ 新建文件夹对话框（CreateDirectoryDialog）
+- **验证**: ✅ 目录名验证（非法字符、保留名检查）
+- **用户体验**: ✅ 实时错误提示和输入验证
 
 **API 接口**:
 ```
-PUT /api/files/move
+DELETE /api/files/delete/{path}    # 删除文件或文件夹
+POST /api/files/mkdir/{path}       # 创建新文件夹
+
+# 未实现:
+PUT /api/files/move               # 文件移动/重命名
 Body: { "from": "/path/old", "to": "/path/new" }
-
-DELETE /api/files?path={file_or_dir_path}
-
-POST /api/files/mkdir
-Body: { "path": "/path/new_folder" }
 ```
 
 ---
@@ -253,14 +267,18 @@ src/backend/
 ├── mod.rs           # 模块导出 ✅
 ├── auth.rs          # 认证模块 ✅
 ├── files.rs         # 文件操作模块 ✅ (浏览、存储信息)
-├── upload.rs        # 文件上传模块 🔄
-├── download.rs      # 文件下载模块 🔄
+├── upload.rs        # 文件上传模块 ✅
+├── download.rs      # 文件下载模块 ✅ (集成在files.rs)
 └── config.rs        # 配置管理 ✅
 
 src/frontend/
 ├── api/                   # API 调用和错误处理
 │   ├── auth.ts            ✅ (认证 API)
-│   └── files.ts           ✅ (文件管理 API)
+│   ├── files.ts           ✅ (文件管理 API)
+│   ├── upload.ts          ✅ (文件上传 API)
+│   └── chunkedUpload.ts   ✅ (分片上传 API)
+├── utils/                 # 工具函数
+│   └── download.ts        ✅ (下载工具函数)
 ├── types/                 # TypeScript 类型定义
 │   ├── auth.ts            ✅ (认证相关类型)
 │   └── files.ts           ✅ (文件管理类型)
@@ -274,11 +292,19 @@ src/frontend/
 │   ├── useAuthQueries.ts  ✅ (认证 TanStack Query Hooks)
 │   └── useFiles.ts        ✅ (文件管理 TanStack Query Hooks)
 ├── components/
-│   ├── LoginForm.tsx      ✅ (登录表单)
-│   ├── FileList.tsx       🔄 (文件列表组件 - 集成在 files.tsx)
-│   ├── FileUpload.tsx     🔄 (文件上传组件)
-│   ├── FilePreview.tsx    🔮 (文件预览组件)
-│   └── FileOperations.tsx 🔄 (文件操作组件)
+│   ├── ui/                    # shadcn/ui 组件库
+│   │   ├── button.tsx         ✅ (按钮组件)
+│   │   ├── input.tsx          ✅ (输入框组件)
+│   │   ├── dialog.tsx         ✅ (对话框组件)
+│   │   └── dropdown-menu.tsx  ✅ (下拉菜单组件)
+│   ├── LoginForm.tsx          ✅ (登录表单)
+│   ├── FilesPageComponent.tsx ✅ (文件管理主组件)
+│   ├── UploadDrawer.tsx       ✅ (上传抽屉组件)
+│   ├── UploadIndicator.tsx    ✅ (上传指示器)
+│   ├── CreateDirectoryDialog.tsx ✅ (创建文件夹对话框)
+│   ├── DeleteConfirmDialog.tsx   ✅ (删除确认对话框)
+│   ├── FilePreview.tsx        🔮 (文件预览组件)
+│   └── FileOperations.tsx     ✅ (文件操作菜单 - 集成在主组件)
 ```
 
 ---
@@ -314,16 +340,17 @@ allow_download = true
 
 ## 开发优先级
 
-### 第一阶段 (MVP)
+### 第一阶段 (MVP) ✅ 已完成
 1. ✅ 用户认证系统
 2. ✅ 文件浏览功能
-3. 🔄 文件上传功能
-4. 🔄 文件下载功能
+3. ✅ 文件上传功能
+4. ✅ 文件下载功能
 
-### 第二阶段
-1. 🔄 文件操作 (移动/删除/重命名)
-2. 🔄 新建文件夹功能
-3. 🔄 批量操作支持
+### 第二阶段 ✅ 已完成
+1. ✅ 文件操作 (删除功能)
+2. ✅ 新建文件夹功能
+3. 🔄 文件移动/重命名功能
+4. 🔄 批量操作支持
 
 ### 第三阶段 (增强功能)
 1. 🔮 文件搜索

@@ -90,7 +90,9 @@ export const filesApi = {
   },
 
   // 创建目录
-  async createDirectory(directoryPath: string): Promise<CreateDirectoryResponse> {
+  async createDirectory(
+    directoryPath: string,
+  ): Promise<CreateDirectoryResponse> {
     return apiRequest<CreateDirectoryResponse>(
       `/files/mkdir/${encodeURIComponent(directoryPath)}`,
       {

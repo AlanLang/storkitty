@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from "@tanstack/react-router";
 import {
   Calendar,
   ChevronRight,
+  Copy,
   Download,
   File,
   FileArchive,
@@ -25,6 +26,7 @@ import {
   User as UserIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import type { UploadResponse } from "../api/upload";
 import { useAuth } from "../hooks/useAuth";
 import {
@@ -36,10 +38,22 @@ import {
 } from "../hooks/useFiles";
 import { useUpload } from "../hooks/useUploadContext";
 import type { FileInfo } from "../types/files";
+import {
+  canCopyToClipboard,
+  copyDownloadLink,
+  downloadFile,
+} from "../utils/download";
 import { CreateDirectoryDialog } from "./CreateDirectoryDialog";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 import { Input } from "./ui/input";
 
 // 格式化文件大小
@@ -278,6 +292,34 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
   // 关闭创建目录对话框
   const handleCreateDirectoryDialogClose = () => {
     setIsCreateDirectoryDialogOpen(false);
+  };
+
+  // 处理文件下载
+  const handleDownload = (file: FileInfo) => {
+    if (file.file_type === "folder") {
+      // 不支持文件夹下载
+      return;
+    }
+
+    const filePath = currentPath ? `${currentPath}/${file.name}` : file.name;
+    downloadFile(filePath, file.name);
+  };
+
+  // 处理复制下载链接
+  const handleCopyDownloadLink = async (file: FileInfo) => {
+    if (file.file_type === "folder") {
+      // 不支持文件夹下载
+      return;
+    }
+
+    const filePath = currentPath ? `${currentPath}/${file.name}` : file.name;
+    const success = await copyDownloadLink(filePath);
+
+    if (success) {
+      toast.success("下载链接已复制到剪贴板");
+    } else {
+      toast.error("复制下载链接失败");
+    }
   };
 
   // 获取面包屑路径
@@ -557,18 +599,66 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
                       }
                     }}
                   >
-                    {/* 删除按钮 */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10 z-10"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteClick(file);
-                      }}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                    {/* 操作菜单 */}
+                    <div className="absolute bottom-2 right-2 z-10">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 rounded-md opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 transition-opacity hover:bg-muted/50"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="start"
+                          side="bottom"
+                          sideOffset={5}
+                          className="w-48"
+                        >
+                          {file.file_type === "file" && (
+                            <>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownload(file);
+                                }}
+                                className="cursor-pointer focus-visible:outline-none"
+                              >
+                                <Download className="mr-2 h-4 w-4" />
+                                下载文件
+                              </DropdownMenuItem>
+                              {canCopyToClipboard() && (
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCopyDownloadLink(file);
+                                  }}
+                                  className="cursor-pointer focus-visible:outline-none"
+                                >
+                                  <Copy className="mr-2 h-4 w-4" />
+                                  复制下载链接
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuSeparator />
+                            </>
+                          )}
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteClick(file);
+                            }}
+                            className="cursor-pointer text-destructive focus:text-destructive focus-visible:outline-none"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            删除
+                            {file.file_type === "folder" ? "文件夹" : "文件"}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
 
                     <CardContent className="p-4">
                       <div className="flex flex-col items-center space-y-3">
@@ -660,24 +750,59 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
                         <span>{file.modified}</span>
                       </div>
 
-                      <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="sm">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteClick(file);
-                          }}
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
+                      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            {file.file_type === "file" && (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDownload(file);
+                                  }}
+                                  className="cursor-pointer focus-visible:outline-none"
+                                >
+                                  <Download className="mr-2 h-4 w-4" />
+                                  下载文件
+                                </DropdownMenuItem>
+                                {canCopyToClipboard() && (
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCopyDownloadLink(file);
+                                    }}
+                                    className="cursor-pointer focus-visible:outline-none"
+                                  >
+                                    <Copy className="mr-2 h-4 w-4" />
+                                    复制下载链接
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuSeparator />
+                              </>
+                            )}
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteClick(file);
+                              }}
+                              className="cursor-pointer text-destructive focus:text-destructive focus-visible:outline-none"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              删除
+                              {file.file_type === "folder" ? "文件夹" : "文件"}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   </div>

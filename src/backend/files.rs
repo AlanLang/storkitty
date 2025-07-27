@@ -1,7 +1,7 @@
 use axum::{
     extract::{Path, State},
-    http::{HeaderMap, StatusCode},
-    response::Json,
+    http::{HeaderMap, StatusCode, header::CONTENT_DISPOSITION},
+    response::{Json, Response},
     routing::{delete, get, post},
     Router,
 };
@@ -12,6 +12,8 @@ use std::{
     sync::Arc,
     time::SystemTime,
 };
+use tokio_util::io::ReaderStream;
+use tokio::fs::File;
 
 use crate::backend::{auth::AuthService, config::Config};
 
@@ -504,6 +506,73 @@ impl FileService {
         }
     }
 
+    pub async fn download_file(&self, file_path: String) -> Result<Response, StatusCode> {
+        log::info!("Attempting to download file: {}", file_path);
+        
+        let safe_path = self.get_safe_path(Some(file_path.clone()))?;
+        log::info!("Safe path resolved to: {:?}", safe_path);
+        
+        // 检查文件是否存在
+        if !safe_path.exists() {
+            log::warn!("Download failed: file not found at {:?}", safe_path);
+            return Err(StatusCode::NOT_FOUND);
+        }
+
+        // 检查是否为文件（不是目录）
+        if !safe_path.is_file() {
+            log::warn!("Download failed: path is not a file: {:?}", safe_path);
+            return Err(StatusCode::BAD_REQUEST);
+        }
+
+        // 获取文件名用于下载
+        let file_name = safe_path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("download");
+
+        // 检查下载权限
+        if !self.config.security.allow_download {
+            log::warn!("Download failed: download functionality is disabled");
+            return Err(StatusCode::FORBIDDEN);
+        }
+
+        // 打开文件
+        let file = match File::open(&safe_path).await {
+            Ok(file) => file,
+            Err(e) => {
+                log::error!("Failed to open file {:?}: {}", safe_path, e);
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        };
+
+        // 获取文件大小
+        let file_size = match file.metadata().await {
+            Ok(metadata) => metadata.len(),
+            Err(e) => {
+                log::error!("Failed to get file metadata {:?}: {}", safe_path, e);
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        };
+
+        // 创建流
+        let stream = ReaderStream::new(file);
+        let body = axum::body::Body::from_stream(stream);
+
+        // 构建响应头
+        let content_disposition = format!("attachment; filename=\"{}\"", file_name);
+        
+        log::info!("Successfully started download for: {:?} (size: {} bytes)", safe_path, file_size);
+        
+        Ok(Response::builder()
+            .status(StatusCode::OK)
+            .header("Content-Type", "application/octet-stream")
+            .header(CONTENT_DISPOSITION, content_disposition)
+            .header("Content-Length", file_size.to_string())
+            .header("Cache-Control", "no-cache")
+            .body(body)
+            .unwrap())
+    }
+
 }
 
 pub async fn list_files_handler(
@@ -544,6 +613,13 @@ pub async fn create_directory_handler(
     file_service.create_directory(&headers, directory_path).await
 }
 
+pub async fn download_file_handler(
+    State(file_service): State<Arc<FileService>>,
+    Path(file_path): Path<String>,
+) -> Result<Response, StatusCode> {
+    file_service.download_file(file_path).await
+}
+
 
 pub fn files_router(file_service: Arc<FileService>) -> Router {
     Router::new()
@@ -552,6 +628,7 @@ pub fn files_router(file_service: Arc<FileService>) -> Router {
         .route("/storage", get(storage_info_handler))
         .route("/delete/{*file_path}", delete(delete_file_handler))
         .route("/mkdir/{*directory_path}", post(create_directory_handler))
+        .route("/download/{*file_path}", get(download_file_handler))
         // Note: /config endpoint removed - file config now included in auth/verify
         .with_state(file_service)
 }
