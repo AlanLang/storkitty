@@ -38,7 +38,64 @@
 
 ## 快速开始
 
-### 环境要求
+### 🚀 一键安装（推荐）
+
+对于 Linux x86_64 系统，可以使用一键安装脚本快速部署：
+
+#### 下载并运行安装脚本
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/AlanLang/storkitty/main/install.sh | sudo bash
+```
+
+#### 或者分步执行
+
+```bash
+wget https://raw.githubusercontent.com/AlanLang/storkitty/main/install.sh
+chmod +x install.sh
+sudo ./install.sh
+```
+
+安装完成后，Storkitty 将作为系统服务运行：
+- 🌐 访问地址: http://localhost:3330
+- 👤 默认账号: `admin` / `admin123`
+- 📁 数据目录: `/etc/storkitty/uploads`
+- ⚙️ 配置文件: `/etc/storkitty/config.toml`
+
+#### 安装脚本命令
+
+```bash
+# 安装或更新到最新版本
+sudo ./install.sh install
+
+# 查看安装状态
+./install.sh status
+
+# 卸载 Storkitty（保留用户数据）
+sudo ./install.sh uninstall
+
+# 显示帮助信息
+./install.sh help
+```
+
+#### 服务管理
+
+```bash
+# 查看服务状态
+systemctl status storkitty
+
+# 启动/停止/重启服务
+sudo systemctl start storkitty
+sudo systemctl stop storkitty
+sudo systemctl restart storkitty
+
+# 查看服务日志
+journalctl -u storkitty -f
+```
+
+### 📦 手动安装
+
+#### 环境要求
 - Rust 1.70+
 - Node.js 18+
 - Bun（推荐）或 npm
