@@ -37,6 +37,7 @@ import {
   useStorageInfoQuery,
 } from "../hooks/useFiles";
 import { useUpload } from "../hooks/useUploadContext";
+import { useViewMode } from "../hooks/useViewMode";
 import type { FileInfo } from "../types/files";
 import {
   canCopyToClipboard,
@@ -208,7 +209,7 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const { viewMode, setViewMode } = useViewMode();
   const [deleteFile, setDeleteFile] = useState<FileInfo | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isCreateDirectoryDialogOpen, setIsCreateDirectoryDialogOpen] =
