@@ -7,3 +7,4 @@
 !.vscode
 backend.logserver.log
 server.log
+config.toml

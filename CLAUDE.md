@@ -25,7 +25,7 @@ The application uses a dual-language architecture where:
 - Rust backend code is in `src/main.rs` with modular `src/backend/` directory
 - Built frontend assets are output to `web/` directory
 - Rust server serves files from `web/` directory and provides API endpoints on port 3330
-- User credentials and configuration stored in `config.toml`
+- User credentials and configuration stored in `config.toml` (gitignored, use `config.example.toml` as template)
 - File storage in configurable `uploads/` directory (gitignored)
 
 ## Development Commands
@@ -47,6 +47,10 @@ The application uses a dual-language architecture where:
 - `cargo run --bin hash_password` - Generate bcrypt hash for new passwords
 - `cargo build` - Build the Rust application
 - `cargo build --release` - Build optimized release version
+
+### Initial Setup
+1. Copy `config.example.toml` to `config.toml` (configuration file is gitignored)
+2. Edit `config.toml` to customize your settings (optional - defaults work for development)
 
 ### Full Development Workflow
 1. Run `bun install` to install frontend dependencies
@@ -99,7 +103,7 @@ The application uses a dual-language architecture where:
 
 ### File Structure
 ```
-├── config.toml                  # Application configuration (users, server, files, security)
+├── config.example.toml          # Example configuration file (copy to config.toml)
 ├── tsr.config.json             # Router configuration for file-based routing
 ├── src/
 │   ├── main.rs                 # Main server entry point
@@ -162,11 +166,13 @@ The application uses a dual-language architecture where:
 
 ### User Management
 - Default user: `admin` / `admin123`
+- **First setup**: Copy `config.example.toml` to `config.toml` before starting the server
 - To add/modify users: Edit `config.toml` under `[user]` section  
 - To generate password hashes: Run `cargo run --bin hash_password`
 - JWT secret and expiration configurable in `config.toml` under `[jwt]` section
 - Server host and port configurable in `config.toml` under `[server]` section
 - Security permissions configurable in `config.toml` under `[security]` section (allow_mkdir, allow_delete, allow_download)
+- **Security**: `config.toml` is gitignored to prevent accidental credential commits
 
 ### File Management
 - **File storage**: Configurable root directory (default: `./uploads`)

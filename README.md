@@ -100,6 +100,15 @@ journalctl -u storkitty -f
 - Node.js 18+
 - Bun（推荐）或 npm
 
+### 初始配置
+```bash
+# 复制配置文件模板
+cp config.example.toml config.toml
+
+# 编辑配置文件（可选，默认设置可用于开发）
+# nano config.toml
+```
+
 ### 安装依赖
 ```bash
 # 安装前端依赖
@@ -160,7 +169,7 @@ storkitty/
 │   ├── bin/              # 命令行工具
 │   │   └── hash_password.rs # 密码哈希生成工具
 │   └── main.rs           # Rust 入口文件
-├── config.toml           # 应用配置（用户、服务器、文件、安全等）
+├── config.example.toml   # 配置文件模板（复制为 config.toml）
 ├── uploads/              # 文件存储目录（.gitignore）
 ├── web/                  # 前端构建输出目录
 └── docs/                 # 项目文档
