@@ -65,17 +65,18 @@ pub struct DirectoryConfig {
 
 impl Config {
     pub fn load() -> anyhow::Result<Self> {
-        let config_path = "config.toml";
+        // 支持通过环境变量指定配置文件路径，默认为 config.toml
+        let config_path = std::env::var("CONFIG_PATH").unwrap_or_else(|_| "config.toml".to_string());
         
         // 检查配置文件是否存在
-        if !Path::new(config_path).exists() {
+        if !Path::new(&config_path).exists() {
             eprintln!("❌ 配置文件未找到: {}", config_path);
-            eprintln!("💡 请先创建配置文件 config.toml");
-            return Err(anyhow::anyhow!("配置文件不存在"));
+            eprintln!("💡 请先创建配置文件或设置正确的 CONFIG_PATH 环境变量");
+            return Err(anyhow::anyhow!("配置文件不存在: {}", config_path));
         }
         
         // 读取并解析配置文件
-        let config_content = fs::read_to_string(config_path)
+        let config_content = fs::read_to_string(&config_path)
             .map_err(|e| anyhow::anyhow!("无法读取配置文件 {}: {}", config_path, e))?;
             
         let config: Config = toml::from_str(&config_content)

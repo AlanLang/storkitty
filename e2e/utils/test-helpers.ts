@@ -1,0 +1,404 @@
+import { type Page, expect } from "@playwright/test";
+import fs from "node:fs";
+import path from "node:path";
+import os from "node:os";
+
+/**
+ * E2E 测试工具函数
+ *
+ * 包含用于 Storkitty 文件管理系统测试的常用功能函数
+ */
+
+// 应用配置
+export const APP_CONFIG = {
+  baseURL: "http://localhost:3331",
+  timeout: {
+    short: 5000, // 5秒 - 用于快速操作
+    medium: 15000, // 15秒 - 用于一般操作
+    long: 30000, // 30秒 - 用于文件上传等耗时操作
+  },
+};
+
+// 测试用户凭据（需要与测试配置文件匹配）
+export const TEST_CREDENTIALS = {
+  username: "admin",
+  password: "admin123",
+  email: "admin@storkitty.com",
+};
+
+/**
+ * 页面导航工具
+ */
+export class NavigationHelper {
+  constructor(private page: Page) {}
+
+  // 导航到登录页面
+  async goToLogin() {
+    await this.page.goto("/login");
+    await this.page.waitForLoadState("networkidle");
+  }
+
+  // 导航到文件管理页面
+  async goToFiles() {
+    await this.page.goto("/files");
+    await this.page.waitForLoadState("networkidle");
+  }
+
+  // 导航到特定目录
+  async goToDirectory(directoryId: string, path?: string) {
+    const url = path
+      ? `/files/${directoryId}/${path}`
+      : `/files/${directoryId}`;
+    await this.page.goto(url);
+    await this.page.waitForLoadState("networkidle");
+  }
+
+  // 等待页面完全加载
+  async waitForPageLoad() {
+    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForTimeout(1000); // 额外等待确保所有异步操作完成
+  }
+}
+
+/**
+ * 认证相关工具
+ */
+export class AuthHelper {
+  constructor(private page: Page) {}
+
+  // 执行登录操作
+  async login(
+    username: string = TEST_CREDENTIALS.username,
+    password: string = TEST_CREDENTIALS.password,
+  ) {
+    await this.page.goto("/login");
+
+    // 填写登录表单
+    await this.page.fill('input[type="text"], input[type="email"]', username);
+    await this.page.fill('input[type="password"]', password);
+
+    // 点击登录按钮
+    await this.page.click('button[type="submit"]');
+
+    // 等待登录成功跳转
+    await this.page.waitForURL("/files", {
+      timeout: APP_CONFIG.timeout.medium,
+    });
+    await this.page.waitForLoadState("networkidle");
+  }
+
+  // 执行登出操作
+  async logout() {
+    // 查找并点击登出按钮（可能在用户菜单中）
+    const logoutButton = this.page.locator(
+      'button:has-text("登出"), button:has-text("退出"), button:has-text("Logout")',
+    );
+    if ((await logoutButton.count()) > 0) {
+      await logoutButton.click();
+    } else {
+      // 如果没有明显的登出按钮，清除 localStorage
+      await this.page.evaluate(() => localStorage.clear());
+      await this.page.reload();
+    }
+
+    // 等待跳转到登录页面
+    await this.page.waitForURL("/login", {
+      timeout: APP_CONFIG.timeout.medium,
+    });
+  }
+
+  // 检查是否已登录
+  async isLoggedIn(): Promise<boolean> {
+    const token = await this.page.evaluate(() => localStorage.getItem("token"));
+    return !!token;
+  }
+
+  // 直接设置认证令牌（用于跳过登录步骤）
+  async setAuthToken(token: string) {
+    await this.page.evaluate((tokenValue) => {
+      localStorage.setItem("token", tokenValue);
+    }, token);
+  }
+}
+
+/**
+ * 文件操作工具
+ */
+export class FileOperationsHelper {
+  constructor(private page: Page) {}
+
+  // 等待文件列表加载完成
+  async waitForFileList() {
+    // 等待主要的文件区域加载
+    await this.page.waitForSelector(
+      '.grid, .space-y-1, [class*="grid-cols"], [class*="space-y"]',
+      {
+        timeout: APP_CONFIG.timeout.medium,
+      },
+    );
+    
+    // 等待加载完成（没有加载动画）
+    await this.page.waitForSelector('.animate-spin', { state: 'hidden', timeout: 5000 });
+  }
+
+  // 获取文件列表中的所有文件（Card组件或列表项）
+  async getFileList() {
+    await this.waitForFileList();
+    // 查找所有文件卡片或列表项
+    const gridItems = this.page.locator('.grid > div[class*="Card"], .grid > [class*="relative"]');
+    const listItems = this.page.locator('.space-y-1 > div[class*="flex"][class*="items-center"]');
+    
+    const gridCount = await gridItems.count();
+    const listCount = await listItems.count();
+    
+    return gridCount > 0 ? await gridItems.all() : await listItems.all();
+  }
+
+  // 查找特定名称的文件
+  async findFile(fileName: string) {
+    await this.waitForFileList();
+    // 在主文件区域中查找文件，避免抽屉中的文件
+    return this.page.locator(`main [title="${fileName}"], main p:has-text("${fileName}")`).first();
+  }
+
+  // 上传文件
+  async uploadFile(filePath: string) {
+    // 打开上传抽屉界面
+    const uploadButton = this.page.locator('button:has-text("上传")');
+    await uploadButton.click();
+
+    // 等待抽屉打开 - 检查抽屉的translate-x-0类
+    await this.page.waitForSelector('.translate-x-0', { timeout: 5000 });
+
+    // 选择文件 - 在上传区域中查找文件输入框
+    const fileInput = this.page.locator('input[type="file"]');
+    await fileInput.setInputFiles(filePath);
+
+    // 等待文件被添加到列表（文件项出现）
+    await this.page.waitForSelector('.space-y-3 > *, [class*="Card"]', { timeout: 5000 });
+
+    // 点击上传按钮开始上传
+    const startUploadButton = this.page.locator('button[class*="flex-1"]:has-text("上传")');
+    await startUploadButton.click();
+
+    // 等待上传完成 - 检查成功状态的图标或者已完成文字
+    await this.page.waitForSelector('.text-green-500, svg[class*="CheckCircle"], :has-text("已完成")', { timeout: 15000 });
+  }
+
+  // 创建文件夹
+  async createDirectory(directoryName: string) {
+    // 打开创建文件夹对话框
+    const createButton = this.page.locator('button:has-text("新建文件夹")');
+    await createButton.click();
+
+    // 等待对话框打开
+    await this.page.waitForSelector('[role="dialog"]', { timeout: 5000 });
+
+    // 填写文件夹名称 - 使用更精确的选择器
+    const nameInput = this.page.locator('input[id="directory-name"], input[placeholder="请输入文件夹名称"]');
+    await nameInput.fill(directoryName);
+
+    // 确认创建
+    const confirmButton = this.page.locator('button:has-text("创建")');
+    await confirmButton.click();
+
+    // 等待对话框关闭
+    await this.page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 5000 });
+    
+    // 等待网络请求完成
+    await this.page.waitForLoadState("networkidle");
+  }
+
+  // 删除文件或文件夹
+  async deleteFile(fileName: string) {
+    const fileItem = await this.findFile(fileName);
+
+    // 悬停以显示操作菜单按钮
+    await fileItem.hover();
+
+    // 点击更多操作按钮（三个点）
+    const moreButton = fileItem.locator('button svg[class*="MoreVertical"], button:has([class*="MoreVertical"])').first();
+    await moreButton.click();
+
+    // 等待下拉菜单打开
+    await this.page.waitForSelector('[role="menu"]', { timeout: 5000 });
+
+    // 点击删除按钮
+    const deleteMenuItem = this.page.locator('[role="menuitem"]:has-text("删除")');
+    await deleteMenuItem.click();
+
+    // 等待确认对话框打开
+    await this.page.waitForSelector('[role="dialog"]', { timeout: 5000 });
+
+    // 在确认对话框中确认删除
+    const confirmButton = this.page.locator('button:has-text("删除"):not([role="menuitem"])');
+    await confirmButton.click();
+
+    // 等待对话框关闭和操作完成
+    await this.page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 5000 });
+    await this.page.waitForLoadState("networkidle");
+  }
+
+  // 重命名文件或文件夹
+  async renameFile(oldName: string, newName: string) {
+    const fileItem = await this.findFile(oldName);
+
+    // 尝试右键点击文件来打开上下文菜单
+    await fileItem.click({ button: 'right' });
+
+    // 等待下拉菜单打开
+    await this.page.waitForSelector('[role="menu"]', { timeout: 5000 });
+
+    // 点击重命名按钮
+    const renameMenuItem = this.page.locator('[role="menuitem"]:has-text("重命名")');
+    await renameMenuItem.click();
+
+    // 等待重命名对话框打开
+    await this.page.waitForSelector('[role="dialog"]', { timeout: 5000 });
+
+    // 填写新名称 - 先清空再输入
+    const nameInput = this.page.locator('input[value*="' + oldName + '"], input[placeholder*="名称"]');
+    await nameInput.selectAll();
+    await nameInput.fill(newName);
+
+    // 确认重命名
+    const confirmButton = this.page.locator('button:has-text("重命名"):not([role="menuitem"])');
+    await confirmButton.click();
+
+    // 等待对话框关闭和操作完成
+    await this.page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 5000 });
+    await this.page.waitForLoadState("networkidle");
+  }
+}
+
+/**
+ * 断言工具
+ */
+export class AssertionHelper {
+  constructor(private page: Page) {}
+
+  // 断言页面标题
+  async assertPageTitle(expectedTitle: string) {
+    await expect(this.page).toHaveTitle(expectedTitle);
+  }
+
+  // 断言页面 URL
+  async assertPageURL(expectedURL: string | RegExp) {
+    await expect(this.page).toHaveURL(expectedURL);
+  }
+
+  // 断言元素存在
+  async assertElementExists(selector: string) {
+    await expect(this.page.locator(selector)).toBeVisible();
+  }
+
+  // 断言元素包含文本
+  async assertElementContainsText(selector: string, text: string) {
+    await expect(this.page.locator(selector)).toContainText(text);
+  }
+
+  // 断言文件存在于列表中
+  async assertFileExists(fileName: string) {
+    const fileItem = this.page.locator(`main [title="${fileName}"], main p:has-text("${fileName}")`).first();
+    await expect(fileItem).toBeVisible();
+  }
+
+  // 断言文件不存在于列表中
+  async assertFileNotExists(fileName: string) {
+    const fileItem = this.page.locator(`main [title="${fileName}"], main p:has-text("${fileName}")`);
+    await expect(fileItem).not.toBeVisible();
+  }
+
+  // 断言成功消息出现
+  async assertSuccessMessage(message?: string) {
+    // 查找 Sonner toast 或其他成功提示
+    const successLocator = this.page.locator(
+      '[data-sonner-toast][data-type="success"], .text-green-500, [class*="success"]',
+    );
+    await expect(successLocator).toBeVisible({ timeout: 10000 });
+
+    if (message) {
+      await expect(successLocator).toContainText(message);
+    }
+  }
+
+  // 断言错误消息出现
+  async assertErrorMessage(message?: string) {
+    // 查找 Sonner toast 或其他错误提示
+    const errorLocator = this.page.locator(
+      '[data-sonner-toast][data-type="error"], .text-red-500, [class*="error"], [role="alert"]',
+    );
+    await expect(errorLocator).toBeVisible({ timeout: 10000 });
+
+    if (message) {
+      await expect(errorLocator).toContainText(message);
+    }
+  }
+}
+
+/**
+ * 工具函数
+ */
+export class TestUtils {
+  // 生成随机文件名
+  static generateRandomFileName(extension = ".txt"): string {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 8);
+    return `test-file-${timestamp}-${random}${extension}`;
+  }
+
+  // 生成随机目录名
+  static generateRandomDirectoryName(): string {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 8);
+    return `test-dir-${timestamp}-${random}`;
+  }
+
+  // 创建临时测试文件
+  static async createTempFile(
+    content = "Test file content",
+    extension = ".txt",
+  ): Promise<string> {
+    const fileName = this.generateRandomFileName(extension);
+    const filePath = path.join(os.tmpdir(), fileName);
+
+    fs.writeFileSync(filePath, content);
+    return filePath;
+  }
+
+  // 等待指定时间
+  static async wait(milliseconds: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, milliseconds));
+  }
+}
+
+/**
+ * 测试数据工厂
+ */
+export class TestDataFactory {
+  // 创建测试用户数据
+  static createTestUser() {
+    return {
+      username: `testuser_${Date.now()}`,
+      password: "TestPassword123!",
+      email: `test_${Date.now()}@example.com`,
+    };
+  }
+
+  // 创建测试文件数据
+  static createTestFileData() {
+    return {
+      name: TestUtils.generateRandomFileName(),
+      content: "This is test file content created by E2E tests.",
+      size: 1024,
+    };
+  }
+
+  // 创建测试目录数据
+  static createTestDirectoryData() {
+    return {
+      name: TestUtils.generateRandomDirectoryName(),
+      description: "Test directory created by E2E tests",
+    };
+  }
+}

@@ -55,8 +55,11 @@ impl SetupService {
         let password_hash = bcrypt::hash(password, bcrypt::DEFAULT_COST)
             .map_err(|e| anyhow::anyhow!("密码哈希生成失败: {}", e))?;
 
+        // 获取配置文件路径（支持环境变量）
+        let config_path = std::env::var("CONFIG_PATH").unwrap_or_else(|_| "config.toml".to_string());
+
         // 读取当前配置文件
-        let config_content = fs::read_to_string("config.toml")
+        let config_content = fs::read_to_string(&config_path)
             .map_err(|e| anyhow::anyhow!("无法读取配置文件: {}", e))?;
 
         // 替换用户信息
@@ -66,7 +69,7 @@ impl SetupService {
             .replace("email = \"\"", &format!("email = \"{}\"", email));
 
         // 写回配置文件
-        fs::write("config.toml", updated_content)
+        fs::write(&config_path, updated_content)
             .map_err(|e| anyhow::anyhow!("无法写入配置文件: {}", e))?;
 
         // 热重载配置到内存

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "files": {
+    "ignore": ["test-results/**", "reports/**", "**/*.gen.*"]
+  },
+  "extends": ["../biome.json"],
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "correctness": {
+        "noUnusedFunctionParameters": "off",
+        "noUnusedVariables": "off",
+        "noUnusedImports": "off"
+      },
+      "style": {
+        "noDefaultExport": "off",
+        "useNodejsImportProtocol": "error"
+      },
+      "nursery": {
+        "useConsistentMemberAccessibility": "off",
+        "useComponentExportOnlyModules": "off"
+      }
+    }
+  }
+}

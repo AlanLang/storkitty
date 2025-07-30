@@ -9,7 +9,13 @@
     "dev": "rsbuild dev --open",
     "format": "biome format --write",
     "preview": "rsbuild preview",
-    "routes:gen": "tsr generate"
+    "routes:gen": "tsr generate",
+    "test:e2e": "bun run build && playwright test",
+    "test:e2e:ui": "bun run build && playwright test --ui",
+    "test:e2e:headed": "bun run build && playwright test --headed",
+    "test:e2e:debug": "bun run build && playwright test --debug",
+    "test:e2e:report": "playwright show-report e2e/reports/html-report",
+    "test:e2e:check": "cd e2e && biome check --write"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.14",
@@ -33,6 +39,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "@playwright/test": "^1.54.1",
     "@rsbuild/core": "^1.2.14",
     "@rsbuild/plugin-react": "^1.1.1",
     "@tailwindcss/postcss": "^4.1.11",
@@ -40,11 +47,12 @@
     "@tanstack/react-query-devtools": "^5.83.0",
     "@tanstack/router-cli": "^1.58.0",
     "@tanstack/router-devtools": "^1.58.0",
+    "@types/node": "^24.1.0",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.11",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.3"
   }
 }

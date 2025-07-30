@@ -14,11 +14,12 @@ This is a full-stack application called "storkitty" that combines a React fronte
 - **Data Fetching**: TanStack Query for server state management, caching, and error handling
 - **UI Framework**: TailwindCSS 4.x + shadcn/ui components for modern, accessible design
 - **Database**: Configuration file-based user storage (no external database required)
-- **File Storage**: Multi-directory storage system with configurable storage directories
+- **File Storage**: File system-based storage with configurable root directory
 - **Build System**: RSBuild for frontend bundling, Cargo for Rust compilation
 - **Package Manager**: Bun for frontend dependency management
 - **Code Quality**: Biome for TypeScript/React linting and formatting, rustfmt for Rust formatting
 - **Routing**: @tanstack/react-router with File-Based Routing for frontend navigation and route protection
+- **E2E Testing**: Playwright + TypeScript for comprehensive end-to-end testing
 
 The application uses a dual-language architecture where:
 - React frontend code is in `src/frontend/` with organized component structure
@@ -27,7 +28,8 @@ The application uses a dual-language architecture where:
 - Rust server serves files from `web/` directory and provides API endpoints on port 3330
 - User credentials and configuration stored in `config.toml` (gitignored for security)
 - Initial setup wizard for first-time configuration
-- Multi-directory file storage system with configurable storage locations
+- File storage in configurable `uploads/` directory (gitignored)
+- Comprehensive E2E test suite in `e2e/` directory with automated testing framework
 
 ## Development Commands
 
@@ -39,7 +41,8 @@ The application uses a dual-language architecture where:
 - `bun install` - Install frontend dependencies
 
 ### Code Quality
-- `bun run check` - Run Biome linter and auto-fix issues
+- `bun run check` - Run Biome linter on main project (excludes E2E tests)
+- `bun run test:e2e:check` - Run Biome linter on E2E test code (with relaxed rules)
 - `bun run format` - Format code with Biome
 - `cargo fmt` - Format Rust code
 
@@ -48,6 +51,13 @@ The application uses a dual-language architecture where:
 - `cargo run --bin hash_password` - Generate bcrypt hash for new passwords
 - `cargo build` - Build the Rust application
 - `cargo build --release` - Build optimized release version
+
+### E2E Testing
+- `bun run test:e2e` - Run all E2E tests
+- `bun run test:e2e:ui` - Run tests with Playwright UI interface
+- `bun run test:e2e:headed` - Run tests in headed browser mode
+- `bun run test:e2e:debug` - Run tests in debug mode
+- `bun run test:e2e:report` - View test results report
 
 ### Initial Setup (Automatic)
 The application features an automatic setup wizard for first-time use:
@@ -98,28 +108,42 @@ The application features an automatic setup wizard for first-time use:
 
 #### Authentication
 - `POST /api/auth/login` - User authentication (returns JWT token)
-- `POST /api/auth/verify` - Token verification (returns user info, file configuration, and available storage directories)
+- `POST /api/auth/verify` - Token verification (returns user info + file configuration)
 
 #### System Setup
 - `GET /api/setup/status` - Check if system needs initial setup (returns needs_setup boolean)
 - `POST /api/setup/init` - Initialize system with admin account (returns success status + JWT token)
 
-#### Multi-Directory File Management (Unified API)
-- `GET /api/files/dir/{directory_id}/list` - Get file list for specific directory
-- `GET /api/files/dir/{directory_id}/list/{path}` - Get file list for specific path within directory
-- `GET /api/files/dir/{directory_id}/storage` - Get storage space information for directory
-- `DELETE /api/files/dir/{directory_id}/delete/{path}` - Delete file or directory (requires allow_delete permission)
-- `POST /api/files/dir/{directory_id}/mkdir/{path}` - Create new directory (requires allow_mkdir permission)
-- `PUT /api/files/dir/{directory_id}/rename/{path}` - Rename file or directory (with conflict detection and validation)
+#### File Management
+- `GET /api/files/list` - Get root directory file list
+- `GET /api/files/list/{path}` - Get file list for specific path
+- `GET /api/files/storage` - Get storage space information
+- `DELETE /api/files/delete/{path}` - Delete file or directory (requires allow_delete permission)
+- `POST /api/files/mkdir/{path}` - Create new directory (requires allow_mkdir permission)
+- `PUT /api/files/rename/{path}` - Rename file or directory (with conflict detection and validation)
 - `GET /api/files/download/{path}` - Download file with streaming support (no authentication required)
 
-#### File Upload (Directory-Based)
-- `POST /api/upload/dir/{directory_id}/simple` - Simple file upload with multipart form data to specific directory
+#### File Upload
+- `POST /api/upload/simple` - Simple file upload with multipart form data
 
 ### File Structure
 ```
 ├── config.example.toml          # Example configuration file (copy to config.toml)
 ├── tsr.config.json             # Router configuration for file-based routing
+├── playwright.config.ts        # Playwright E2E testing configuration
+├── e2e/                        # E2E testing framework
+│   ├── tests/                  # Test case files
+│   │   ├── auth.spec.ts        # Authentication tests
+│   │   ├── file-management.spec.ts # File management tests
+│   │   ├── multi-directory.spec.ts # Multi-directory tests
+│   │   └── ui-interactions.spec.ts # UI/UX tests
+│   ├── utils/                  # Test helpers and utilities
+│   │   ├── test-helpers.ts     # Core testing helper classes
+│   │   ├── global-setup.ts     # Test environment setup
+│   │   └── global-teardown.ts  # Test environment cleanup
+│   ├── fixtures/               # Test data and configurations
+│   │   └── test-config.toml    # Test environment config
+│   └── README.md               # E2E testing documentation
 ├── src/
 │   ├── main.rs                 # Main server entry point
 │   ├── bin/
@@ -201,26 +225,18 @@ The application features an automatic setup wizard for first-time use:
   - To manually generate password hashes: Run `cargo run --bin hash_password`
 - **Security**: `config.toml` is gitignored to prevent accidental credential commits
 
-### Multi-Directory Storage System
-- **Multiple Storage Directories**: Support for multiple configurable storage locations with distinct purposes
-- **Directory Management**: Each directory has unique ID, name, description, icon, and storage type
-- **Default Directory**: One directory can be marked as default for initial access
-- **Storage Types**: Currently supports local file system storage with plans for cloud storage
-- **Path Security**: Each directory is sandboxed with independent path validation
-- **Dynamic Configuration**: Storage directories configured in `config.toml` under `[[storage_directories]]` sections
-
-### Enhanced File Management Interface
-- **Directory Selector**: Modern sidebar with directory icons and descriptions
-- **Unified File Browser**: Consistent interface across all storage directories
+### File Management
+- **File storage**: Configurable root directory (default: `./uploads`)
 - **Upload limits**: Configurable maximum file size (default: 100MB)
 - **File type restrictions**: Configurable allowed/blocked file extensions
-- **Automatic directory creation**: Creates storage directories on startup
+- **Automatic directory creation**: Creates upload directory on startup
+- **Path security**: Restricted to configured root directory with path validation
 - **File browser interface**: Modern responsive design with grid/list view modes
 - **Folder navigation**: Click folders to navigate into subdirectories with URL path reflection
 - **Breadcrumb navigation**: Interactive breadcrumb showing current path with clickable navigation
 - **File metadata**: File size formatting, type detection, and modification dates
-- **Real-time storage info**: Per-directory storage space calculation and usage display
-- **Search functionality**: Filter files and folders by name within selected directory
+- **Real-time storage info**: Storage space calculation and usage display
+- **Search functionality**: Filter files and folders by name
 - **URL-based routing**: File paths reflected in browser URL for bookmarking and sharing
 
 ### File Download System
@@ -238,29 +254,13 @@ The application features an automatic setup wizard for first-time use:
 - **File renaming**: Rename files and folders with real-time validation and conflict detection
 - **Name validation**: Automatic validation of file/directory names against illegal characters and system reserved names
 
-### API Performance Optimizations
-- **Unified Authentication Response**: `/api/auth/verify` returns user info, file configuration, and storage directories in one request
-- **Reduced Network Requests**: Eliminated separate `/api/files/directories` endpoint by integrating into auth flow
-- **Optimized Data Loading**: Single API call provides all necessary system configuration data
-- **Improved User Experience**: Faster application startup and reduced loading times
-- **Centralized Configuration**: All system configuration accessible through authentication context
-
-### File Upload System
-- **Smart Upload Detection**: Automatically uses chunked upload for files larger than 10MB
-- **Chunked Upload**: Large files split into 1MB chunks with concurrent upload (max 3 concurrent)
-- **Progress Tracking**: Real-time upload progress with speed and ETA calculations
-- **Error Recovery**: Automatic retry mechanism with up to 3 attempts per chunk
-- **Directory-Based Upload**: All uploads specify target directory for multi-directory support
-- **Upload Management**: Cancel individual uploads, clear completed items, or reset all
-- **Real-time Feedback**: Live progress updates with visual status indicators
-- **Path-aware Uploads**: Automatically uploads to current folder location within selected directory
-
 ### Dependencies
 **Backend**: axum (with multipart), tokio, tokio-util, serde, jsonwebtoken, bcrypt, tower-http, uuid, mime, bytes, futures-util
 **Frontend**: react, @tanstack/react-router, @tanstack/router-cli, @tanstack/router-devtools, @tanstack/react-query, @tanstack/react-query-devtools, react-dropzone, sonner
 **UI Framework**: @tailwindcss/postcss (TailwindCSS 4.x), class-variance-authority, clsx, tailwind-merge, lucide-react, @radix-ui/react-slot, @radix-ui/react-dialog, @radix-ui/react-dropdown-menu, shadcn/ui components
 **Animation**: TailwindCSS animate classes, CSS transitions and transforms for smooth user interactions, custom CSS keyframes for heartbeat effects
 **Package Manager**: Bun (uses `bun.lockb` for dependency locking)
+**E2E Testing**: @playwright/test, comprehensive test coverage with TypeScript support
 
 ## Development Notes
 - Always run `bun run build` before starting the backend to ensure latest frontend assets
@@ -285,7 +285,7 @@ The application features an automatic setup wizard for first-time use:
   - UploadIndicator: Floating upload status button with progress visualization
   - Route components: Thin wrappers that pass props to shared components
   - Hooks: Custom hooks for API calls and state management in `src/frontend/hooks/`
-  - **AuthContext优化**: 现在包含用户信息、文件配置和存储目录信息，实现统一的系统配置管理
+  - **AuthContext优化**: 现在包含用户信息和文件配置，减少了对独立配置API的依赖
 - **ONLY use TailwindCSS 4.x classes for styling** - no custom CSS classes, no inline styles, no CSS-in-JS
 - **TailwindCSS 4.x Configuration**: Uses `@tailwindcss/postcss` plugin with `@theme` configuration in globals.css
 - **CSS Variables for shadcn/ui**: All colors defined as CSS variables (--primary, --secondary, etc.) and referenced via `@theme` configuration
@@ -314,6 +314,35 @@ The application features an automatic setup wizard for first-time use:
 - **Route Protection**: Multi-layer protection (setup status → authentication → authorization)
 - **Index routes**: Uses `files.index.tsx` for `/files` to ensure proper route matching
 - **Dynamic parameters**: Path parameters automatically URL-encoded/decoded for special characters
+
+## E2E Testing Framework
+
+### Testing Architecture
+- **Framework**: Playwright + TypeScript for reliable, cross-browser testing
+- **Test Organization**: Organized by feature area (auth, file-management, multi-directory, ui-interactions)
+- **Helper Classes**: Comprehensive testing utilities for common operations
+- **Test Data**: Automatic test data generation and cleanup
+- **Environment**: Isolated test environment with dedicated config and storage directories
+
+### Test Coverage
+- **Authentication**: Login/logout, session management, token validation, form validation
+- **File Management**: File listing, upload, download, delete, rename, directory creation
+- **Multi-Directory**: Directory switching, independent storage, URL routing
+- **UI Interactions**: Responsive design, view switching, search, drag-drop, animations
+- **Error Handling**: Network errors, validation errors, permission errors
+
+### Test Execution
+- **Parallel Execution**: Tests run in parallel for faster feedback
+- **Cross-Browser**: Chromium, Firefox, WebKit, and mobile browsers
+- **Automatic Setup**: Test environment prepared and cleaned automatically
+- **Rich Reporting**: HTML reports with screenshots, videos, and traces
+- **CI/CD Ready**: Optimized for continuous integration pipelines
+
+### Test Maintenance
+- **Page Object Model**: Organized helper classes for maintainable tests
+- **Data Isolation**: Each test uses unique data to prevent conflicts
+- **Error Recovery**: Robust error handling and cleanup mechanisms
+- **Documentation**: Comprehensive test documentation and examples
 
 ## UI/UX Design Guidelines
 
@@ -556,7 +585,7 @@ allow_mkdir = true
 allow_delete = true
 allow_download = true
 
-# Multiple storage directories configuration
+# Multi-directory storage configuration
 [[storage_directories]]
 id = "uploads"
 name = "My Files"
@@ -574,43 +603,116 @@ icon = "file-text"
 storage_type = "local"
 path = "./documents"
 default = false
-
-[[storage_directories]]
-id = "media"
-name = "Media Files"
-description = "Photos, videos, and media"
-icon = "image"
-storage_type = "local"
-path = "./media"
-default = false
 ```
 
-### Storage Directory Properties
-- **id**: Unique identifier for the directory (used in API endpoints)
-- **name**: Display name shown in the interface
-- **description**: Descriptive text explaining the directory's purpose
-- **icon**: Icon identifier (from Lucide React icon set)
-- **storage_type**: Currently only "local" is supported
-- **path**: Local file system path for storage
-- **default**: Boolean indicating if this is the default directory (only one should be true)
+### Configuration Fields
+- **Storage Directories**: Array of `[[storage_directories]]` entries
+- **Directory ID**: Unique identifier for API routing
+- **Directory Name**: Display name in the UI
+- **Description**: Optional description for the directory
+- **Icon**: Lucide React icon name for UI display
+- **Storage Type**: Currently only "local" is supported
+- **Path**: Filesystem path relative to server root
+- **Default**: Boolean indicating the default directory selection
 
-## Documentation Maintenance
+## API 优化
 
-### FEATURES.md Maintenance Rule
-**IMPORTANT**: When implementing new features or making significant changes to existing functionality, always update `FEATURES.md` to maintain accurate feature documentation.
+### 合并认证与配置请求
+为了提升应用性能和减少网络请求，我们将文件配置信息合并到认证验证响应中：
 
-**Required Updates**:
-1. **New Features**: Add new feature modules with implementation status (✅/🔄/🔮)
-2. **API Changes**: Update API endpoint documentation to reflect changes
-3. **Configuration Changes**: Update configuration examples when adding new config options
-4. **Development Phases**: Update development priority sections when completing phases
-5. **Technical Stack Changes**: Update technology stack information when adding new dependencies
+#### 优化前
+- 用户登录后需要两个独立请求：
+  1. `POST /api/auth/verify` - 获取用户信息
+  2. `GET /api/files/config` - 获取文件配置（上传限制等）
 
-**Update Process**:
-- Update `FEATURES.md` immediately after implementing any feature
-- Mark completed features with ✅ and update status descriptions
-- Add new API endpoints with proper directory-based naming conventions
-- Update configuration examples to show new options
-- Maintain consistency between `CLAUDE.md` and `FEATURES.md` documentation
+#### 优化后
+- 只需一个请求：
+  1. `POST /api/auth/verify` - 同时返回用户信息和文件配置
 
-This ensures that `FEATURES.md` serves as an accurate, up-to-date reference for all project functionality and capabilities.
+#### 响应格式
+```json
+{
+  "user": {
+    "username": "admin",
+    "email": "admin@storkitty.com"
+  },
+  "file_config": {
+    "max_file_size_mb": 100,
+    "allowed_extensions": [],
+    "blocked_extensions": [".exe", ".bat", ".sh"]
+  }
+}
+```
+
+#### 技术实现
+- **后端变更**: 修改 `auth.rs` 中的 `VerifyResponse` 结构体，包含 `FileConfigInfo`
+- **前端变更**: 更新 `AuthContext` 暴露 `fileConfig` 属性，组件直接从认证上下文获取配置
+- **类型安全**: 统一在 `types/auth.ts` 中定义相关类型，移除重复定义
+- **向后兼容**: 保持现有API结构，只是数据更丰富
+
+#### 性能收益
+- **减少网络请求**: 从2个请求优化为1个请求
+- **降低延迟**: 用户登录后立即获得所有必要信息
+- **简化状态管理**: 统一在认证上下文中管理用户和配置信息
+- **改善用户体验**: 更快的界面响应和配置加载
+
+## 开发阶段与维护规则
+
+### 开发优先级
+
+#### 第一阶段 (MVP) ✅ 已完成
+1. ✅ 用户认证系统
+2. ✅ 文件浏览功能
+3. ✅ 文件上传功能
+4. ✅ 文件下载功能
+
+#### 第二阶段 ✅ 已完成
+1. ✅ 文件操作 (删除功能)
+2. ✅ 新建文件夹功能
+3. ✅ 文件重命名功能
+4. 🔄 批量操作支持
+
+#### 第三阶段 ✅ 已完成 (多目录与性能优化)
+1. ✅ **多目录存储系统**: 支持配置多个独立存储目录
+2. ✅ **API 性能优化**: 统一认证响应，减少网络请求
+3. ✅ **智能上传系统**: 自动分片上传，并发控制和错误恢复
+4. ✅ **目录化 API**: 所有文件操作统一使用目录化端点
+
+#### 第四阶段 ✅ 已完成 (E2E 测试框架)
+1. ✅ **E2E 测试框架**: 基于 Playwright + TypeScript 的端到端测试系统
+2. ✅ **全面测试覆盖**: 用户认证、文件管理、多目录存储、UI 交互测试
+3. ✅ **测试工具链**: 测试助手、数据工厂、全局设置和清理
+4. ✅ **CI/CD 支持**: 适配持续集成的测试配置和报告生成
+
+#### 第五阶段 (增强功能)
+1. 🔮 文件搜索
+2. 🔮 文件预览
+3. 🔮 访问日志记录
+4. 🔮 多用户权限管理
+5. 🔮 云存储支持 (S3, 阿里云 OSS 等)
+
+### 文档维护规则
+
+#### FEATURES.md 维护规则 ⚠️ 重要
+**每当实现新功能或更新现有功能时，必须同步更新 FEATURES.md 文件。**
+
+维护要求：
+1. **功能完成后立即更新**: 不允许功能实现与文档脱节
+2. **详细记录实现细节**: 包括技术实现、API 端点、用户界面变化
+3. **更新开发阶段状态**: 及时标记完成的功能为 ✅，进行中的为 🔄
+4. **保持格式一致性**: 遵循现有的文档结构和格式规范
+5. **包含配置示例**: 新功能如涉及配置文件变更，必须提供配置示例
+
+#### 文档同步检查清单
+- [ ] 功能描述是否准确反映实际实现
+- [ ] API 端点文档是否与后端代码一致
+- [ ] 配置文件示例是否正确和完整
+- [ ] 技术实现部分是否涵盖关键架构决策
+- [ ] 用户界面变化是否有相应说明
+- [ ] 开发阶段状态是否及时更新
+
+### 状态说明
+- ✅ 已完成并测试
+- 🔄 开发中/规划中  
+- 🔮 未来功能
+- ⚠️ 需要注意的重要信息

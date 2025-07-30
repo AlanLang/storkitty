@@ -1,0 +1,48 @@
+# 测试环境配置文件
+# 此文件用于 E2E 测试环境，包含测试用的用户凭据和配置
+
+[server]
+host = "0.0.0.0"
+port = 3331
+
+[jwt]
+secret_key = "test-secret-key-for-e2e-testing-only"
+expiration_hours = 24
+
+[user]
+username = "admin"
+password_hash = "$2b$12$v0MUjOhIj5aUiPmUPzHpY.hKKzaWjgAAeagfaa.yUjrbTC.BfvfMC"  # admin123
+email = "admin@storkitty.com"
+
+[files]
+# 测试环境文件大小限制 (MB)
+max_file_size = 100
+# 允许的文件类型 (空表示允许所有)
+allowed_extensions = []
+# 禁止的文件类型
+blocked_extensions = [".exe", ".bat", ".sh"]
+
+[security]
+# 测试环境权限设置
+allow_mkdir = true
+allow_delete = true
+allow_download = true
+
+# 测试环境存储目录配置
+[[storage.directories]]
+id = "test-uploads"
+name = "Test Files"
+description = "Test file storage for E2E testing"
+icon = "hard-drive"
+storage_type = "local"
+path = "./test-uploads"
+default = true
+
+[[storage.directories]]
+id = "test-documents"
+name = "Test Documents"
+description = "Test document storage"
+icon = "file-text"
+storage_type = "local"
+path = "./test-documents"
+default = false

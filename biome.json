@@ -6,7 +6,9 @@
       "src/frontend/src/routeTree.gen.ts",
       "src/frontend/routeTree.gen.ts",
       "uploads/**",
-      "uploads1/**"
+      "uploads1/**",
+      "e2e/**",
+      "playwright.config.ts"
     ]
   },
   "vcs": {
