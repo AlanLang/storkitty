@@ -6,11 +6,12 @@
 
 ### 核心特性
 - 🔐 **安全认证**: JWT-based 用户登录系统
-- 📁 **文件管理**: 完整的文件 CRUD 操作
+- 📁 **多目录管理**: 支持多个独立存储目录的完整文件 CRUD 操作
 - 🚀 **无数据库**: 基于文件系统和配置文件，部署简单
 - 🎨 **现代界面**: React + TypeScript 响应式前端
-- ⚡ **高性能**: Rust Axum 后端，异步处理
+- ⚡ **高性能**: Rust Axum 后端，异步处理 + API 性能优化
 - 📦 **快速构建**: Bun 包管理器，极速依赖安装
+- 🗂️ **智能存储**: 多目录存储系统，灵活配置不同用途的存储位置
 
 ---
 
@@ -37,7 +38,7 @@
 
 **API 接口**:
 - `POST /api/auth/login` - 用户登录
-- `POST /api/auth/verify` - token 验证
+- `POST /api/auth/verify` - token 验证 + 系统配置信息（用户信息、文件配置、存储目录列表）
 
 **前端技术栈升级**:
 - ✅ React 19 + TypeScript
@@ -49,7 +50,52 @@
 
 ---
 
-### 2. 文件浏览模块 ✅ (已实现)
+### 2. 多目录存储系统 ✅ (已实现)
+
+**功能描述**: 支持配置和管理多个独立的存储目录，每个目录有不同的用途和设置
+
+**实现方案**:
+- **后端**: 
+  - ✅ 基于 TOML 配置的多目录支持 (`[[storage_directories]]` 配置节)
+  - ✅ 每个目录独立的 ID、名称、描述、图标和存储类型
+  - ✅ 默认目录设置和自动目录创建
+  - ✅ 目录级别的路径安全检查和沙盒隔离
+  - ✅ 统一的目录化 API 端点设计
+- **前端**:
+  - ✅ 现代化目录选择界面，侧边栏显示所有可用目录
+  - ✅ 目录图标和描述的直观展示
+  - ✅ 无缝的目录切换体验
+  - ✅ 认证上下文集成目录信息，减少网络请求
+
+**配置示例**:
+```toml
+[[storage_directories]]
+id = "uploads"
+name = "My Files"
+description = "Personal file storage"
+icon = "hard-drive"
+storage_type = "local"
+path = "./uploads"
+default = true
+
+[[storage_directories]]
+id = "documents"
+name = "Documents"
+description = "Document storage area"
+icon = "file-text"
+storage_type = "local"
+path = "./documents"
+default = false
+```
+
+**API 优化**:
+- ✅ 统一认证响应：`/api/auth/verify` 现在返回用户信息 + 文件配置 + 目录列表
+- ✅ 减少网络请求：从多个独立请求优化为单一请求
+- ✅ 提升用户体验：更快的应用启动和配置加载
+
+---
+
+### 3. 文件浏览模块 ✅ (已实现)
 
 **功能描述**: 展示服务器指定目录的文件和文件夹列表，提供现代化的文件管理界面
 
@@ -84,11 +130,11 @@
 - ✅ 心跳动画效果（删除警告）
 - ✅ 智能菜单定位（网格模式右下展开）
 
-**API 接口**:
+**API 接口** (目录化统一 API):
 ```
-GET /api/files/list           # 获取根目录文件列表
-GET /api/files/list/{path}    # 获取指定路径文件列表
-GET /api/files/storage        # 获取存储空间信息
+GET /api/files/dir/{directory_id}/list              # 获取指定目录的文件列表
+GET /api/files/dir/{directory_id}/list/{path}       # 获取指定目录中指定路径的文件列表
+GET /api/files/dir/{directory_id}/storage           # 获取指定目录的存储空间信息
 
 Response: {
   "success": true,
@@ -117,7 +163,7 @@ Response: {
 
 ---
 
-### 3. 文件上传模块 ✅ (已实现)
+### 4. 文件上传模块 ✅ (已实现)
 
 **功能描述**: 支持单文件和多文件上传到服务器
 
@@ -128,6 +174,7 @@ Response: {
   - ✅ 自动处理文件名冲突（UUID重命名策略）
   - ✅ 分片上传支持大文件（>10MB自动分片）
   - ✅ 支持子目录上传（路径感知）
+  - ✅ 目录化上传：所有上传操作指定目标存储目录
 - **前端**:
   - ✅ 现代化上传抽屉界面（UploadDrawer）
   - ✅ 拖拽上传支持（react-dropzone）
@@ -137,17 +184,22 @@ Response: {
   - ✅ 智能分片上传（1MB分片，3并发）
   - ✅ 浮动上传指示器（UploadIndicator）
 
-**API 接口**:
+**API 接口** (目录化统一 API):
 ```
-POST /api/upload/simple          # 简单文件上传
-POST /api/upload/chunked/init    # 分片上传初始化
-POST /api/upload/chunked/chunk   # 分片数据上传
-POST /api/upload/chunked/finish  # 分片上传完成
+POST /api/upload/dir/{directory_id}/simple    # 简单文件上传到指定目录
+# 分片上传功能集成在 simple 端点中，根据文件大小自动处理
 ```
+
+**上传功能增强**:
+- ✅ **智能上传检测**: 自动判断文件大小，>10MB 使用分片上传
+- ✅ **分片上传优化**: 1MB 分片大小，最多 3 个并发上传
+- ✅ **进度跟踪**: 实时显示上传进度、速度和 ETA
+- ✅ **错误恢复**: 每个分片最多 3 次重试机制
+- ✅ **目录感知**: 所有上传操作明确指定目标存储目录
 
 ---
 
-### 4. 文件下载模块 ✅ (已实现)
+### 5. 文件下载模块 ✅ (已实现)
 
 **功能描述**: 提供文件下载功能，支持直接下载和链接分享
 
@@ -174,11 +226,11 @@ Content-Type: application/octet-stream
 
 ---
 
-### 5. 文件操作模块 ✅ (已实现)
+### 6. 文件操作模块 ✅ (已实现)
 
 **功能描述**: 文件和文件夹的删除、创建操作
 
-#### 5.1 文件重命名 ✅ (已实现)
+#### 6.1 文件重命名 ✅ (已实现)
 **实现方案**:
 - **后端**: ✅ 使用 `std::fs::rename` 进行文件重命名
 - **前端**: ✅ 重命名对话框（RenameDialog）
@@ -187,7 +239,7 @@ Content-Type: application/octet-stream
 - **用户体验**: ✅ 实时错误提示和输入验证
 - **UI集成**: ✅ 集成在文件操作下拉菜单
 
-#### 5.2 文件删除 ✅ (已实现)
+#### 6.2 文件删除 ✅ (已实现)
 **实现方案**:
 - **后端**: ✅ 使用 `std::fs::remove_file` 和 `std::fs::remove_dir_all`
 - **前端**: ✅ 删除确认对话框（DeleteConfirmDialog）
@@ -195,18 +247,18 @@ Content-Type: application/octet-stream
 - **动画效果**: ✅ 心跳动画警告图标
 - **UI优化**: ✅ 集成在文件操作下拉菜单
 
-#### 5.3 新建文件夹 ✅ (已实现)
+#### 6.3 新建文件夹 ✅ (已实现)
 **实现方案**:
 - **后端**: ✅ 使用 `std::fs::create_dir_all`
 - **前端**: ✅ 新建文件夹对话框（CreateDirectoryDialog）
 - **验证**: ✅ 目录名验证（非法字符、保留名检查）
 - **用户体验**: ✅ 实时错误提示和输入验证
 
-**API 接口**:
+**API 接口** (目录化统一 API):
 ```
-DELETE /api/files/delete/{path}    # 删除文件或文件夹
-POST /api/files/mkdir/{path}       # 创建新文件夹
-PUT /api/files/rename/{path}       # 重命名文件或文件夹
+DELETE /api/files/dir/{directory_id}/delete/{path}    # 删除指定目录中的文件或文件夹
+POST /api/files/dir/{directory_id}/mkdir/{path}       # 在指定目录中创建新文件夹
+PUT /api/files/dir/{directory_id}/rename/{path}       # 重命名指定目录中的文件或文件夹
 Body: { "new_name": "新文件名" }
 
 Response: {
@@ -223,7 +275,7 @@ Response: {
 
 ---
 
-### 6. 文件搜索模块 🔮 (未来功能)
+### 7. 文件搜索模块 🔮 (未来功能)
 
 **功能描述**: 在指定目录中搜索文件
 
@@ -236,7 +288,7 @@ Response: {
 
 ---
 
-### 7. 文件预览模块 🔮 (未来功能)
+### 8. 文件预览模块 🔮 (未来功能)
 
 **功能描述**: 支持常见文件类型的在线预览
 
@@ -325,15 +377,22 @@ src/frontend/
 
 ## 配置文件设计
 
-### config/server.toml (新增)
+### config.toml (更新为多目录支持)
 ```toml
 [server]
 host = "0.0.0.0"
 port = 3330
 
+[jwt]
+secret_key = "your-secret-key"
+expiration_hours = 24
+
+[user]
+username = "admin"
+password_hash = "$2b$12$..."
+email = "admin@storkitty.com"
+
 [files]
-# 文件管理根目录
-root_directory = "./uploads"
 # 单文件上传大小限制 (MB)
 max_file_size = 100
 # 允许的文件类型 (空表示允许所有)
@@ -348,6 +407,34 @@ allow_mkdir = true
 allow_delete = true
 # 是否允许下载文件
 allow_download = true
+
+# 多目录存储配置 ✅ (新增)
+[[storage_directories]]
+id = "uploads"
+name = "My Files"
+description = "Personal file storage"
+icon = "hard-drive"
+storage_type = "local"
+path = "./uploads"
+default = true
+
+[[storage_directories]]
+id = "documents"
+name = "Documents"
+description = "Document storage area"
+icon = "file-text"
+storage_type = "local"
+path = "./documents"
+default = false
+
+[[storage_directories]]
+id = "media"
+name = "Media Files"
+description = "Photos, videos, and media"
+icon = "image"
+storage_type = "local"
+path = "./media"
+default = false
 ```
 
 ---
@@ -366,11 +453,18 @@ allow_download = true
 3. ✅ 文件重命名功能
 4. 🔄 批量操作支持
 
-### 第三阶段 (增强功能)
+### 第三阶段 ✅ 已完成 (多目录与性能优化)
+1. ✅ **多目录存储系统**: 支持配置多个独立存储目录
+2. ✅ **API 性能优化**: 统一认证响应，减少网络请求
+3. ✅ **智能上传系统**: 自动分片上传，并发控制和错误恢复
+4. ✅ **目录化 API**: 所有文件操作统一使用目录化端点
+
+### 第四阶段 (增强功能)
 1. 🔮 文件搜索
 2. 🔮 文件预览
 3. 🔮 访问日志记录
 4. 🔮 多用户权限管理
+5. 🔮 云存储支持 (S3, 阿里云 OSS 等)
 
 ---
 

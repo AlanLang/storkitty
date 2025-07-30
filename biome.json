@@ -4,7 +4,9 @@
     "ignore": [
       "src/frontend/components/ui/**",
       "src/frontend/src/routeTree.gen.ts",
-      "src/frontend/routeTree.gen.ts"
+      "src/frontend/routeTree.gen.ts",
+      "uploads/**",
+      "uploads1/**"
     ]
   },
   "vcs": {

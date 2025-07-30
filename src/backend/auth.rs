@@ -48,9 +48,20 @@ pub struct FileConfigInfo {
 }
 
 #[derive(Debug, Serialize)]
+pub struct DirectoryInfo {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    pub icon: String,
+    pub default: bool,
+    pub storage_type: String,
+}
+
+#[derive(Debug, Serialize)]
 pub struct VerifyResponse {
     pub user: UserInfo,
     pub file_config: FileConfigInfo,
+    pub directories: Vec<DirectoryInfo>,
 }
 
 pub struct AuthService {
@@ -172,9 +183,22 @@ pub async fn verify_handler(
                 blocked_extensions: config.files.blocked_extensions.clone(),
             };
             
+            let directories = config.get_storage_directories()
+                .into_iter()
+                .map(|dir| DirectoryInfo {
+                    id: dir.id,
+                    name: dir.name,
+                    description: dir.description,
+                    icon: dir.icon,
+                    default: dir.default,
+                    storage_type: dir.storage_type,
+                })
+                .collect();
+            
             let response = VerifyResponse {
                 user: user_info,
                 file_config,
+                directories,
             };
             
             Ok(Json(response))

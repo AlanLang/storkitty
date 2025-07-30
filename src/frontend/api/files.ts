@@ -63,27 +63,38 @@ async function apiRequest<T>(
 
 // 文件管理相关 API 函数
 export const filesApi = {
-  // 获取文件列表
-  async getFileList(path?: string): Promise<FilesResponse> {
+  // 获取指定目录的文件列表
+  async getFileListWithDirectory(
+    directoryId: string,
+    path?: string,
+  ): Promise<FilesResponse> {
     const endpoint = path
-      ? `/files/list/${encodeURIComponent(path)}`
-      : "/files/list";
+      ? `/files/dir/${encodeURIComponent(directoryId)}/list/${encodeURIComponent(path)}`
+      : `/files/dir/${encodeURIComponent(directoryId)}/list`;
     return apiRequest<FilesResponse>(endpoint, {
       method: "GET",
     });
   },
 
-  // 获取存储空间信息
-  async getStorageInfo(): Promise<StorageResponse> {
-    return apiRequest<StorageResponse>("/files/storage", {
-      method: "GET",
-    });
+  // 获取指定目录的存储空间信息
+  async getStorageInfoWithDirectory(
+    directoryId: string,
+  ): Promise<StorageResponse> {
+    return apiRequest<StorageResponse>(
+      `/files/dir/${encodeURIComponent(directoryId)}/storage`,
+      {
+        method: "GET",
+      },
+    );
   },
 
-  // 删除文件或目录
-  async deleteFile(filePath: string): Promise<DeleteResponse> {
+  // 删除指定目录中的文件或目录
+  async deleteFileWithDirectory(
+    directoryId: string,
+    filePath: string,
+  ): Promise<DeleteResponse> {
     const response = await apiRequest<DeleteResponse>(
-      `/files/delete/${encodeURIComponent(filePath)}`,
+      `/files/dir/${encodeURIComponent(directoryId)}/delete/${encodeURIComponent(filePath)}`,
       {
         method: "DELETE",
       },
@@ -97,12 +108,13 @@ export const filesApi = {
     return response;
   },
 
-  // 创建目录
-  async createDirectory(
+  // 在指定目录中创建目录
+  async createDirectoryWithDirectory(
+    directoryId: string,
     directoryPath: string,
   ): Promise<CreateDirectoryResponse> {
     const response = await apiRequest<CreateDirectoryResponse>(
-      `/files/mkdir/${encodeURIComponent(directoryPath)}`,
+      `/files/dir/${encodeURIComponent(directoryId)}/mkdir/${encodeURIComponent(directoryPath)}`,
       {
         method: "POST",
       },
@@ -116,13 +128,14 @@ export const filesApi = {
     return response;
   },
 
-  // 重命名文件或目录
-  async renameFile(
+  // 重命名指定目录中的文件或目录
+  async renameFileWithDirectory(
+    directoryId: string,
     filePath: string,
     newName: string,
   ): Promise<RenameResponse> {
     return apiRequest<RenameResponse>(
-      `/files/rename/${encodeURIComponent(filePath)}`,
+      `/files/dir/${encodeURIComponent(directoryId)}/rename/${encodeURIComponent(filePath)}`,
       {
         method: "PUT",
         body: JSON.stringify({ new_name: newName }),

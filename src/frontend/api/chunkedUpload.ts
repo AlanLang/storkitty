@@ -14,6 +14,7 @@ export interface ChunkedUploadProgress {
 export interface ChunkedUploadSession {
   file: File;
   uploadId: string;
+  directoryId: string;
   targetPath?: string;
   chunkSize: number;
   totalChunks: number;
@@ -33,6 +34,7 @@ const MAX_RETRIES = 3; // Maximum retry attempts per chunk
  */
 export function createChunkedUploadSession(
   file: File,
+  directoryId: string,
   options: {
     targetPath?: string;
     chunkSize?: number;
@@ -47,6 +49,7 @@ export function createChunkedUploadSession(
   return {
     file,
     uploadId: generateUploadId(),
+    directoryId,
     targetPath: options.targetPath,
     chunkSize,
     totalChunks,
@@ -140,13 +143,16 @@ export async function startChunkedUpload(
         // Always upload chunks to root .chunks directory regardless of target path
         formData.append("targetPath", `.chunks/${session.uploadId}`);
 
-        const response = await fetch("/api/upload/simple", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
+        const response = await fetch(
+          `/api/upload/dir/${encodeURIComponent(session.directoryId)}/simple`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
           },
-          body: formData,
-        });
+        );
 
         if (!response.ok) {
           throw new Error(
@@ -246,13 +252,16 @@ async function combineChunks(
     formData.append("targetPath", session.targetPath);
   }
 
-  const response = await fetch("/api/upload/simple", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
+  const response = await fetch(
+    `/api/upload/dir/${encodeURIComponent(session.directoryId)}/simple`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
     },
-    body: formData,
-  });
+  );
 
   if (!response.ok) {
     throw new Error(`Failed to finalize upload: ${response.statusText}`);

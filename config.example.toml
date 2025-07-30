@@ -14,10 +14,80 @@ secret_key = "your-super-secret-jwt-key-change-this-in-production"
 expiration_hours = 24
 
 [files]
-root_directory = "./uploads"
 max_file_size = 100
 allowed_extensions = []
 blocked_extensions = [".exe", ".bat", ".sh"]
+
+# 存储目录配置
+[[storage.directories]]
+id = "default"
+name = "默认"
+description = "默认上传目录"
+icon = "folder"
+default = true
+# 存储类型：local, oss, s3, minio 等
+storage_type = "local"
+# 本地存储配置
+path = "./uploads"
+
+[[storage.directories]]
+id = "documents"
+name = "文档"
+description = "文档和文本文件"
+icon = "file-text"
+default = false
+storage_type = "local"
+path = "./uploads/documents"
+
+[[storage.directories]]
+id = "images"
+name = "图片"
+description = "图片和媒体文件"
+icon = "image"
+default = false
+storage_type = "local"
+path = "./uploads/images"
+
+[[storage.directories]]
+id = "videos" 
+name = "视频"
+description = "视频文件"
+icon = "video"
+default = false
+storage_type = "local"
+path = "./uploads/videos"
+
+# OSS 存储配置示例（暂未实现）
+# [[storage.directories]]
+# id = "oss_documents"
+# name = "云端文档"
+# description = "阿里云OSS文档存储"
+# icon = "cloud"
+# default = false
+# storage_type = "oss"
+# [storage.directories.config]
+# endpoint = "https://oss-cn-hangzhou.aliyuncs.com"
+# bucket = "my-bucket"
+# access_key_id = "your_access_key"
+# access_key_secret = "your_secret_key"
+# region = "cn-hangzhou"
+# path_prefix = "documents/"
+
+# S3 存储配置示例（暂未实现）
+# [[storage.directories]]
+# id = "s3_backup"
+# name = "S3备份"
+# description = "AWS S3备份存储"
+# icon = "cloud"
+# default = false
+# storage_type = "s3"
+# [storage.directories.config]
+# endpoint = "https://s3.amazonaws.com"
+# bucket = "my-s3-bucket"
+# access_key_id = "your_aws_key"
+# secret_access_key = "your_aws_secret"
+# region = "us-east-1"
+# path_prefix = "backup/"
 
 [security]
 allow_mkdir = true

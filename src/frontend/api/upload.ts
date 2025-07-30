@@ -11,10 +11,23 @@ export interface UploadError {
 }
 
 /**
- * Upload a single file using the simple upload endpoint
+ * Upload a single file using directory-specific upload endpoint (unified API)
  */
 export async function uploadFile(
   file: File,
+  directoryId: string,
+  targetPath?: string,
+  onProgress?: (progress: number) => void,
+): Promise<UploadResponse> {
+  return uploadFileWithDirectory(file, directoryId, targetPath, onProgress);
+}
+
+/**
+ * Upload a single file to a specific directory using the directory-aware upload endpoint
+ */
+export async function uploadFileWithDirectory(
+  file: File,
+  directoryId: string,
   targetPath?: string,
   onProgress?: (progress: number) => void,
 ): Promise<UploadResponse> {
@@ -69,17 +82,33 @@ export async function uploadFile(
       reject(new Error("上传已取消"));
     });
 
-    xhr.open("POST", "/api/upload/simple");
+    xhr.open(
+      "POST",
+      `/api/upload/dir/${encodeURIComponent(directoryId)}/simple`,
+    );
     xhr.setRequestHeader("Authorization", `Bearer ${token}`);
     xhr.send(formData);
   });
 }
 
 /**
- * Upload multiple files sequentially
+ * Upload multiple files sequentially (unified API)
  */
 export async function uploadFiles(
   files: File[],
+  directoryId: string,
+  targetPath?: string,
+  onProgress?: (fileIndex: number, progress: number, fileName: string) => void,
+): Promise<UploadResponse[]> {
+  return uploadFilesWithDirectory(files, directoryId, targetPath, onProgress);
+}
+
+/**
+ * Upload multiple files sequentially to a specific directory
+ */
+export async function uploadFilesWithDirectory(
+  files: File[],
+  directoryId: string,
   targetPath?: string,
   onProgress?: (fileIndex: number, progress: number, fileName: string) => void,
 ): Promise<UploadResponse[]> {
@@ -88,8 +117,11 @@ export async function uploadFiles(
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
     try {
-      const result = await uploadFile(file, targetPath, (progress) =>
-        onProgress?.(i, progress, file.name),
+      const result = await uploadFileWithDirectory(
+        file,
+        directoryId,
+        targetPath,
+        (progress) => onProgress?.(i, progress, file.name),
       );
       results.push(result);
     } catch (error) {

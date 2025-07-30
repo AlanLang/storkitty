@@ -3,6 +3,7 @@
 /web
 /node_modules
 /uploads
+/uploads1
 .DS_Store
 !.vscode
 backend.logserver.log

@@ -57,7 +57,7 @@ export function RenameDialog({
     // 检查系统保留名
     const reservedNames = [
       ".DS_Store",
-      ".chunks", 
+      ".chunks",
       "Thumbs.db",
       ".gitkeep",
       "desktop.ini",
@@ -101,9 +101,10 @@ export function RenameDialog({
       setNewName("");
       setError("");
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       // 显示后端返回的错误信息
-      const errorMessage = error?.message || "重命名失败，请重试";
+      const errorMessage =
+        error instanceof Error ? error.message : "重命名失败，请重试";
       setError(errorMessage);
       console.error("Rename failed:", error);
     }
@@ -130,7 +131,12 @@ export function RenameDialog({
     }
   };
 
-  const canRename = newName.trim().length > 0 && !error && !isRenaming && file && newName.trim() !== file.name;
+  const canRename =
+    newName.trim().length > 0 &&
+    !error &&
+    !isRenaming &&
+    file &&
+    newName.trim() !== file.name;
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -141,7 +147,9 @@ export function RenameDialog({
               <Edit className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <DialogTitle className="text-left">重命名{file?.file_type === "folder" ? "文件夹" : "文件"}</DialogTitle>
+              <DialogTitle className="text-left">
+                重命名{file?.file_type === "folder" ? "文件夹" : "文件"}
+              </DialogTitle>
               <DialogDescription className="text-left">
                 为 "{file?.name}" 输入新的名称
               </DialogDescription>

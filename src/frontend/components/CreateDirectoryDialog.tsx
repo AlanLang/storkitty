@@ -85,9 +85,10 @@ export function CreateDirectoryDialog({
       setDirectoryName("");
       setError("");
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       // 显示后端返回的错误信息
-      const errorMessage = error?.message || "创建文件夹失败，请重试";
+      const errorMessage =
+        error instanceof Error ? error.message : "创建文件夹失败，请重试";
       setError(errorMessage);
       console.error("Create directory failed:", error);
     }

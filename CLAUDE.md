@@ -14,7 +14,7 @@ This is a full-stack application called "storkitty" that combines a React fronte
 - **Data Fetching**: TanStack Query for server state management, caching, and error handling
 - **UI Framework**: TailwindCSS 4.x + shadcn/ui components for modern, accessible design
 - **Database**: Configuration file-based user storage (no external database required)
-- **File Storage**: File system-based storage with configurable root directory
+- **File Storage**: Multi-directory storage system with configurable storage directories
 - **Build System**: RSBuild for frontend bundling, Cargo for Rust compilation
 - **Package Manager**: Bun for frontend dependency management
 - **Code Quality**: Biome for TypeScript/React linting and formatting, rustfmt for Rust formatting
@@ -27,7 +27,7 @@ The application uses a dual-language architecture where:
 - Rust server serves files from `web/` directory and provides API endpoints on port 3330
 - User credentials and configuration stored in `config.toml` (gitignored for security)
 - Initial setup wizard for first-time configuration
-- File storage in configurable `uploads/` directory (gitignored)
+- Multi-directory file storage system with configurable storage locations
 
 ## Development Commands
 
@@ -98,23 +98,23 @@ The application features an automatic setup wizard for first-time use:
 
 #### Authentication
 - `POST /api/auth/login` - User authentication (returns JWT token)
-- `POST /api/auth/verify` - Token verification (returns user info + file configuration)
+- `POST /api/auth/verify` - Token verification (returns user info, file configuration, and available storage directories)
 
 #### System Setup
 - `GET /api/setup/status` - Check if system needs initial setup (returns needs_setup boolean)
 - `POST /api/setup/init` - Initialize system with admin account (returns success status + JWT token)
 
-#### File Management
-- `GET /api/files/list` - Get root directory file list
-- `GET /api/files/list/{path}` - Get file list for specific path
-- `GET /api/files/storage` - Get storage space information
-- `DELETE /api/files/delete/{path}` - Delete file or directory (requires allow_delete permission)
-- `POST /api/files/mkdir/{path}` - Create new directory (requires allow_mkdir permission)
-- `PUT /api/files/rename/{path}` - Rename file or directory (with conflict detection and validation)
+#### Multi-Directory File Management (Unified API)
+- `GET /api/files/dir/{directory_id}/list` - Get file list for specific directory
+- `GET /api/files/dir/{directory_id}/list/{path}` - Get file list for specific path within directory
+- `GET /api/files/dir/{directory_id}/storage` - Get storage space information for directory
+- `DELETE /api/files/dir/{directory_id}/delete/{path}` - Delete file or directory (requires allow_delete permission)
+- `POST /api/files/dir/{directory_id}/mkdir/{path}` - Create new directory (requires allow_mkdir permission)
+- `PUT /api/files/dir/{directory_id}/rename/{path}` - Rename file or directory (with conflict detection and validation)
 - `GET /api/files/download/{path}` - Download file with streaming support (no authentication required)
 
-#### File Upload
-- `POST /api/upload/simple` - Simple file upload with multipart form data
+#### File Upload (Directory-Based)
+- `POST /api/upload/dir/{directory_id}/simple` - Simple file upload with multipart form data to specific directory
 
 ### File Structure
 ```
@@ -201,18 +201,26 @@ The application features an automatic setup wizard for first-time use:
   - To manually generate password hashes: Run `cargo run --bin hash_password`
 - **Security**: `config.toml` is gitignored to prevent accidental credential commits
 
-### File Management
-- **File storage**: Configurable root directory (default: `./uploads`)
+### Multi-Directory Storage System
+- **Multiple Storage Directories**: Support for multiple configurable storage locations with distinct purposes
+- **Directory Management**: Each directory has unique ID, name, description, icon, and storage type
+- **Default Directory**: One directory can be marked as default for initial access
+- **Storage Types**: Currently supports local file system storage with plans for cloud storage
+- **Path Security**: Each directory is sandboxed with independent path validation
+- **Dynamic Configuration**: Storage directories configured in `config.toml` under `[[storage_directories]]` sections
+
+### Enhanced File Management Interface
+- **Directory Selector**: Modern sidebar with directory icons and descriptions
+- **Unified File Browser**: Consistent interface across all storage directories
 - **Upload limits**: Configurable maximum file size (default: 100MB)
 - **File type restrictions**: Configurable allowed/blocked file extensions
-- **Automatic directory creation**: Creates upload directory on startup
-- **Path security**: Restricted to configured root directory with path validation
+- **Automatic directory creation**: Creates storage directories on startup
 - **File browser interface**: Modern responsive design with grid/list view modes
 - **Folder navigation**: Click folders to navigate into subdirectories with URL path reflection
 - **Breadcrumb navigation**: Interactive breadcrumb showing current path with clickable navigation
 - **File metadata**: File size formatting, type detection, and modification dates
-- **Real-time storage info**: Storage space calculation and usage display
-- **Search functionality**: Filter files and folders by name
+- **Real-time storage info**: Per-directory storage space calculation and usage display
+- **Search functionality**: Filter files and folders by name within selected directory
 - **URL-based routing**: File paths reflected in browser URL for bookmarking and sharing
 
 ### File Download System
@@ -229,6 +237,23 @@ The application features an automatic setup wizard for first-time use:
 - **Directory creation**: Create new folders with validation and security checks
 - **File renaming**: Rename files and folders with real-time validation and conflict detection
 - **Name validation**: Automatic validation of file/directory names against illegal characters and system reserved names
+
+### API Performance Optimizations
+- **Unified Authentication Response**: `/api/auth/verify` returns user info, file configuration, and storage directories in one request
+- **Reduced Network Requests**: Eliminated separate `/api/files/directories` endpoint by integrating into auth flow
+- **Optimized Data Loading**: Single API call provides all necessary system configuration data
+- **Improved User Experience**: Faster application startup and reduced loading times
+- **Centralized Configuration**: All system configuration accessible through authentication context
+
+### File Upload System
+- **Smart Upload Detection**: Automatically uses chunked upload for files larger than 10MB
+- **Chunked Upload**: Large files split into 1MB chunks with concurrent upload (max 3 concurrent)
+- **Progress Tracking**: Real-time upload progress with speed and ETA calculations
+- **Error Recovery**: Automatic retry mechanism with up to 3 attempts per chunk
+- **Directory-Based Upload**: All uploads specify target directory for multi-directory support
+- **Upload Management**: Cancel individual uploads, clear completed items, or reset all
+- **Real-time Feedback**: Live progress updates with visual status indicators
+- **Path-aware Uploads**: Automatically uploads to current folder location within selected directory
 
 ### Dependencies
 **Backend**: axum (with multipart), tokio, tokio-util, serde, jsonwebtoken, bcrypt, tower-http, uuid, mime, bytes, futures-util
@@ -260,7 +285,7 @@ The application features an automatic setup wizard for first-time use:
   - UploadIndicator: Floating upload status button with progress visualization
   - Route components: Thin wrappers that pass props to shared components
   - Hooks: Custom hooks for API calls and state management in `src/frontend/hooks/`
-  - **AuthContext优化**: 现在包含用户信息和文件配置，减少了对独立配置API的依赖
+  - **AuthContext优化**: 现在包含用户信息、文件配置和存储目录信息，实现统一的系统配置管理
 - **ONLY use TailwindCSS 4.x classes for styling** - no custom CSS classes, no inline styles, no CSS-in-JS
 - **TailwindCSS 4.x Configuration**: Uses `@tailwindcss/postcss` plugin with `@theme` configuration in globals.css
 - **CSS Variables for shadcn/ui**: All colors defined as CSS variables (--primary, --secondary, etc.) and referenced via `@theme` configuration
@@ -502,43 +527,90 @@ The project uses TailwindCSS 4.x with the following setup:
 - **State Management**: TanStack Query for optimistic updates and error handling
 - **Real-time Updates**: Automatic refresh of file lists and storage information
 
-## API 优化
+## Configuration File Format
 
-### 合并认证与配置请求
-为了提升应用性能和减少网络请求，我们将文件配置信息合并到认证验证响应中：
+### Multi-Directory Storage Configuration
+The `config.toml` file now supports multiple storage directories with the following format:
 
-#### 优化前
-- 用户登录后需要两个独立请求：
-  1. `POST /api/auth/verify` - 获取用户信息
-  2. `GET /api/files/config` - 获取文件配置（上传限制等）
+```toml
+[server]
+host = "0.0.0.0"
+port = 3330
 
-#### 优化后
-- 只需一个请求：
-  1. `POST /api/auth/verify` - 同时返回用户信息和文件配置
+[jwt]
+secret_key = "your-secret-key"
+expiration_hours = 24
 
-#### 响应格式
-```json
-{
-  "user": {
-    "username": "admin",
-    "email": "admin@storkitty.com"
-  },
-  "file_config": {
-    "max_file_size_mb": 100,
-    "allowed_extensions": [],
-    "blocked_extensions": [".exe", ".bat", ".sh"]
-  }
-}
+[user]
+username = "admin"
+password_hash = "$2b$12$..."
+email = "admin@storkitty.com"
+
+[files]
+max_file_size = 100
+allowed_extensions = []
+blocked_extensions = [".exe", ".bat", ".sh"]
+
+[security]
+allow_mkdir = true
+allow_delete = true
+allow_download = true
+
+# Multiple storage directories configuration
+[[storage_directories]]
+id = "uploads"
+name = "My Files"
+description = "Personal file storage"
+icon = "hard-drive"
+storage_type = "local"
+path = "./uploads"
+default = true
+
+[[storage_directories]]
+id = "documents"
+name = "Documents"
+description = "Document storage area"
+icon = "file-text"
+storage_type = "local"
+path = "./documents"
+default = false
+
+[[storage_directories]]
+id = "media"
+name = "Media Files"
+description = "Photos, videos, and media"
+icon = "image"
+storage_type = "local"
+path = "./media"
+default = false
 ```
 
-#### 技术实现
-- **后端变更**: 修改 `auth.rs` 中的 `VerifyResponse` 结构体，包含 `FileConfigInfo`
-- **前端变更**: 更新 `AuthContext` 暴露 `fileConfig` 属性，组件直接从认证上下文获取配置
-- **类型安全**: 统一在 `types/auth.ts` 中定义相关类型，移除重复定义
-- **向后兼容**: 保持现有API结构，只是数据更丰富
+### Storage Directory Properties
+- **id**: Unique identifier for the directory (used in API endpoints)
+- **name**: Display name shown in the interface
+- **description**: Descriptive text explaining the directory's purpose
+- **icon**: Icon identifier (from Lucide React icon set)
+- **storage_type**: Currently only "local" is supported
+- **path**: Local file system path for storage
+- **default**: Boolean indicating if this is the default directory (only one should be true)
 
-#### 性能收益
-- **减少网络请求**: 从2个请求优化为1个请求
-- **降低延迟**: 用户登录后立即获得所有必要信息
-- **简化状态管理**: 统一在认证上下文中管理用户和配置信息
-- **改善用户体验**: 更快的界面响应和配置加载
+## Documentation Maintenance
+
+### FEATURES.md Maintenance Rule
+**IMPORTANT**: When implementing new features or making significant changes to existing functionality, always update `FEATURES.md` to maintain accurate feature documentation.
+
+**Required Updates**:
+1. **New Features**: Add new feature modules with implementation status (✅/🔄/🔮)
+2. **API Changes**: Update API endpoint documentation to reflect changes
+3. **Configuration Changes**: Update configuration examples when adding new config options
+4. **Development Phases**: Update development priority sections when completing phases
+5. **Technical Stack Changes**: Update technology stack information when adding new dependencies
+
+**Update Process**:
+- Update `FEATURES.md` immediately after implementing any feature
+- Mark completed features with ✅ and update status descriptions
+- Add new API endpoints with proper directory-based naming conventions
+- Update configuration examples to show new options
+- Maintain consistency between `CLAUDE.md` and `FEATURES.md` documentation
+
+This ensures that `FEATURES.md` serves as an accurate, up-to-date reference for all project functionality and capabilities.

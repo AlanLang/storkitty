@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from "@tanstack/react-router";
 import {
   Calendar,
   ChevronRight,
+  Cloud,
   Copy,
   Download,
   Edit,
@@ -17,6 +18,7 @@ import {
   Grid3X3,
   HardDrive,
   Home,
+  Image,
   List,
   Loader2,
   LogOut,
@@ -25,6 +27,7 @@ import {
   Trash2,
   Upload,
   User as UserIcon,
+  Video,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -34,9 +37,9 @@ import {
   filesKeys,
   useCreateDirectoryMutation,
   useDeleteFileMutation,
-  useFileListQuery,
+  useFileListWithDirectoryQuery,
   useRenameFileMutation,
-  useStorageInfoQuery,
+  useStorageInfoWithDirectoryQuery,
 } from "../hooks/useFiles";
 import { useUpload } from "../hooks/useUploadContext";
 import { useViewMode } from "../hooks/useViewMode";
@@ -143,6 +146,26 @@ function getFileIcon(fileName: string, fileType: string) {
   return File;
 }
 
+// 根据图标名称获取图标组件
+function getDirectoryIcon(iconName: string) {
+  switch (iconName) {
+    case "folder":
+      return Folder;
+    case "file-text":
+      return FileText;
+    case "image":
+      return Image;
+    case "video":
+      return Video;
+    case "cloud":
+      return Cloud;
+    case "home":
+      return Home;
+    default:
+      return Folder;
+  }
+}
+
 // 根据文件类型获取图标颜色
 function getFileIconColor(fileName: string, fileType: string) {
   if (fileType === "folder") {
@@ -206,10 +229,53 @@ function getFileIconColor(fileName: string, fileType: string) {
 
 interface FilesPageComponentProps {
   currentPath?: string;
+  directoryId?: string;
 }
 
-export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
-  const { user, isAuthenticated, isLoading, logout } = useAuth();
+// Helper function to get the effective directory ID
+function getEffectiveDirectoryId(
+  requestedDirectoryId: string | undefined,
+  directoriesData:
+    | { directories: Array<{ id: string; default?: boolean }> }
+    | undefined,
+): string | undefined {
+  if (!directoriesData?.directories?.length) {
+    return undefined;
+  }
+
+  // If a specific directory is requested, use it
+  if (requestedDirectoryId) {
+    return requestedDirectoryId;
+  }
+
+  // Find the default directory from config
+  const defaultDirectory = directoriesData.directories.find(
+    (dir) => dir.default,
+  );
+  if (defaultDirectory) {
+    return defaultDirectory.id;
+  }
+
+  // If no default is set, use the first directory
+  return directoriesData.directories[0].id;
+}
+
+// Helper function to validate directory exists
+function validateDirectoryId(
+  directoryId: string | undefined,
+  directoriesData: { directories: Array<{ id: string }> } | undefined,
+): boolean {
+  if (!directoryId || !directoriesData?.directories?.length) {
+    return false;
+  }
+  return directoriesData.directories.some((dir) => dir.id === directoryId);
+}
+
+export function FilesPageComponent({
+  currentPath,
+  directoryId,
+}: FilesPageComponentProps) {
+  const { user, isAuthenticated, isLoading, directories, logout } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const { viewMode, setViewMode } = useViewMode();
@@ -219,24 +285,69 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
     useState(false);
   const [renameFile, setRenameFile] = useState<FileInfo | null>(null);
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
-  const { setIsDrawerOpen, setOnUploadComplete } = useUpload();
+
+  const { setIsDrawerOpen, setOnUploadComplete, setCurrentDirectoryId } =
+    useUpload();
   const queryClient = useQueryClient();
 
-  // 删除文件 mutation
+  // 构建 directoriesData 以保持兼容现有代码
+  const directoriesData = directories
+    ? { success: true, directories }
+    : undefined;
+  const directoriesLoading = false; // Auth already loaded if we got here
+  const directoriesError = null;
+
+  // 计算有效的目录ID
+  const _effectiveDirectoryId = getEffectiveDirectoryId(
+    directoryId,
+    directoriesData,
+  );
+  const [selectedDirectoryId, setSelectedDirectoryId] = useState<
+    string | undefined
+  >(undefined);
+
+  // 当目录数据加载完成后，立即设置初始的目录ID
+  useEffect(() => {
+    if (directoriesData?.directories?.length && !selectedDirectoryId) {
+      const newEffectiveDirectoryId = getEffectiveDirectoryId(
+        directoryId,
+        directoriesData,
+      );
+      if (newEffectiveDirectoryId) {
+        setSelectedDirectoryId(newEffectiveDirectoryId);
+      }
+    }
+  }, [directoryId, directoriesData, selectedDirectoryId]);
+
+  // 同步上传上下文的目录ID
+  useEffect(() => {
+    if (selectedDirectoryId) {
+      setCurrentDirectoryId(selectedDirectoryId);
+    }
+  }, [selectedDirectoryId, setCurrentDirectoryId]);
+
+  // Mutations
   const deleteFileMutation = useDeleteFileMutation();
-
-  // 创建目录 mutation
   const createDirectoryMutation = useCreateDirectoryMutation();
-
-  // 重命名文件 mutation
   const renameFileMutation = useRenameFileMutation();
 
-  // 获取文件列表
+  // 只有在有目录数据且selectedDirectoryId有效时才查询文件
+  const shouldQueryFiles =
+    isAuthenticated &&
+    !!selectedDirectoryId &&
+    selectedDirectoryId.length > 0 && // 确保不是空字符串
+    validateDirectoryId(selectedDirectoryId, directoriesData);
+
+  // 统一使用目录API
   const {
     data: filesData,
     isLoading: filesLoading,
     error: filesError,
-  } = useFileListQuery(currentPath, isAuthenticated);
+  } = useFileListWithDirectoryQuery(
+    selectedDirectoryId || "", // 传入空字符串，但是enabled为false时不会发送请求
+    currentPath,
+    shouldQueryFiles, // 这里控制是否发送请求
+  );
 
   // 处理文件夹点击
   const handleFolderClick = (folderName: string) => {
@@ -252,10 +363,18 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
   const handleUploadComplete = useCallback(
     (_results: UploadResponse[]) => {
       // 刷新文件列表
-      queryClient.invalidateQueries({ queryKey: filesKeys.list(currentPath) });
-      queryClient.invalidateQueries({ queryKey: filesKeys.storage() });
+      queryClient.invalidateQueries({
+        queryKey: filesKeys.list(currentPath, selectedDirectoryId),
+      });
+
+      // 刷新存储空间
+      if (selectedDirectoryId) {
+        queryClient.invalidateQueries({
+          queryKey: filesKeys.storage(selectedDirectoryId),
+        });
+      }
     },
-    [currentPath, queryClient],
+    [currentPath, selectedDirectoryId, queryClient],
   );
 
   // 设置上传完成回调到上传上下文
@@ -271,12 +390,16 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
 
   // 处理删除确认
   const handleDeleteConfirm = async () => {
-    if (!deleteFile) return;
+    if (!deleteFile || !selectedDirectoryId) return;
 
     const filePath = currentPath
       ? `${currentPath}/${deleteFile.name}`
       : deleteFile.name;
-    await deleteFileMutation.mutateAsync(filePath);
+
+    await deleteFileMutation.mutateAsync({
+      filePath,
+      directoryId: selectedDirectoryId,
+    });
   };
 
   // 关闭删除对话框
@@ -287,10 +410,16 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
 
   // 处理创建目录确认
   const handleCreateDirectoryConfirm = async (directoryName: string) => {
+    if (!selectedDirectoryId) return;
+
     const directoryPath = currentPath
       ? `${currentPath}/${directoryName}`
       : directoryName;
-    await createDirectoryMutation.mutateAsync(directoryPath);
+
+    await createDirectoryMutation.mutateAsync({
+      directoryPath,
+      directoryId: selectedDirectoryId,
+    });
   };
 
   // 处理创建目录按钮点击
@@ -311,12 +440,17 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
 
   // 处理重命名确认
   const handleRenameConfirm = async (newName: string) => {
-    if (!renameFile) return;
+    if (!renameFile || !selectedDirectoryId) return;
 
     const filePath = currentPath
       ? `${currentPath}/${renameFile.name}`
       : renameFile.name;
-    await renameFileMutation.mutateAsync({ filePath, newName });
+
+    await renameFileMutation.mutateAsync({
+      filePath,
+      newName,
+      directoryId: selectedDirectoryId,
+    });
   };
 
   // 关闭重命名对话框
@@ -373,9 +507,12 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
     }
   };
 
-  // 获取存储空间信息
+  // 获取存储空间信息（统一使用目录API）
   const { data: storageData, isLoading: storageLoading } =
-    useStorageInfoQuery(isAuthenticated);
+    useStorageInfoWithDirectoryQuery(
+      selectedDirectoryId || "", // 传入空字符串，但enabled控制是否发送请求
+      shouldQueryFiles,
+    );
 
   // 过滤和搜索文件
   const filteredFiles = useMemo(() => {
@@ -441,26 +578,52 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
         <aside className="hidden md:flex w-64 border-r bg-card/30 flex-col">
           <div className="p-4">
             <nav className="space-y-2">
-              <Button
-                variant="default"
-                className="w-full justify-start gap-2"
-                onClick={() => navigate({ to: "/files" })}
-              >
-                <Home className="h-4 w-4" />
-                全部文件
-              </Button>
-              <Button variant="ghost" className="w-full justify-start gap-2">
-                <Folder className="h-4 w-4" />
-                文档
-              </Button>
-              <Button variant="ghost" className="w-full justify-start gap-2">
-                <File className="h-4 w-4" />
-                图片
-              </Button>
-              <Button variant="ghost" className="w-full justify-start gap-2">
-                <Trash2 className="h-4 w-4" />
-                回收站
-              </Button>
+              <div className="text-xs font-medium text-muted-foreground mb-2 px-2">
+                存储目录
+              </div>
+              {directoriesLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                </div>
+              ) : directoriesError ? (
+                <div className="text-xs text-destructive px-2">
+                  无法加载目录列表
+                </div>
+              ) : directoriesData?.success && directoriesData.directories ? (
+                directoriesData.directories.map((directory) => {
+                  const IconComponent = getDirectoryIcon(directory.icon);
+                  const isSelected = selectedDirectoryId === directory.id;
+
+                  return (
+                    <Button
+                      key={directory.id}
+                      variant={isSelected ? "default" : "ghost"}
+                      className="w-full justify-start gap-2"
+                      onClick={() => {
+                        setSelectedDirectoryId(directory.id);
+                        setCurrentDirectoryId(directory.id);
+                        // 重置当前路径，因为切换目录了
+                        if (directory.id !== selectedDirectoryId) {
+                          navigate({ to: "/files" });
+                        }
+                      }}
+                      title={directory.description}
+                    >
+                      <IconComponent className="h-4 w-4" />
+                      {directory.name}
+                      {directory.default && (
+                        <span className="ml-auto text-xs text-muted-foreground">
+                          默认
+                        </span>
+                      )}
+                    </Button>
+                  );
+                })
+              ) : (
+                <div className="text-xs text-muted-foreground px-2">
+                  没有配置存储目录
+                </div>
+              )}
             </nav>
           </div>
 
@@ -605,7 +768,20 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
 
           {/* 文件列表 - 可滚动区域 */}
           <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-4 md:pb-6">
-            {filesLoading ? (
+            {directoriesLoading ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">初始化存储目录中...</p>
+              </div>
+            ) : !selectedDirectoryId ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Folder className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">选择存储目录</h3>
+                <p className="text-muted-foreground text-center">
+                  请从左侧选择一个存储目录以查看文件
+                </p>
+              </div>
+            ) : filesLoading ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
                 <p className="text-muted-foreground">加载文件列表中...</p>
@@ -863,31 +1039,34 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
               </div>
             )}
 
-            {!filesLoading && !filesError && filteredFiles.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-16">
-                <div className="w-24 h-24 flex items-center justify-center rounded-3xl bg-gradient-to-br from-muted/30 to-muted/50 mb-6">
-                  <FolderOpen className="h-12 w-12 text-muted-foreground/60" />
+            {selectedDirectoryId &&
+              !filesLoading &&
+              !filesError &&
+              filteredFiles.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <div className="w-24 h-24 flex items-center justify-center rounded-3xl bg-gradient-to-br from-muted/30 to-muted/50 mb-6">
+                    <FolderOpen className="h-12 w-12 text-muted-foreground/60" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2 text-foreground">
+                    {searchQuery ? "未找到匹配的文件" : "文件夹为空"}
+                  </h3>
+                  <p className="text-muted-foreground text-center max-w-sm">
+                    {searchQuery
+                      ? "尝试使用不同的关键词搜索，或检查文件名拼写"
+                      : "此文件夹中还没有任何文件。上传一些文件来开始使用吧"}
+                  </p>
+                  {!searchQuery && (
+                    <Button
+                      variant="outline"
+                      className="mt-4 gap-2"
+                      onClick={() => setIsDrawerOpen(true)}
+                    >
+                      <Upload className="h-4 w-4" />
+                      上传文件
+                    </Button>
+                  )}
                 </div>
-                <h3 className="text-xl font-semibold mb-2 text-foreground">
-                  {searchQuery ? "未找到匹配的文件" : "文件夹为空"}
-                </h3>
-                <p className="text-muted-foreground text-center max-w-sm">
-                  {searchQuery
-                    ? "尝试使用不同的关键词搜索，或检查文件名拼写"
-                    : "此文件夹中还没有任何文件。上传一些文件来开始使用吧"}
-                </p>
-                {!searchQuery && (
-                  <Button
-                    variant="outline"
-                    className="mt-4 gap-2"
-                    onClick={() => setIsDrawerOpen(true)}
-                  >
-                    <Upload className="h-4 w-4" />
-                    上传文件
-                  </Button>
-                )}
-              </div>
-            )}
+              )}
           </div>
         </main>
       </div>

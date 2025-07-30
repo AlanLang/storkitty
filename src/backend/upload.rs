@@ -287,7 +287,11 @@ pub async fn init_upload_handler(
     let total_chunks = ((req.file_size as f64) / (chunk_size as f64)).ceil() as usize;
     
     // Create temporary directory
-    let temp_dir = { let config = upload_service.config.read().await; PathBuf::from(&config.files.root_directory) }.join("temp").join(upload_id.to_string());
+    let temp_dir = { 
+        let config = upload_service.config.read().await; 
+        let default_dir = config.get_default_directory().unwrap();
+        PathBuf::from(default_dir.path.as_ref().unwrap())
+    }.join("temp").join(upload_id.to_string());
     fs::create_dir_all(&temp_dir).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     
     let session = UploadSession {
@@ -382,7 +386,11 @@ pub async fn complete_upload_handler(
     let final_file_name = &session.file_name;
     
     // Determine final file path
-    let root_dir = { let config = upload_service.config.read().await; PathBuf::from(&config.files.root_directory) };
+    let root_dir = { 
+        let config = upload_service.config.read().await; 
+        let default_dir = config.get_default_directory().unwrap();
+        PathBuf::from(default_dir.path.as_ref().unwrap())
+    };
     let target_dir = if session.target_path.is_empty() {
         root_dir.clone()
     } else {
@@ -580,7 +588,11 @@ pub async fn simple_upload_handler(
     let final_file_name = &file_name;
     
     // Determine final file path
-    let root_dir = { let config = upload_service.config.read().await; PathBuf::from(&config.files.root_directory) };
+    let root_dir = { 
+        let config = upload_service.config.read().await; 
+        let default_dir = config.get_default_directory().unwrap();
+        PathBuf::from(default_dir.path.as_ref().unwrap())
+    };
     let target_dir = if target_path.is_empty() {
         root_dir.clone()
     } else {
@@ -635,13 +647,128 @@ pub async fn simple_upload_handler(
     }))
 }
 
-// Router setup
+// Simple upload with directory ID
+pub async fn simple_upload_with_directory_handler(
+    State(upload_service): State<Arc<UploadService>>,
+    headers: HeaderMap,
+    Path(directory_id): Path<String>,
+    mut multipart: Multipart,
+) -> Result<Json<CompleteUploadResponse>, StatusCode> {
+    // Verify authentication
+    let _username = upload_service.verify_auth(&headers).await?;
+    
+    // Get directory configuration
+    let config = upload_service.config.read().await;
+    let directory_config = config.get_directory_by_id(&directory_id)
+        .ok_or(StatusCode::NOT_FOUND)?;
+    
+    // Currently only support local storage
+    if directory_config.storage_type != "local" {
+        return Err(StatusCode::NOT_IMPLEMENTED);
+    }
+    
+    let mut file_name: Option<String> = None;
+    let mut file_data: Option<Bytes> = None;
+    let mut target_path: Option<String> = None;
+    
+    // Parse multipart form data
+    while let Some(field) = multipart.next_field().await.map_err(|_| StatusCode::BAD_REQUEST)? {
+        match field.name() {
+            Some("fileName") => {
+                let data = field.bytes().await.map_err(|_| StatusCode::BAD_REQUEST)?;
+                file_name = Some(String::from_utf8(data.to_vec()).map_err(|_| StatusCode::BAD_REQUEST)?);
+            }
+            Some("targetPath") => {
+                let data = field.bytes().await.map_err(|_| StatusCode::BAD_REQUEST)?;
+                target_path = Some(String::from_utf8(data.to_vec()).map_err(|_| StatusCode::BAD_REQUEST)?);
+            }
+            Some("file") => {
+                file_data = Some(field.bytes().await.map_err(|_| StatusCode::BAD_REQUEST)?);
+            }
+            _ => {}
+        }
+    }
+    
+    let file_name = file_name.ok_or(StatusCode::BAD_REQUEST)?;
+    let file_data = file_data.ok_or(StatusCode::BAD_REQUEST)?;
+    let target_path = target_path.unwrap_or_default();
+    
+    // Validate file name and path
+    validate_file_name(&file_name).map_err(|_| StatusCode::BAD_REQUEST)?;
+    if !target_path.is_empty() {
+        validate_path(&target_path).map_err(|_| StatusCode::BAD_REQUEST)?;
+    }
+    
+    // Check file size
+    if file_data.len() as u64 > MAX_FILE_SIZE {
+        return Err(StatusCode::PAYLOAD_TOO_LARGE);
+    }
+    
+    // Use original file name (allow overwrite)
+    let final_file_name = &file_name;
+    
+    // Determine final file path using specified directory
+    let root_dir = PathBuf::from(directory_config.path.as_ref().unwrap());
+    let target_dir = if target_path.is_empty() {
+        root_dir.clone()
+    } else {
+        root_dir.join(&target_path)
+    };
+    
+    fs::create_dir_all(&target_dir).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let final_path = target_dir.join(final_file_name);
+    
+    // Check if this is a pseudo-chunked upload completion marker
+    if file_name.ends_with(".upload_complete") {
+        match handle_pseudo_chunked_upload(&file_data, &target_dir, &root_dir, &file_name).await {
+            Ok(Some(reassembled_info)) => {
+                // Return info for the reassembled file instead of the marker
+                return Ok(Json(CompleteUploadResponse {
+                    file_path: reassembled_info.relative_path,
+                    file_info: FileInfo {
+                        name: reassembled_info.original_name,
+                        size: reassembled_info.file_size,
+                        mime_type: "application/octet-stream".to_string(),
+                    },
+                }));
+            }
+            Ok(None) => {
+                // No chunks found, just proceed as normal file
+            }
+            Err(e) => {
+                log::error!("Error handling pseudo-chunked upload: {}", e);
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        }
+    }
+    
+    // Write file normally
+    fs::write(&final_path, &file_data).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    
+    let relative_path = final_path
+        .strip_prefix(&root_dir)
+        .unwrap_or(&final_path)
+        .to_string_lossy()
+        .to_string();
+    
+    Ok(Json(CompleteUploadResponse {
+        file_path: relative_path,
+        file_info: FileInfo {
+            name: file_name,
+            size: file_data.len() as u64,
+            mime_type: "application/octet-stream".to_string(),
+        },
+    }))
+}
+
+// Router setup - unified directory-based API
 pub fn upload_router(upload_service: Arc<UploadService>, max_file_size_mb: u64) -> Router {
     let max_size_bytes = max_file_size_mb * 1024 * 1024;
     Router::new()
-        .route("/simple", post(simple_upload_handler))
+        // Unified directory-based upload endpoint
+        .route("/dir/{directory_id}/simple", post(simple_upload_with_directory_handler))
+        // Chunked upload support
         .route("/init", post(init_upload_handler))
-        // .route("/chunk", post(chunk_upload_handler))  // Temporarily disabled due to Axum compatibility
         .route("/complete", post(complete_upload_handler))
         .route("/status/{upload_id}", get(get_upload_status_handler))
         .route("/{upload_id}", delete(cancel_upload_handler))

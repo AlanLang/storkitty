@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use std::fs;
 use std::path::Path;
+use std::collections::HashMap;
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
@@ -8,6 +9,7 @@ pub struct Config {
     pub user: UserConfig,
     pub jwt: JwtConfig,
     pub files: FilesConfig,
+    pub storage: Option<StorageConfig>,
     pub security: SecurityConfig,
 }
 
@@ -32,7 +34,6 @@ pub struct JwtConfig {
 
 #[derive(Debug, Deserialize)]
 pub struct FilesConfig {
-    pub root_directory: String,
     pub max_file_size: u64,
     pub allowed_extensions: Vec<String>,
     pub blocked_extensions: Vec<String>,
@@ -43,6 +44,23 @@ pub struct SecurityConfig {
     pub allow_mkdir: bool,
     pub allow_delete: bool,
     pub allow_download: bool,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct StorageConfig {
+    pub directories: Vec<DirectoryConfig>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct DirectoryConfig {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    pub icon: String,
+    pub default: bool,
+    pub storage_type: String,
+    pub path: Option<String>, // 本地存储路径
+    pub config: Option<HashMap<String, String>>, // 云存储配置
 }
 
 impl Config {
@@ -64,5 +82,29 @@ impl Config {
             .map_err(|e| anyhow::anyhow!("配置文件格式错误: {}", e))?;
             
         Ok(config)
+    }
+    
+    /// 获取可用的存储目录列表
+    pub fn get_storage_directories(&self) -> Vec<DirectoryConfig> {
+        if let Some(storage) = &self.storage {
+            storage.directories.clone()
+        } else {
+            // 如果没有配置多目录，返回空列表
+            vec![]
+        }
+    }
+    
+    /// 获取默认存储目录
+    pub fn get_default_directory(&self) -> Option<DirectoryConfig> {
+        self.get_storage_directories()
+            .into_iter()
+            .find(|dir| dir.default)
+    }
+    
+    /// 根据ID获取存储目录
+    pub fn get_directory_by_id(&self, id: &str) -> Option<DirectoryConfig> {
+        self.get_storage_directories()
+            .into_iter()
+            .find(|dir| dir.id == id)
     }
 }

@@ -5,10 +5,12 @@ import {
   useVerifyTokenQuery,
 } from "../hooks/useAuthQueries";
 import type { FileConfigInfo, LoginRequest, UserInfo } from "../types/auth";
+import type { DirectoryInfo } from "../types/files";
 
 export interface AuthContextType {
   user: UserInfo | null;
   fileConfig: FileConfigInfo | null;
+  directories: DirectoryInfo[] | null;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -78,12 +80,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // 构建认证状态
   const user = verifyResponse?.user || null;
   const fileConfig = verifyResponse?.file_config || null;
+  const directories = verifyResponse?.directories || null;
   const isAuthenticated = !!user && !!token && !verifyError;
   const loginError = loginMutation.error?.message || null;
 
   const value: AuthContextType = {
     user,
     fileConfig,
+    directories,
     token,
     isAuthenticated,
     isLoading,

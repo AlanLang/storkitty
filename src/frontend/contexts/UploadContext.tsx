@@ -22,10 +22,23 @@ export function UploadProvider({ children }: UploadProviderProps) {
   const [onUploadComplete, setOnUploadComplete] = useState<
     ((results: UploadResponse[]) => void) | undefined
   >();
+  const [currentDirectoryId, setCurrentDirectoryId] = useState<
+    string | undefined
+  >();
 
   const addFiles = useCallback(
-    (files: File[], _targetPath?: string, maxSizeMB?: number) => {
+    (
+      files: File[],
+      _targetPath?: string,
+      maxSizeMB?: number,
+      directoryId?: string,
+    ) => {
       setGlobalError(null);
+
+      // Update currentDirectoryId if a specific directoryId is provided
+      if (directoryId && directoryId !== currentDirectoryId) {
+        setCurrentDirectoryId(directoryId);
+      }
 
       const newItems: UploadItem[] = [];
 
@@ -45,7 +58,7 @@ export function UploadProvider({ children }: UploadProviderProps) {
 
       setUploadItems((prev) => [...prev, ...newItems]);
     },
-    [],
+    [currentDirectoryId],
   );
 
   const removeFile = useCallback((id: string) => {
@@ -73,7 +86,7 @@ export function UploadProvider({ children }: UploadProviderProps) {
   }, []);
 
   const startUpload = useCallback(
-    async (targetPath?: string) => {
+    async (targetPath?: string, directoryId?: string) => {
       const validItems = uploadItems.filter(
         (item) => item.status === "pending",
       );
@@ -81,6 +94,9 @@ export function UploadProvider({ children }: UploadProviderProps) {
 
       setIsUploading(true);
       setGlobalError(null);
+
+      // Use provided directoryId or fall back to currentDirectoryId
+      const activeDirectoryId = directoryId || currentDirectoryId;
 
       try {
         const results: UploadResponse[] = [];
@@ -101,49 +117,56 @@ export function UploadProvider({ children }: UploadProviderProps) {
 
             if (item.isChunked) {
               // Use chunked upload for large files
-              const session = createChunkedUploadSession(item.file, {
-                targetPath,
-                onProgress: (progress) => {
-                  setUploadItems((prev) =>
-                    prev.map((prevItem) =>
-                      prevItem.id === item.id
-                        ? {
-                            ...prevItem,
-                            progress: progress.progress,
-                            uploadProgress: progress,
-                          }
-                        : prevItem,
-                    ),
-                  );
+              if (!activeDirectoryId) {
+                throw new Error("Directory ID is required for chunked upload");
+              }
+              const session = createChunkedUploadSession(
+                item.file,
+                activeDirectoryId,
+                {
+                  targetPath,
+                  onProgress: (progress) => {
+                    setUploadItems((prev) =>
+                      prev.map((prevItem) =>
+                        prevItem.id === item.id
+                          ? {
+                              ...prevItem,
+                              progress: progress.progress,
+                              uploadProgress: progress,
+                            }
+                          : prevItem,
+                      ),
+                    );
+                  },
+                  onError: (error) => {
+                    setUploadItems((prev) =>
+                      prev.map((prevItem) =>
+                        prevItem.id === item.id
+                          ? {
+                              ...prevItem,
+                              status: "error" as const,
+                              error: error.message,
+                            }
+                          : prevItem,
+                      ),
+                    );
+                  },
+                  onComplete: (uploadResult) => {
+                    setUploadItems((prev) =>
+                      prev.map((prevItem) =>
+                        prevItem.id === item.id
+                          ? {
+                              ...prevItem,
+                              status: "completed" as const,
+                              progress: 100,
+                              result: uploadResult,
+                            }
+                          : prevItem,
+                      ),
+                    );
+                  },
                 },
-                onError: (error) => {
-                  setUploadItems((prev) =>
-                    prev.map((prevItem) =>
-                      prevItem.id === item.id
-                        ? {
-                            ...prevItem,
-                            status: "error" as const,
-                            error: error.message,
-                          }
-                        : prevItem,
-                    ),
-                  );
-                },
-                onComplete: (uploadResult) => {
-                  setUploadItems((prev) =>
-                    prev.map((prevItem) =>
-                      prevItem.id === item.id
-                        ? {
-                            ...prevItem,
-                            status: "completed" as const,
-                            progress: 100,
-                            result: uploadResult,
-                          }
-                        : prevItem,
-                    ),
-                  );
-                },
-              });
+              );
 
               // Store the session for potential cancellation
               setUploadItems((prev) =>
@@ -172,9 +195,14 @@ export function UploadProvider({ children }: UploadProviderProps) {
                 startChunkedUpload(session);
               });
             } else {
-              // Use simple upload for small files
+              // Use simple upload for small files (unified directory API)
+              if (!activeDirectoryId) {
+                throw new Error("No directory selected for upload");
+              }
+
               const uploadResult = await uploadFiles(
                 [item.file],
+                activeDirectoryId,
                 targetPath,
                 (_, progress) => {
                   setUploadItems((prev) =>
@@ -218,7 +246,7 @@ export function UploadProvider({ children }: UploadProviderProps) {
         setIsUploading(false);
       }
     },
-    [uploadItems, onUploadComplete],
+    [uploadItems, onUploadComplete, currentDirectoryId],
   );
 
   const clearCompleted = useCallback(() => {
@@ -272,6 +300,8 @@ export function UploadProvider({ children }: UploadProviderProps) {
     setOnUploadComplete: useCallback((callback) => {
       setOnUploadComplete(() => callback);
     }, []),
+    currentDirectoryId,
+    setCurrentDirectoryId,
   };
 
   return (

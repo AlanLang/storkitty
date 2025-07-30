@@ -1,3 +1,5 @@
+import type { DirectoryInfo } from "./files";
+
 export interface LoginRequest {
   username: string;
   password: string;
@@ -23,6 +25,7 @@ export interface FileConfigInfo {
 export interface VerifyResponse {
   user: UserInfo;
   file_config: FileConfigInfo;
+  directories: DirectoryInfo[];
 }
 
 export interface SetupRequest {

@@ -7,6 +7,15 @@ export interface FileInfo {
   items?: number; // 文件夹中的项目数量
 }
 
+export interface DirectoryInfo {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  default: boolean;
+  storage_type: string;
+}
+
 export interface FilesResponse {
   success: boolean;
   files: FileInfo[];

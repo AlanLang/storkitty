@@ -22,9 +22,13 @@ import { Card } from "./ui/card";
 
 interface UploadDrawerProps {
   targetPath?: string;
+  directoryId?: string;
 }
 
-export function UploadDrawer({ targetPath }: UploadDrawerProps = {}) {
+export function UploadDrawer({
+  targetPath,
+  directoryId,
+}: UploadDrawerProps = {}) {
   const router = useRouter();
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -87,9 +91,14 @@ export function UploadDrawer({ targetPath }: UploadDrawerProps = {}) {
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
-      addFiles(acceptedFiles, currentPath, fileConfig?.max_file_size_mb);
+      addFiles(
+        acceptedFiles,
+        currentPath,
+        fileConfig?.max_file_size_mb,
+        directoryId,
+      );
     },
-    [addFiles, currentPath, fileConfig?.max_file_size_mb],
+    [addFiles, currentPath, fileConfig?.max_file_size_mb, directoryId],
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -100,7 +109,7 @@ export function UploadDrawer({ targetPath }: UploadDrawerProps = {}) {
   });
 
   const handleStartUpload = () => {
-    startUpload(currentPath);
+    startUpload(currentPath, directoryId);
   };
 
   const stats = getUploadStats();
