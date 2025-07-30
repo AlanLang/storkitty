@@ -10,6 +10,7 @@ use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, TokenData, Validation};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use tokio::sync::RwLock;
 
 use crate::backend::config::Config;
 
@@ -53,21 +54,23 @@ pub struct VerifyResponse {
 }
 
 pub struct AuthService {
-    config: Arc<Config>,
+    config: Arc<RwLock<Config>>,
 }
 
 impl AuthService {
-    pub fn new(config: Arc<Config>) -> Self {
+    pub fn new(config: Arc<RwLock<Config>>) -> Self {
         Self { config }
     }
 
-    pub fn verify_password(&self, password: &str) -> bool {
-        bcrypt::verify(password, &self.config.user.password_hash).unwrap_or(false)
+    pub async fn verify_password(&self, password: &str) -> bool {
+        let config = self.config.read().await;
+        bcrypt::verify(password, &config.user.password_hash).unwrap_or(false)
     }
 
-    pub fn generate_token(&self, username: &str) -> anyhow::Result<String> {
+    pub async fn generate_token(&self, username: &str) -> anyhow::Result<String> {
+        let config = self.config.read().await;
         let now = Utc::now();
-        let exp = now + Duration::hours(self.config.jwt.expiration_hours as i64);
+        let exp = now + Duration::hours(config.jwt.expiration_hours as i64);
 
         let claims = Claims {
             sub: username.to_string(),
@@ -78,16 +81,17 @@ impl AuthService {
         let token = encode(
             &Header::default(),
             &claims,
-            &EncodingKey::from_secret(self.config.jwt.secret_key.as_ref()),
+            &EncodingKey::from_secret(config.jwt.secret_key.as_ref()),
         )?;
 
         Ok(token)
     }
 
-    pub fn verify_token(&self, token: &str) -> anyhow::Result<TokenData<Claims>> {
+    pub async fn verify_token(&self, token: &str) -> anyhow::Result<TokenData<Claims>> {
+        let config = self.config.read().await;
         let token_data = decode::<Claims>(
             token,
-            &DecodingKey::from_secret(self.config.jwt.secret_key.as_ref()),
+            &DecodingKey::from_secret(config.jwt.secret_key.as_ref()),
             &Validation::default(),
         )?;
 
@@ -99,17 +103,29 @@ pub async fn login_handler(
     State(auth_service): State<Arc<AuthService>>,
     Json(request): Json<LoginRequest>,
 ) -> Result<Json<LoginResponse>, StatusCode> {
+    // 检查是否需要初始化设置
+    let config = auth_service.config.read().await;
+    if config.user.username.trim().is_empty() || 
+       config.user.password_hash.trim().is_empty() {
+        return Ok(Json(LoginResponse {
+            success: false,
+            token: None,
+            message: "系统需要初始化，请先设置管理员账户".to_string(),
+        }));
+    }
+
     // 验证用户名
-    if request.username != auth_service.config.user.username {
+    if request.username != config.user.username {
         return Ok(Json(LoginResponse {
             success: false,
             token: None,
             message: "用户名或密码错误".to_string(),
         }));
     }
+    drop(config); // 释放读锁
 
     // 验证密码
-    if !auth_service.verify_password(&request.password) {
+    if !auth_service.verify_password(&request.password).await {
         return Ok(Json(LoginResponse {
             success: false,
             token: None,
@@ -118,7 +134,7 @@ pub async fn login_handler(
     }
 
     // 生成 JWT token
-    match auth_service.generate_token(&request.username) {
+    match auth_service.generate_token(&request.username).await {
         Ok(token) => Ok(Json(LoginResponse {
             success: true,
             token: Some(token),
@@ -142,17 +158,18 @@ pub async fn verify_handler(
         None => return Err(StatusCode::UNAUTHORIZED),
     };
 
-    match auth_service.verify_token(token) {
+    match auth_service.verify_token(token).await {
         Ok(token_data) => {
+            let config = auth_service.config.read().await;
             let user_info = UserInfo {
                 username: token_data.claims.sub,
-                email: auth_service.config.user.email.clone(),
+                email: config.user.email.clone(),
             };
             
             let file_config = FileConfigInfo {
-                max_file_size_mb: auth_service.config.files.max_file_size,
-                allowed_extensions: auth_service.config.files.allowed_extensions.clone(),
-                blocked_extensions: auth_service.config.files.blocked_extensions.clone(),
+                max_file_size_mb: config.files.max_file_size,
+                allowed_extensions: config.files.allowed_extensions.clone(),
+                blocked_extensions: config.files.blocked_extensions.clone(),
             };
             
             let response = VerifyResponse {

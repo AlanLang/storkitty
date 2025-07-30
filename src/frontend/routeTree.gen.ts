@@ -9,11 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from "./routes/__root"
+import { Route as SetupRouteImport } from "./routes/setup"
 import { Route as LoginRouteImport } from "./routes/login"
 import { Route as IndexRouteImport } from "./routes/index"
 import { Route as FilesIndexRouteImport } from "./routes/files.index"
 import { Route as FilesSplatRouteImport } from "./routes/files.$"
 
+const SetupRoute = SetupRouteImport.update({
+  id: "/setup",
+  path: "/setup",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: "/login",
   path: "/login",
@@ -38,12 +44,14 @@ const FilesSplatRoute = FilesSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
   "/login": typeof LoginRoute
+  "/setup": typeof SetupRoute
   "/files/$": typeof FilesSplatRoute
   "/files": typeof FilesIndexRoute
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute
   "/login": typeof LoginRoute
+  "/setup": typeof SetupRoute
   "/files/$": typeof FilesSplatRoute
   "/files": typeof FilesIndexRoute
 }
@@ -51,26 +59,35 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   "/": typeof IndexRoute
   "/login": typeof LoginRoute
+  "/setup": typeof SetupRoute
   "/files/$": typeof FilesSplatRoute
   "/files/": typeof FilesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: "/" | "/login" | "/files/$" | "/files"
+  fullPaths: "/" | "/login" | "/setup" | "/files/$" | "/files"
   fileRoutesByTo: FileRoutesByTo
-  to: "/" | "/login" | "/files/$" | "/files"
-  id: "__root__" | "/" | "/login" | "/files/$" | "/files/"
+  to: "/" | "/login" | "/setup" | "/files/$" | "/files"
+  id: "__root__" | "/" | "/login" | "/setup" | "/files/$" | "/files/"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
+  SetupRoute: typeof SetupRoute
   FilesSplatRoute: typeof FilesSplatRoute
   FilesIndexRoute: typeof FilesIndexRoute
 }
 
 declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
+    "/setup": {
+      id: "/setup"
+      path: "/setup"
+      fullPath: "/setup"
+      preLoaderRoute: typeof SetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/login": {
       id: "/login"
       path: "/login"
@@ -105,6 +122,7 @@ declare module "@tanstack/react-router" {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
+  SetupRoute: SetupRoute,
   FilesSplatRoute: FilesSplatRoute,
   FilesIndexRoute: FilesIndexRoute,
 }

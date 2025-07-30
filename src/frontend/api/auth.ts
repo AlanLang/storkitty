@@ -1,6 +1,9 @@
 import type {
   LoginRequest,
   LoginResponse,
+  SetupRequest,
+  SetupResponse,
+  SetupStatusResponse,
   VerifyResponse,
 } from "../types/auth";
 
@@ -72,6 +75,24 @@ export const authApi = {
       headers: {
         Authorization: `Bearer ${token}`,
       },
+    });
+  },
+};
+
+// 系统设置相关 API 函数
+export const setupApi = {
+  // 检查是否需要初始化设置
+  async checkStatus(): Promise<SetupStatusResponse> {
+    return apiRequest<SetupStatusResponse>("/setup/status", {
+      method: "GET",
+    });
+  },
+
+  // 初始化系统设置
+  async initialize(setupData: SetupRequest): Promise<SetupResponse> {
+    return apiRequest<SetupResponse>("/setup/init", {
+      method: "POST",
+      body: JSON.stringify(setupData),
     });
   },
 };

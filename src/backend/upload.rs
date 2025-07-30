@@ -13,6 +13,7 @@ use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
 };
+use tokio::sync::RwLock;
 use tokio::{fs, io::AsyncWriteExt};
 use uuid::Uuid;
 use serde_json;
@@ -266,7 +267,7 @@ pub async fn init_upload_handler(
     Json(req): Json<InitUploadRequest>,
 ) -> Result<Json<InitUploadResponse>, StatusCode> {
     // Verify authentication
-    let username = upload_service.verify_auth(&headers)?;
+    let username = upload_service.verify_auth(&headers).await?;
     
     // Validate request
     validate_file_name(&req.file_name).map_err(|_| StatusCode::BAD_REQUEST)?;
@@ -286,7 +287,7 @@ pub async fn init_upload_handler(
     let total_chunks = ((req.file_size as f64) / (chunk_size as f64)).ceil() as usize;
     
     // Create temporary directory
-    let temp_dir = PathBuf::from(&upload_service.config.files.root_directory).join("temp").join(upload_id.to_string());
+    let temp_dir = { let config = upload_service.config.read().await; PathBuf::from(&config.files.root_directory) }.join("temp").join(upload_id.to_string());
     fs::create_dir_all(&temp_dir).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     
     let session = UploadSession {
@@ -322,7 +323,7 @@ pub async fn chunk_upload_handler(
     let upload_id = params.upload_id;
     let chunk_index = params.chunk_index;
     // Verify authentication
-    let _username = upload_service.verify_auth(&headers)?;
+    let _username = upload_service.verify_auth(&headers).await?;
     
     // Read chunk data from request body
     use axum::body::to_bytes;
@@ -365,7 +366,7 @@ pub async fn complete_upload_handler(
     Json(upload_id): Json<Uuid>,
 ) -> Result<Json<CompleteUploadResponse>, StatusCode> {
     // Verify authentication
-    let _username = upload_service.verify_auth(&headers)?;
+    let _username = upload_service.verify_auth(&headers).await?;
     // Get and remove upload session
     let session = {
         let mut store = upload_service.upload_store.lock().unwrap();
@@ -381,7 +382,7 @@ pub async fn complete_upload_handler(
     let final_file_name = &session.file_name;
     
     // Determine final file path
-    let root_dir = PathBuf::from(&upload_service.config.files.root_directory);
+    let root_dir = { let config = upload_service.config.read().await; PathBuf::from(&config.files.root_directory) };
     let target_dir = if session.target_path.is_empty() {
         root_dir.clone()
     } else {
@@ -425,7 +426,7 @@ pub async fn cancel_upload_handler(
     headers: HeaderMap,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     // Verify authentication
-    let _username = upload_service.verify_auth(&headers)?;
+    let _username = upload_service.verify_auth(&headers).await?;
     // Get and remove upload session
     let session = {
         let mut store = upload_service.upload_store.lock().unwrap();
@@ -445,7 +446,7 @@ pub async fn get_upload_status_handler(
     headers: HeaderMap,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     // Verify authentication
-    let _username = upload_service.verify_auth(&headers)?;
+    let _username = upload_service.verify_auth(&headers).await?;
     
     // Get upload session
     let store = upload_service.upload_store.lock().unwrap();
@@ -493,13 +494,13 @@ pub async fn cleanup_expired_sessions(upload_store: UploadStore) {
 
 // Upload service to manage state
 pub struct UploadService {
-    config: Arc<Config>,
+    config: Arc<RwLock<Config>>,
     auth_service: Arc<AuthService>,
     upload_store: UploadStore,
 }
 
 impl UploadService {
-    pub fn new(config: Arc<Config>, auth_service: Arc<AuthService>) -> Self {
+    pub fn new(config: Arc<RwLock<Config>>, auth_service: Arc<AuthService>) -> Self {
         Self {
             config,
             auth_service,
@@ -511,7 +512,7 @@ impl UploadService {
         self.upload_store.clone()
     }
     
-    fn verify_auth(&self, headers: &HeaderMap) -> Result<String, StatusCode> {
+    async fn verify_auth(&self, headers: &HeaderMap) -> Result<String, StatusCode> {
         let auth_header = headers
             .get("Authorization")
             .and_then(|value| value.to_str().ok())
@@ -522,7 +523,7 @@ impl UploadService {
             None => return Err(StatusCode::UNAUTHORIZED),
         };
 
-        match self.auth_service.verify_token(token) {
+        match self.auth_service.verify_token(token).await {
             Ok(token_data) => Ok(token_data.claims.sub),
             Err(_) => Err(StatusCode::UNAUTHORIZED),
         }
@@ -536,7 +537,7 @@ pub async fn simple_upload_handler(
     mut multipart: Multipart,
 ) -> Result<Json<CompleteUploadResponse>, StatusCode> {
     // Verify authentication
-    let _username = upload_service.verify_auth(&headers)?;
+    let _username = upload_service.verify_auth(&headers).await?;
     
     let mut file_name: Option<String> = None;
     let mut file_data: Option<Bytes> = None;
@@ -579,7 +580,7 @@ pub async fn simple_upload_handler(
     let final_file_name = &file_name;
     
     // Determine final file path
-    let root_dir = PathBuf::from(&upload_service.config.files.root_directory);
+    let root_dir = { let config = upload_service.config.read().await; PathBuf::from(&config.files.root_directory) };
     let target_dir = if target_path.is_empty() {
         root_dir.clone()
     } else {

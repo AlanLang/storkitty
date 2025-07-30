@@ -24,3 +24,19 @@ export interface VerifyResponse {
   user: UserInfo;
   file_config: FileConfigInfo;
 }
+
+export interface SetupRequest {
+  username: string;
+  password: string;
+  email: string;
+}
+
+export interface SetupResponse {
+  success: boolean;
+  message: string;
+  token?: string;
+}
+
+export interface SetupStatusResponse {
+  needs_setup: boolean;
+}

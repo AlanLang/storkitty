@@ -5,10 +5,12 @@
 ## 功能特性
 
 ### 🔐 用户认证系统
-- 安全的 JWT Token 认证
+- 安全的 JWT Token 认证（异步安全配置管理）
+- 交互式初始设置向导
+- 热配置重载（无需重启服务器）
 - 用户登录/登出功能
 - 会话状态管理和自动恢复
-- 演示账号支持（用户名: admin, 密码: admin123）
+- 安全优先：无默认凭据，配置文件自动 gitignore
 
 ### 📁 文件管理功能
 - 文件和文件夹浏览
@@ -58,7 +60,7 @@ sudo ./install.sh
 
 安装完成后，Storkitty 将作为系统服务运行：
 - 🌐 访问地址: http://localhost:3330
-- 👤 默认账号: `admin` / `admin123`
+- 🛠️ **首次访问**: 系统将自动引导您完成初始设置，创建管理员账户
 - 📁 数据目录: `/etc/storkitty/uploads`
 - ⚙️ 配置文件: `/etc/storkitty/config.toml`
 
@@ -101,12 +103,20 @@ journalctl -u storkitty -f
 - Bun（推荐）或 npm
 
 ### 初始配置
+
+**自动化设置（推荐）**：
+系统首次启动时会自动检测配置状态，如需初始化将引导您完成设置。
+
+**手动准备配置文件**：
 ```bash
-# 复制配置文件模板
+# 复制配置文件模板（或创建空白配置）
 cp config.example.toml config.toml
 
-# 编辑配置文件（可选，默认设置可用于开发）
-# nano config.toml
+# 确保用户部分为空（触发初始化向导）
+# [user]
+# username = ""
+# password_hash = ""
+# email = ""
 ```
 
 ### 安装依赖
@@ -129,6 +139,7 @@ cargo run --bin storkitty
 # 3. 访问应用
 # 前端: http://localhost:3001
 # 后端API: http://localhost:3330/api
+# 首次访问会引导您完成初始设置
 ```
 
 ### 生产构建
@@ -144,6 +155,7 @@ cargo build --release
 
 # 4. 访问应用
 # http://localhost:3330
+# 首次访问会自动引导设置管理员账户
 ```
 
 ## 项目结构
@@ -153,12 +165,13 @@ storkitty/
 ├── src/
 │   ├── backend/          # Rust 后端代码
 │   │   ├── mod.rs        # 模块导出
-│   │   ├── auth.rs       # 认证模块
+│   │   ├── auth.rs       # 认证模块（异步安全）
 │   │   ├── files.rs      # 文件管理模块
-│   │   └── config.rs     # 配置管理
+│   │   ├── setup.rs      # 初始设置和配置管理
+│   │   └── config.rs     # 配置文件解析
 │   ├── frontend/         # React 前端代码
 │   │   ├── api/          # API 客户端
-│   │   │   ├── auth.ts   # 认证 API
+│   │   │   ├── auth.ts   # 认证 & 设置 API
 │   │   │   └── files.ts  # 文件管理 API
 │   │   ├── types/        # TypeScript 类型定义
 │   │   ├── components/   # UI 组件
@@ -184,9 +197,9 @@ host = "0.0.0.0"
 port = 3330
 
 [user]
-username = "admin"
-password_hash = "$2b$12$..."  # 使用 cargo run --bin hash_password 生成
-email = "admin@storkitty.com"
+username = ""  # 留空将触发初始化向导
+password_hash = ""
+email = ""
 
 [jwt]
 secret_key = "your-secret-key"
@@ -206,14 +219,24 @@ allow_download = true
 
 ### API 端点
 
+#### 系统初始化
+- `GET /api/setup/status` - 检查系统初始化状态
+- `POST /api/setup/user` - 初始化管理员用户（返回JWT Token）
+
 #### 认证
 - `POST /api/auth/login` - 用户登录
-- `POST /api/auth/verify` - Token 验证
+- `POST /api/auth/verify` - Token 验证（包含用户信息和文件配置）
 
 #### 文件管理
 - `GET /api/files/list` - 获取根目录文件列表
 - `GET /api/files/list/{path}` - 获取指定路径文件列表
 - `GET /api/files/storage` - 获取存储空间信息
+- `DELETE /api/files/delete/{path}` - 删除文件或目录
+- `POST /api/files/mkdir/{path}` - 创建新目录
+- `GET /api/files/download/{path}` - 文件下载（无需认证）
+
+#### 文件上传
+- `POST /api/upload/simple` - 简单文件上传
 
 ## 开发规范
 

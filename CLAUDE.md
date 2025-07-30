@@ -25,7 +25,8 @@ The application uses a dual-language architecture where:
 - Rust backend code is in `src/main.rs` with modular `src/backend/` directory
 - Built frontend assets are output to `web/` directory
 - Rust server serves files from `web/` directory and provides API endpoints on port 3330
-- User credentials and configuration stored in `config.toml` (gitignored, use `config.example.toml` as template)
+- User credentials and configuration stored in `config.toml` (gitignored for security)
+- Initial setup wizard for first-time configuration
 - File storage in configurable `uploads/` directory (gitignored)
 
 ## Development Commands
@@ -48,16 +49,22 @@ The application uses a dual-language architecture where:
 - `cargo build` - Build the Rust application
 - `cargo build --release` - Build optimized release version
 
-### Initial Setup
-1. Copy `config.example.toml` to `config.toml` (configuration file is gitignored)
-2. Edit `config.toml` to customize your settings (optional - defaults work for development)
+### Initial Setup (Automatic)
+The application features an automatic setup wizard for first-time use:
 
-### Full Development Workflow
-1. Run `bun install` to install frontend dependencies
-2. Run `bun run build` to build the frontend
-3. Run `cargo run --bin storkitty` to start the backend server
-4. Access the application at `http://localhost:3330`
-5. Login with credentials: username `admin`, password `admin123`
+1. Copy `config.example.toml` to `config.toml` (or create with empty user credentials)
+2. Run `bun install` to install frontend dependencies  
+3. Run `bun run build` to build the frontend
+4. Run `cargo run --bin storkitty` to start the backend server
+5. Access the application at `http://localhost:3330`
+6. **First visit**: System will automatically redirect to setup wizard (`/setup`) if no admin user is configured
+7. **Complete setup**: Enter your desired admin username, password, and email
+8. **Automatic login**: System will immediately log you in and redirect to file management interface
+
+### Development Workflow
+- **Hot Configuration Reload**: Changes to user settings take effect immediately without server restart
+- **Secure by Default**: No default credentials - admin account is created during initial setup
+- **Route Protection**: Automatic redirection based on authentication and setup status
 
 ## Code Style Rules
 
@@ -78,17 +85,24 @@ The application uses a dual-language architecture where:
 ## Features
 
 ### Authentication System
-- **JWT-based authentication**: Secure token-based session management
+- **JWT-based authentication**: Secure token-based session management with async-safe configuration access
 - **Password hashing**: bcrypt with configurable cost for secure password storage
-- **Route protection**: Frontend routes automatically redirect unauthenticated users
+- **Initial Setup Wizard**: Interactive first-time setup for admin account creation
+- **Hot Configuration Reload**: Configuration changes apply immediately without server restart
+- **Route protection**: Intelligent routing based on authentication and setup status
 - **Token persistence**: Automatic login state restoration using localStorage
 - **Configuration-based users**: Simple TOML file for user management (no database required)
+- **Security-first**: No default credentials, gitignored configuration file
 
 ### API Endpoints
 
 #### Authentication
 - `POST /api/auth/login` - User authentication (returns JWT token)
 - `POST /api/auth/verify` - Token verification (returns user info + file configuration)
+
+#### System Setup
+- `GET /api/setup/status` - Check if system needs initial setup (returns needs_setup boolean)
+- `POST /api/setup/init` - Initialize system with admin account (returns success status + JWT token)
 
 #### File Management
 - `GET /api/files/list` - Get root directory file list
@@ -111,18 +125,19 @@ The application uses a dual-language architecture where:
 │   │   └── hash_password.rs    # Password hashing utility
 │   ├── backend/
 │   │   ├── mod.rs              # Backend module exports
-│   │   ├── auth.rs             # Authentication logic and handlers
+│   │   ├── auth.rs             # Authentication logic and handlers (async-safe)
 │   │   ├── files.rs            # File management logic and handlers
 │   │   ├── upload.rs           # File upload logic and handlers
+│   │   ├── setup.rs            # Initial setup and configuration management
 │   │   └── config.rs           # Configuration file parsing
 │   └── frontend/
 │       ├── index.tsx           # Main app component with router
 │       ├── routeTree.gen.ts    # Auto-generated route tree (do not edit)
 │       ├── types/
-│       │   ├── auth.ts         # Authentication type definitions
+│       │   ├── auth.ts         # Authentication & setup type definitions
 │       │   └── files.ts        # File management type definitions
 │       ├── api/
-│       │   ├── auth.ts         # Authentication API functions and error handling
+│       │   ├── auth.ts         # Authentication & setup API functions with error handling
 │       │   ├── files.ts        # File management API functions
 │       │   ├── upload.ts       # Simple file upload API functions and utilities
 │       │   └── chunkedUpload.ts # Chunked upload API for large files
@@ -150,7 +165,8 @@ The application uses a dual-language architecture where:
 │       │   │   ├── alert.tsx   # Alert component
 │       │   │   ├── dialog.tsx  # Dialog component
 │       │   │   └── dropdown-menu.tsx # Dropdown menu component
-│       │   ├── LoginForm.tsx   # Login form component
+│       │   ├── LoginForm.tsx   # Login form component (clean, no demo credentials)
+│       │   ├── SetupForm.tsx   # Initial setup form component with validation
 │       │   ├── CreateDirectoryDialog.tsx # Directory creation dialog with validation
 │       │   ├── DeleteConfirmDialog.tsx # File deletion confirmation dialog
 │       │   ├── UploadDrawer.tsx # Upload drawer component with progress tracking
@@ -158,20 +174,29 @@ The application uses a dual-language architecture where:
 │       │   └── FilesPageComponent.tsx # Shared file management component
 │       └── routes/             # File-based route definitions
 │           ├── __root.tsx      # Root layout with AuthProvider
-│           ├── index.tsx       # Home route (auto-redirect)
+│           ├── index.tsx       # Home route (intelligent auto-redirect)
+│           ├── setup.tsx       # Initial setup wizard route
 │           ├── login.tsx       # Login page route
 │           ├── files.index.tsx # Root directory file browser
 │           └── files.$path.tsx # Dynamic path file browser
 ```
 
-### User Management
-- Default user: `admin` / `admin123`
-- **First setup**: Copy `config.example.toml` to `config.toml` before starting the server
-- To add/modify users: Edit `config.toml` under `[user]` section  
-- To generate password hashes: Run `cargo run --bin hash_password`
-- JWT secret and expiration configurable in `config.toml` under `[jwt]` section
-- Server host and port configurable in `config.toml` under `[server]` section
-- Security permissions configurable in `config.toml` under `[security]` section (allow_mkdir, allow_delete, allow_download)
+### User Management & Initial Setup
+- **No default credentials**: System is secure by default with no pre-configured admin account
+- **Interactive Setup Wizard**: First-time users are guided through initial setup at `/setup`
+- **Automatic Configuration**: Setup wizard creates admin account and saves to `config.toml`
+- **Hot Configuration Reload**: Changes take effect immediately without server restart
+- **Setup Flow**:
+  1. Copy `config.example.toml` to `config.toml` (or create with empty user section)
+  2. Start server and access web interface
+  3. System automatically redirects to setup wizard if no admin is configured
+  4. Enter desired username, password, and email
+  5. System immediately logs you in and redirects to file management
+- **Configuration Management**:
+  - JWT secret and expiration configurable in `config.toml` under `[jwt]` section
+  - Server host and port configurable in `config.toml` under `[server]` section  
+  - Security permissions configurable in `config.toml` under `[security]` section (allow_mkdir, allow_delete, allow_download)
+  - To manually generate password hashes: Run `cargo run --bin hash_password`
 - **Security**: `config.toml` is gitignored to prevent accidental credential commits
 
 ### File Management
@@ -243,16 +268,21 @@ The application uses a dual-language architecture where:
 - JWT tokens expire after 24 hours by default (configurable)
 - CORS is enabled for development (all origins allowed)
 - **File-based routing**: Routes in `src/frontend/routes/` become URL paths with nested layout support
-- **Route structure**:
-  - `/` - Home page with authentication-based redirect
-  - `/login` - User authentication page  
+- **Intelligent Route Structure**:
+  - `/` - Home page with intelligent redirect based on system status
+  - `/setup` - Initial setup wizard (automatic redirect if system needs setup)
+  - `/login` - User authentication page (redirects if setup needed)
   - `/files` - Root directory file browser (files.index.tsx)
   - `/files/folder` - Dynamic folder navigation (files.$path.tsx)
   - `/files/folder/subfolder` - Deep folder navigation with URL encoding
+- **Smart Routing Logic**:
+  - System automatically checks setup status and authentication state
+  - Redirects to setup wizard if no admin user is configured
+  - Redirects to login if setup is complete but user not authenticated
+  - Redirects to files if user is authenticated
+- **Route Protection**: Multi-layer protection (setup status → authentication → authorization)
 - **Index routes**: Uses `files.index.tsx` for `/files` to ensure proper route matching
-- **Dynamic parameters**: Path parameters automatically URL-encoded/decoded for special characters  
-- **Route protection**: Automatic redirect to login for unauthenticated users
-- **Route matching priority**: Index routes have higher priority than parameterized routes
+- **Dynamic parameters**: Path parameters automatically URL-encoded/decoded for special characters
 
 ## UI/UX Design Guidelines
 

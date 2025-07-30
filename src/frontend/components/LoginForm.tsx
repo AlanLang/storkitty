@@ -124,29 +124,6 @@ export function LoginForm() {
                 )}
               </Button>
             </form>
-
-            {/* 测试账号信息 */}
-            <div className="rounded-lg bg-muted/50 p-4">
-              <div className="text-center space-y-2">
-                <div className="text-sm font-medium text-muted-foreground">
-                  演示账号
-                </div>
-                <div className="text-sm space-y-1">
-                  <div className="flex justify-between items-center">
-                    <span>用户名:</span>
-                    <code className="text-xs bg-muted px-2 py-1 rounded border font-mono">
-                      admin
-                    </code>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>密码:</span>
-                    <code className="text-xs bg-muted px-2 py-1 rounded border font-mono">
-                      admin123
-                    </code>
-                  </div>
-                </div>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>
