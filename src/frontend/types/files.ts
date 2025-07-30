@@ -36,4 +36,9 @@ export interface CreateDirectoryResponse {
   message: string;
 }
 
+export interface RenameResponse {
+  success: boolean;
+  message: string;
+}
+
 // Note: File config is now included in auth/verify response (types/auth.ts)

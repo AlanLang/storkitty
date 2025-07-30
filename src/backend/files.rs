@@ -1,11 +1,11 @@
 use axum::{
-    extract::{Path, State},
+    extract::{Path, State, Json as ExtractJson},
     http::{HeaderMap, StatusCode, header::CONTENT_DISPOSITION},
-    response::{Json, Response},
-    routing::{delete, get, post},
+    response::Json,
+    routing::{delete, get, post, put},
     Router,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{
     fs,
     path::{Path as StdPath, PathBuf},
@@ -61,6 +61,17 @@ pub struct DeleteResponse {
 pub struct CreateDirectoryResponse {
     pub success: bool,
     pub message: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RenameResponse {
+    pub success: bool,
+    pub message: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RenameRequest {
+    pub new_name: String,
 }
 
 
@@ -512,6 +523,105 @@ impl FileService {
         }
     }
 
+    pub async fn rename_file(&self, headers: &HeaderMap, file_path: String, new_name: String) -> Result<(StatusCode, Json<RenameResponse>), StatusCode> {
+        // 验证认证
+        self.verify_auth(headers).await?;
+
+        log::info!("Attempting to rename file: {} to {}", file_path, new_name);
+        
+        let safe_path = self.get_safe_path(Some(file_path.clone())).await?;
+        log::info!("Safe path resolved to: {:?}", safe_path);
+        
+        // 检查源文件/目录是否存在
+        if !safe_path.exists() {
+            return Ok((StatusCode::NOT_FOUND, Json(RenameResponse {
+                success: false,
+                message: "文件或目录不存在".to_string(),
+            })));
+        }
+
+        // 验证新名称是否合法
+        if new_name.trim().is_empty() {
+            return Ok((StatusCode::BAD_REQUEST, Json(RenameResponse {
+                success: false,
+                message: "文件名不能为空".to_string(),
+            })));
+        }
+
+        // 检查是否包含非法字符
+        if new_name.contains('/') || new_name.contains('\\') || 
+           new_name.contains(':') || new_name.contains('*') ||
+           new_name.contains('?') || new_name.contains('"') ||
+           new_name.contains('<') || new_name.contains('>') ||
+           new_name.contains('|') {
+            return Ok((StatusCode::BAD_REQUEST, Json(RenameResponse {
+                success: false,
+                message: "文件名包含非法字符".to_string(),
+            })));
+        }
+
+        // 检查是否为系统文件名
+        if self.is_system_file(&new_name) {
+            return Ok((StatusCode::BAD_REQUEST, Json(RenameResponse {
+                success: false,
+                message: "不能使用系统保留的文件名".to_string(),
+            })));
+        }
+
+        // 构建新的文件路径
+        let parent_dir = match safe_path.parent() {
+            Some(parent) => parent,
+            None => {
+                return Ok((StatusCode::INTERNAL_SERVER_ERROR, Json(RenameResponse {
+                    success: false,
+                    message: "无法确定父目录".to_string(),
+                })));
+            }
+        };
+
+        let new_path = parent_dir.join(&new_name);
+        
+        // 检查新文件名是否已存在（但排除自身）
+        if new_path.exists() && new_path != safe_path {
+            return Ok((StatusCode::CONFLICT, Json(RenameResponse {
+                success: false,
+                message: "目标文件名已存在".to_string(),
+            })));
+        }
+
+        // 确保新路径在安全范围内
+        let config = self.config.read().await;
+        let root_dir = StdPath::new(&config.files.root_directory).canonicalize().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        
+        // 检查新路径是否在安全范围内
+        if let Some(parent) = new_path.parent() {
+            let canonical_parent = parent.canonicalize().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+            if !canonical_parent.starts_with(&root_dir) {
+                return Err(StatusCode::FORBIDDEN);
+            }
+        } else {
+            return Err(StatusCode::BAD_REQUEST);
+        }
+
+        // 执行重命名操作
+        match fs::rename(&safe_path, &new_path) {
+            Ok(_) => {
+                log::info!("Successfully renamed {:?} to {:?}", safe_path, new_path);
+                Ok((StatusCode::OK, Json(RenameResponse {
+                    success: true,
+                    message: "重命名成功".to_string(),
+                })))
+            }
+            Err(e) => {
+                log::error!("Failed to rename {:?} to {:?}: {}", safe_path, new_path, e);
+                Ok((StatusCode::INTERNAL_SERVER_ERROR, Json(RenameResponse {
+                    success: false,
+                    message: format!("重命名失败: {}", e),
+                })))
+            }
+        }
+    }
+
     pub async fn download_file(&self, file_path: String) -> Result<axum::response::Response, StatusCode> {
         log::info!("Attempting to download file: {}", file_path);
         
@@ -620,6 +730,15 @@ pub async fn create_directory_handler(
     file_service.create_directory(&headers, directory_path).await
 }
 
+pub async fn rename_file_handler(
+    State(file_service): State<Arc<FileService>>,
+    headers: HeaderMap,
+    Path(file_path): Path<String>,
+    ExtractJson(request): ExtractJson<RenameRequest>,
+) -> Result<(StatusCode, Json<RenameResponse>), StatusCode> {
+    file_service.rename_file(&headers, file_path, request.new_name).await
+}
+
 // Temporarily disabled due to compilation issue
 // pub async fn download_file_handler(
 //     State(file_service): State<Arc<FileService>>,
@@ -636,6 +755,7 @@ pub fn files_router(file_service: Arc<FileService>) -> Router {
         .route("/storage", get(storage_info_handler))
         .route("/delete/{*file_path}", delete(delete_file_handler))
         .route("/mkdir/{*directory_path}", post(create_directory_handler))
+        .route("/rename/{*file_path}", put(rename_file_handler))
         // .route("/download/{*file_path}", get(download_file_handler))
         // Note: /config endpoint removed - file config now included in auth/verify
         .with_state(file_service)

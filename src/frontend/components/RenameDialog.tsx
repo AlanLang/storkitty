@@ -1,6 +1,7 @@
-import { AlertTriangle, FolderPlus, Loader2 } from "lucide-react";
+import { AlertTriangle, Edit, Loader2 } from "lucide-react";
 import type { KeyboardEvent } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { FileInfo } from "../types/files";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -13,40 +14,50 @@ import {
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 
-interface CreateDirectoryDialogProps {
+interface RenameDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (directoryName: string) => Promise<void>;
-  isCreating: boolean;
+  onConfirm: (newName: string) => Promise<void>;
+  file: FileInfo | null;
+  isRenaming: boolean;
 }
 
-export function CreateDirectoryDialog({
+export function RenameDialog({
   isOpen,
   onClose,
   onConfirm,
-  isCreating,
-}: CreateDirectoryDialogProps) {
-  const [directoryName, setDirectoryName] = useState("");
+  file,
+  isRenaming,
+}: RenameDialogProps) {
+  const [newName, setNewName] = useState("");
   const [error, setError] = useState("");
 
-  // 验证目录名
-  const validateDirectoryName = (name: string): string => {
+  // 当文件变化时，设置初始名称
+  useEffect(() => {
+    if (file && isOpen) {
+      setNewName(file.name);
+      setError("");
+    }
+  }, [file, isOpen]);
+
+  // 验证文件名
+  const validateFileName = (name: string): string => {
     const trimmedName = name.trim();
 
     if (!trimmedName) {
-      return "目录名不能为空";
+      return "文件名不能为空";
     }
 
     // 检查非法字符
     const invalidChars = /[/\\:*?"<>|]/;
     if (invalidChars.test(trimmedName)) {
-      return '目录名不能包含以下字符: / \\ : * ? " < > |';
+      return '文件名不能包含以下字符: / \\ : * ? " < > |';
     }
 
     // 检查系统保留名
     const reservedNames = [
       ".DS_Store",
-      ".chunks",
+      ".chunks", 
       "Thumbs.db",
       ".gitkeep",
       "desktop.ini",
@@ -58,50 +69,55 @@ export function CreateDirectoryDialog({
       "node_modules",
     ];
     if (reservedNames.includes(trimmedName)) {
-      return "不能使用系统保留的目录名";
+      return "不能使用系统保留的文件名";
     }
 
     // 检查长度限制
     if (trimmedName.length > 255) {
-      return "目录名过长，请保持在255个字符以内";
+      return "文件名过长，请保持在255个字符以内";
+    }
+
+    // 检查是否与原名称相同
+    if (file && trimmedName === file.name) {
+      return "新名称不能与原名称相同";
     }
 
     return "";
   };
 
   const handleConfirm = async () => {
-    const trimmedName = directoryName.trim();
-    const validationError = validateDirectoryName(trimmedName);
+    const trimmedName = newName.trim();
+    const validationError = validateFileName(trimmedName);
 
     if (validationError) {
       setError(validationError);
       return;
     }
 
-    if (isCreating) return;
+    if (isRenaming) return;
 
     try {
       await onConfirm(trimmedName);
-      setDirectoryName("");
+      setNewName("");
       setError("");
       onClose();
     } catch (error: any) {
       // 显示后端返回的错误信息
-      const errorMessage = error?.message || "创建文件夹失败，请重试";
+      const errorMessage = error?.message || "重命名失败，请重试";
       setError(errorMessage);
-      console.error("Create directory failed:", error);
+      console.error("Rename failed:", error);
     }
   };
 
   const handleClose = () => {
-    if (isCreating) return;
-    setDirectoryName("");
+    if (isRenaming) return;
+    setNewName("");
     setError("");
     onClose();
   };
 
   const handleInputChange = (value: string) => {
-    setDirectoryName(value);
+    setNewName(value);
     if (error) {
       setError("");
     }
@@ -114,7 +130,7 @@ export function CreateDirectoryDialog({
     }
   };
 
-  const canCreate = directoryName.trim().length > 0 && !error && !isCreating;
+  const canRename = newName.trim().length > 0 && !error && !isRenaming && file && newName.trim() !== file.name;
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -122,12 +138,12 @@ export function CreateDirectoryDialog({
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-              <FolderPlus className="h-5 w-5 text-primary" />
+              <Edit className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <DialogTitle className="text-left">创建新文件夹</DialogTitle>
+              <DialogTitle className="text-left">重命名{file?.file_type === "folder" ? "文件夹" : "文件"}</DialogTitle>
               <DialogDescription className="text-left">
-                在当前位置创建一个新的文件夹
+                为 "{file?.name}" 输入新的名称
               </DialogDescription>
             </div>
           </div>
@@ -135,17 +151,17 @@ export function CreateDirectoryDialog({
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="directory-name" className="text-sm font-medium">
-              文件夹名称
+            <Label htmlFor="new-name" className="text-sm font-medium">
+              新名称
             </Label>
             <Input
-              id="directory-name"
+              id="new-name"
               type="text"
-              value={directoryName}
+              value={newName}
               onChange={(e) => handleInputChange(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="请输入文件夹名称"
-              disabled={isCreating}
+              placeholder="请输入新的名称"
+              disabled={isRenaming}
               className={
                 error ? "border-destructive focus-visible:ring-destructive" : ""
               }
@@ -161,7 +177,7 @@ export function CreateDirectoryDialog({
 
           <div className="rounded-lg bg-muted/50 p-3">
             <p className="text-sm text-muted-foreground">
-              💡 提示：文件夹名称不能包含特殊字符，且不能与系统保留名冲突
+              💡 提示：文件名不能包含特殊字符，且不能与系统保留名冲突
             </p>
           </div>
         </div>
@@ -170,22 +186,22 @@ export function CreateDirectoryDialog({
           <Button
             variant="outline"
             onClick={handleClose}
-            disabled={isCreating}
+            disabled={isRenaming}
             className="transition-all duration-200 hover:scale-105"
           >
             取消
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={!canCreate}
+            disabled={!canRename}
             className="gap-2 transition-all duration-200 hover:scale-105 hover:shadow-lg"
           >
-            {isCreating ? (
+            {isRenaming ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <FolderPlus className="h-4 w-4" />
+              <Edit className="h-4 w-4" />
             )}
-            {isCreating ? "创建中..." : "创建文件夹"}
+            {isRenaming ? "重命名中..." : "重命名"}
           </Button>
         </DialogFooter>
       </DialogContent>

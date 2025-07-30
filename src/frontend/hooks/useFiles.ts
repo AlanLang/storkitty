@@ -62,5 +62,20 @@ export function useCreateDirectoryMutation() {
   });
 }
 
+// 重命名文件 mutation
+export function useRenameFileMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ filePath, newName }: { filePath: string; newName: string }) =>
+      filesApi.renameFile(filePath, newName),
+    onSuccess: () => {
+      // 只有真正成功时才刷新
+      queryClient.invalidateQueries({ queryKey: filesKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: filesKeys.storage() });
+    },
+  });
+}
+
 // Note: File config is now included in auth/verify response
 // useFileConfigQuery removed - use useAuth().fileConfig instead

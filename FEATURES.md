@@ -178,10 +178,14 @@ Content-Type: application/octet-stream
 
 **功能描述**: 文件和文件夹的删除、创建操作
 
-#### 5.1 文件移动/重命名 🔄 (规划中)
+#### 5.1 文件重命名 ✅ (已实现)
 **实现方案**:
-- **后端**: 使用 `std::fs::rename` 进行文件移动
-- **前端**: 拖拽操作 + 重命名对话框
+- **后端**: ✅ 使用 `std::fs::rename` 进行文件重命名
+- **前端**: ✅ 重命名对话框（RenameDialog）
+- **验证**: ✅ 文件名验证（非法字符、系统保留名、冲突检查）
+- **安全特性**: ✅ 路径安全检查和权限控制
+- **用户体验**: ✅ 实时错误提示和输入验证
+- **UI集成**: ✅ 集成在文件操作下拉菜单
 
 #### 5.2 文件删除 ✅ (已实现)
 **实现方案**:
@@ -202,10 +206,19 @@ Content-Type: application/octet-stream
 ```
 DELETE /api/files/delete/{path}    # 删除文件或文件夹
 POST /api/files/mkdir/{path}       # 创建新文件夹
+PUT /api/files/rename/{path}       # 重命名文件或文件夹
+Body: { "new_name": "新文件名" }
 
-# 未实现:
-PUT /api/files/move               # 文件移动/重命名
-Body: { "from": "/path/old", "to": "/path/new" }
+Response: {
+  "success": true,
+  "message": "重命名成功"
+}
+
+# 错误响应（409 Conflict）:
+{
+  "success": false,
+  "message": "目标文件名已存在"
+}
 ```
 
 ---
@@ -303,6 +316,7 @@ src/frontend/
 │   ├── UploadIndicator.tsx    ✅ (上传指示器)
 │   ├── CreateDirectoryDialog.tsx ✅ (创建文件夹对话框)
 │   ├── DeleteConfirmDialog.tsx   ✅ (删除确认对话框)
+│   ├── RenameDialog.tsx          ✅ (文件重命名对话框)
 │   ├── FilePreview.tsx        🔮 (文件预览组件)
 │   └── FileOperations.tsx     ✅ (文件操作菜单 - 集成在主组件)
 ```
@@ -349,7 +363,7 @@ allow_download = true
 ### 第二阶段 ✅ 已完成
 1. ✅ 文件操作 (删除功能)
 2. ✅ 新建文件夹功能
-3. 🔄 文件移动/重命名功能
+3. ✅ 文件重命名功能
 4. 🔄 批量操作支持
 
 ### 第三阶段 (增强功能)

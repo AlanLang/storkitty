@@ -110,6 +110,7 @@ The application features an automatic setup wizard for first-time use:
 - `GET /api/files/storage` - Get storage space information
 - `DELETE /api/files/delete/{path}` - Delete file or directory (requires allow_delete permission)
 - `POST /api/files/mkdir/{path}` - Create new directory (requires allow_mkdir permission)
+- `PUT /api/files/rename/{path}` - Rename file or directory (with conflict detection and validation)
 - `GET /api/files/download/{path}` - Download file with streaming support (no authentication required)
 
 #### File Upload
@@ -169,6 +170,7 @@ The application features an automatic setup wizard for first-time use:
 │       │   ├── SetupForm.tsx   # Initial setup form component with validation
 │       │   ├── CreateDirectoryDialog.tsx # Directory creation dialog with validation
 │       │   ├── DeleteConfirmDialog.tsx # File deletion confirmation dialog
+│       │   ├── RenameDialog.tsx # File/folder rename dialog with validation and conflict detection
 │       │   ├── UploadDrawer.tsx # Upload drawer component with progress tracking
 │       │   ├── UploadIndicator.tsx # Floating upload indicator button
 │       │   └── FilesPageComponent.tsx # Shared file management component
@@ -225,7 +227,8 @@ The application features an automatic setup wizard for first-time use:
 - **File deletion**: Secure file and folder deletion with confirmation dialogs
 - **Deletion safety**: Special confirmation required for non-empty folders
 - **Directory creation**: Create new folders with validation and security checks
-- **Name validation**: Automatic validation of directory names against illegal characters and system reserved names
+- **File renaming**: Rename files and folders with real-time validation and conflict detection
+- **Name validation**: Automatic validation of file/directory names against illegal characters and system reserved names
 
 ### Dependencies
 **Backend**: axum (with multipart), tokio, tokio-util, serde, jsonwebtoken, bcrypt, tower-http, uuid, mime, bytes, futures-util
@@ -242,14 +245,17 @@ The application features an automatic setup wizard for first-time use:
 - Only import specific React hooks/types you need: `import { useState, useEffect } from "react"`
 - Keep hooks in separate files from components for better modularity
 - **TanStack Query handles all server state** - use query hooks for data fetching
+- **TanStack Query Configuration**: Mutations are configured with `retry: 0` to prevent automatic retries for file operations
 - API calls are centralized in `src/frontend/api/` with proper error handling
 - React Query DevTools available in development for debugging queries
+- **Error Handling**: Backend returns appropriate HTTP status codes (4xx for client errors, 200 for success)
 - **Component architecture**: 
   - Shared UI components in `src/frontend/components/ui/` (shadcn/ui)
   - Business logic components in `src/frontend/components/`
   - FilesPageComponent: Shared component for file browser functionality
   - CreateDirectoryDialog: Dialog for creating new folders with input validation and error handling
   - DeleteConfirmDialog: Confirmation dialog for file/folder deletion with safety features
+  - RenameDialog: Dialog for renaming files/folders with real-time validation and conflict detection
   - UploadDrawer: Modern slide-out upload interface with drag-and-drop support
   - UploadIndicator: Floating upload status button with progress visualization
   - Route components: Thin wrappers that pass props to shared components

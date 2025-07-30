@@ -17,7 +17,7 @@ const queryClient = new QueryClient({
       gcTime: 10 * 60 * 1000, // 10 minutes (previously cacheTime)
     },
     mutations: {
-      retry: 1,
+      retry: 0, // 不重试 mutations，特别是文件操作
     },
   },
 });

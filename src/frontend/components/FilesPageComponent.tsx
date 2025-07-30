@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Copy,
   Download,
+  Edit,
   File,
   FileArchive,
   FileCode,
@@ -34,6 +35,7 @@ import {
   useCreateDirectoryMutation,
   useDeleteFileMutation,
   useFileListQuery,
+  useRenameFileMutation,
   useStorageInfoQuery,
 } from "../hooks/useFiles";
 import { useUpload } from "../hooks/useUploadContext";
@@ -46,6 +48,7 @@ import {
 } from "../utils/download";
 import { CreateDirectoryDialog } from "./CreateDirectoryDialog";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
+import { RenameDialog } from "./RenameDialog";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import {
@@ -214,6 +217,8 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isCreateDirectoryDialogOpen, setIsCreateDirectoryDialogOpen] =
     useState(false);
+  const [renameFile, setRenameFile] = useState<FileInfo | null>(null);
+  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
   const { setIsDrawerOpen, setOnUploadComplete } = useUpload();
   const queryClient = useQueryClient();
 
@@ -222,6 +227,9 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
 
   // 创建目录 mutation
   const createDirectoryMutation = useCreateDirectoryMutation();
+
+  // 重命名文件 mutation
+  const renameFileMutation = useRenameFileMutation();
 
   // 获取文件列表
   const {
@@ -293,6 +301,28 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
   // 关闭创建目录对话框
   const handleCreateDirectoryDialogClose = () => {
     setIsCreateDirectoryDialogOpen(false);
+  };
+
+  // 处理重命名文件点击
+  const handleRenameClick = (file: FileInfo) => {
+    setRenameFile(file);
+    setIsRenameDialogOpen(true);
+  };
+
+  // 处理重命名确认
+  const handleRenameConfirm = async (newName: string) => {
+    if (!renameFile) return;
+
+    const filePath = currentPath
+      ? `${currentPath}/${renameFile.name}`
+      : renameFile.name;
+    await renameFileMutation.mutateAsync({ filePath, newName });
+  };
+
+  // 关闭重命名对话框
+  const handleRenameDialogClose = () => {
+    setIsRenameDialogOpen(false);
+    setRenameFile(null);
   };
 
   // 处理文件下载
@@ -649,6 +679,17 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
                           <DropdownMenuItem
                             onClick={(e) => {
                               e.stopPropagation();
+                              handleRenameClick(file);
+                            }}
+                            className="cursor-pointer focus-visible:outline-none"
+                          >
+                            <Edit className="mr-2 h-4 w-4" />
+                            重命名
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
                               handleDeleteClick(file);
                             }}
                             className="cursor-pointer text-destructive focus:text-destructive focus-visible:outline-none"
@@ -794,6 +835,17 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
                             <DropdownMenuItem
                               onClick={(e) => {
                                 e.stopPropagation();
+                                handleRenameClick(file);
+                              }}
+                              className="cursor-pointer focus-visible:outline-none"
+                            >
+                              <Edit className="mr-2 h-4 w-4" />
+                              重命名
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 handleDeleteClick(file);
                               }}
                               className="cursor-pointer text-destructive focus:text-destructive focus-visible:outline-none"
@@ -855,6 +907,15 @@ export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
         onClose={handleCreateDirectoryDialogClose}
         onConfirm={handleCreateDirectoryConfirm}
         isCreating={createDirectoryMutation.isPending}
+      />
+
+      {/* 重命名对话框 */}
+      <RenameDialog
+        isOpen={isRenameDialogOpen}
+        onClose={handleRenameDialogClose}
+        onConfirm={handleRenameConfirm}
+        file={renameFile}
+        isRenaming={renameFileMutation.isPending}
       />
     </div>
   );

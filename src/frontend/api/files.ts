@@ -2,6 +2,7 @@ import type {
   CreateDirectoryResponse,
   DeleteResponse,
   FilesResponse,
+  RenameResponse,
   StorageResponse,
 } from "../types/files";
 
@@ -81,22 +82,50 @@ export const filesApi = {
 
   // 删除文件或目录
   async deleteFile(filePath: string): Promise<DeleteResponse> {
-    return apiRequest<DeleteResponse>(
+    const response = await apiRequest<DeleteResponse>(
       `/files/delete/${encodeURIComponent(filePath)}`,
       {
         method: "DELETE",
       },
     );
+
+    // 检查操作是否成功，如果失败则抛出错误
+    if (!response.success) {
+      throw new ApiError(response.message, 400, response);
+    }
+
+    return response;
   },
 
   // 创建目录
   async createDirectory(
     directoryPath: string,
   ): Promise<CreateDirectoryResponse> {
-    return apiRequest<CreateDirectoryResponse>(
+    const response = await apiRequest<CreateDirectoryResponse>(
       `/files/mkdir/${encodeURIComponent(directoryPath)}`,
       {
         method: "POST",
+      },
+    );
+
+    // 检查操作是否成功，如果失败则抛出错误
+    if (!response.success) {
+      throw new ApiError(response.message, 400, response);
+    }
+
+    return response;
+  },
+
+  // 重命名文件或目录
+  async renameFile(
+    filePath: string,
+    newName: string,
+  ): Promise<RenameResponse> {
+    return apiRequest<RenameResponse>(
+      `/files/rename/${encodeURIComponent(filePath)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ new_name: newName }),
       },
     );
   },
