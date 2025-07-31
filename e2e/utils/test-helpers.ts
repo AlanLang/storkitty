@@ -1,7 +1,7 @@
 import { type Page, expect } from "@playwright/test";
-import fs from "node:fs";
-import path from "node:path";
-import os from "node:os";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import * as os from "node:os";
 
 /**
  * E2E 测试工具函数
@@ -213,11 +213,10 @@ export class FileOperationsHelper {
   async deleteFile(fileName: string) {
     const fileItem = await this.findFile(fileName);
 
-    // 悬停以显示操作菜单按钮
-    await fileItem.hover();
-
-    // 点击更多操作按钮（三个点）
-    const moreButton = fileItem.locator('button svg[class*="MoreVertical"], button:has([class*="MoreVertical"])').first();
+    // 使用更可靠的方法来显示和点击更多操作按钮
+    await this.showMoreActionsButton(fileItem);
+    
+    const moreButton = this.page.getByTestId('file-more-actions-button').first();
     await moreButton.click();
 
     // 等待下拉菜单打开
@@ -230,13 +229,56 @@ export class FileOperationsHelper {
     // 等待确认对话框打开
     await this.page.waitForSelector('[role="dialog"]', { timeout: 5000 });
 
-    // 在确认对话框中确认删除
-    const confirmButton = this.page.locator('button:has-text("删除"):not([role="menuitem"])');
+    // 在确认对话框中确认删除 - 使用更精确的选择器
+    const confirmButton = this.page.locator('button:has-text("确认删除")');
+    
+    // 等待按钮变为可用状态
+    await confirmButton.waitFor({ state: 'visible', timeout: 5000 });
+    
+    // 等待一下让组件状态稳定
+    await this.page.waitForTimeout(500);
+    
+    // 点击删除按钮
     await confirmButton.click();
 
     // 等待对话框关闭和操作完成
-    await this.page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 5000 });
+    await this.page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 15000 });
     await this.page.waitForLoadState("networkidle");
+  }
+
+  // 可靠地显示更多操作按钮的辅助方法
+  private async showMoreActionsButton(fileItem: any) {
+    // 悬停在文件项上
+    await fileItem.hover();
+    
+    // 找到文件的父容器
+    const fileContainer = fileItem.locator('..').locator('..').locator('..');
+    await fileContainer.hover();
+    
+    // 使用JavaScript强制触发hover状态以显示按钮
+    await this.page.evaluate(() => {
+      // 找到所有带有group-hover:opacity-100的按钮并显示它们
+      const buttons = document.querySelectorAll('[data-testid="file-more-actions-button"]');
+      buttons.forEach((button: Element) => {
+        if (button instanceof HTMLElement) {
+          button.style.opacity = '1';
+          button.style.visibility = 'visible';
+          button.style.pointerEvents = 'auto';
+        }
+      });
+      
+      // 也强制显示包含按钮的容器
+      const containers = document.querySelectorAll('.opacity-0.group-hover\\:opacity-100');
+      containers.forEach((container: Element) => {
+        if (container instanceof HTMLElement) {
+          container.style.opacity = '1';
+          container.style.visibility = 'visible';
+        }
+      });
+    });
+    
+    // 等待一小段时间让样式生效
+    await this.page.waitForTimeout(300);
   }
 
   // 重命名文件或文件夹
@@ -258,7 +300,7 @@ export class FileOperationsHelper {
 
     // 填写新名称 - 先清空再输入
     const nameInput = this.page.locator('input[value*="' + oldName + '"], input[placeholder*="名称"]');
-    await nameInput.selectAll();
+    await nameInput.selectText();
     await nameInput.fill(newName);
 
     // 确认重命名

@@ -815,6 +815,7 @@ export function FilesPageComponent({
                             size="sm"
                             className="h-8 w-8 p-0 rounded-md opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 transition-opacity hover:bg-muted/50"
                             onClick={(e) => e.stopPropagation()}
+                            data-testid="file-more-actions-button"
                           >
                             <MoreVertical className="h-4 w-4" />
                           </Button>
@@ -968,7 +969,7 @@ export function FilesPageComponent({
                         <span>{file.modified}</span>
                       </div>
 
-                      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 transition-opacity">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
@@ -976,6 +977,7 @@ export function FilesPageComponent({
                               size="sm"
                               className="h-8 w-8 p-0"
                               onClick={(e) => e.stopPropagation()}
+                              data-testid="file-more-actions-button"
                             >
                               <MoreVertical className="h-4 w-4" />
                             </Button>
