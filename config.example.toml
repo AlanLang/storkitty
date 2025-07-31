@@ -24,7 +24,6 @@ id = "default"
 name = "默认"
 description = "默认上传目录"
 icon = "folder"
-default = true
 # 存储类型：local, oss, s3, minio 等
 storage_type = "local"
 # 本地存储配置
@@ -35,7 +34,6 @@ id = "documents"
 name = "文档"
 description = "文档和文本文件"
 icon = "file-text"
-default = false
 storage_type = "local"
 path = "./uploads/documents"
 
@@ -44,7 +42,6 @@ id = "images"
 name = "图片"
 description = "图片和媒体文件"
 icon = "image"
-default = false
 storage_type = "local"
 path = "./uploads/images"
 
@@ -53,7 +50,6 @@ id = "videos"
 name = "视频"
 description = "视频文件"
 icon = "video"
-default = false
 storage_type = "local"
 path = "./uploads/videos"
 
@@ -63,7 +59,6 @@ path = "./uploads/videos"
 # name = "云端文档"
 # description = "阿里云OSS文档存储"
 # icon = "cloud"
-# default = false
 # storage_type = "oss"
 # [storage.directories.config]
 # endpoint = "https://oss-cn-hangzhou.aliyuncs.com"
@@ -79,7 +74,6 @@ path = "./uploads/videos"
 # name = "S3备份"
 # description = "AWS S3备份存储"
 # icon = "cloud"
-# default = false
 # storage_type = "s3"
 # [storage.directories.config]
 # endpoint = "https://s3.amazonaws.com"

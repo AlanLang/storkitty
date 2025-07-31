@@ -36,7 +36,6 @@ description = "Test file storage for E2E testing"
 icon = "hard-drive"
 storage_type = "local"
 path = "./test-uploads"
-default = true
 
 [[storage.directories]]
 id = "test-documents"
@@ -45,4 +44,3 @@ description = "Test document storage"
 icon = "file-text"
 storage_type = "local"
 path = "./test-documents"
-default = false

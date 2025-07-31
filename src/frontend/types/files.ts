@@ -12,7 +12,6 @@ export interface DirectoryInfo {
   name: string;
   description: string;
   icon: string;
-  default: boolean;
   storage_type: string;
 }
 

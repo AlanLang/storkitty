@@ -57,11 +57,6 @@ export function FilesSidebar() {
                 >
                   <IconComponent className="h-4 w-4" />
                   {directory.name}
-                  {directory.default && (
-                    <span className="ml-auto text-xs text-muted-foreground">
-                      默认
-                    </span>
-                  )}
                 </Button>
               );
             })

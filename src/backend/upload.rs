@@ -289,7 +289,7 @@ pub async fn init_upload_handler(
     // Create temporary directory
     let temp_dir = { 
         let config = upload_service.config.read().await; 
-        let default_dir = config.get_default_directory().unwrap();
+        let default_dir = config.get_first_directory().unwrap();
         PathBuf::from(default_dir.path.as_ref().unwrap())
     }.join("temp").join(upload_id.to_string());
     fs::create_dir_all(&temp_dir).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -388,7 +388,7 @@ pub async fn complete_upload_handler(
     // Determine final file path
     let root_dir = { 
         let config = upload_service.config.read().await; 
-        let default_dir = config.get_default_directory().unwrap();
+        let default_dir = config.get_first_directory().unwrap();
         PathBuf::from(default_dir.path.as_ref().unwrap())
     };
     let target_dir = if session.target_path.is_empty() {
@@ -590,7 +590,7 @@ pub async fn simple_upload_handler(
     // Determine final file path
     let root_dir = { 
         let config = upload_service.config.read().await; 
-        let default_dir = config.get_default_directory().unwrap();
+        let default_dir = config.get_first_directory().unwrap();
         PathBuf::from(default_dir.path.as_ref().unwrap())
     };
     let target_dir = if target_path.is_empty() {
