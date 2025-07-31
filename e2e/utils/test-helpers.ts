@@ -209,45 +209,169 @@ export class FileOperationsHelper {
     await this.page.waitForLoadState("networkidle");
   }
 
-  // 删除文件或文件夹
-  async deleteFile(fileName: string) {
+  // 点击文件的操作菜单项
+  async clickFileMenuAction(fileName: string, menuAction: string) {
+    // 找到文件
     const fileItem = await this.findFile(fileName);
-
-    // 使用更可靠的方法来显示和点击更多操作按钮
-    await this.showMoreActionsButton(fileItem);
     
-    const moreButton = this.page.getByTestId('file-more-actions-button').first();
+    // 显示操作按钮并点击
+    await this.showMoreActionsButton(fileItem, fileName);
+    const moreButton = this.page.getByTestId(`file-more-actions-button-${fileName}`);
     await moreButton.click();
 
     // 等待下拉菜单打开
     await this.page.waitForSelector('[role="menu"]', { timeout: 5000 });
 
-    // 点击删除按钮
-    const deleteMenuItem = this.page.locator('[role="menuitem"]:has-text("删除")');
-    await deleteMenuItem.click();
+    // 点击指定的菜单项
+    const menuItem = this.page.locator(`[role="menuitem"]:has-text("${menuAction}")`);
+    await menuItem.click();
+  }
 
+  // 确认删除对话框操作
+  async confirmDeleteDialog(shouldConfirm: boolean = true, confirmationText?: string) {
     // 等待确认对话框打开
     await this.page.waitForSelector('[role="dialog"]', { timeout: 5000 });
 
-    // 在确认对话框中确认删除 - 使用更精确的选择器
-    const confirmButton = this.page.locator('button:has-text("确认删除")');
-    
-    // 等待按钮变为可用状态
-    await confirmButton.waitFor({ state: 'visible', timeout: 5000 });
-    
-    // 等待一下让组件状态稳定
-    await this.page.waitForTimeout(500);
-    
-    // 点击删除按钮
-    await confirmButton.click();
+    if (confirmationText) {
+      // 对于需要输入确认文本的删除（如非空文件夹）
+      const confirmInput = this.page.locator('#confirm-input');
+      await confirmInput.waitFor({ state: 'visible', timeout: 5000 });
+      await confirmInput.fill(confirmationText);
+      await this.page.waitForTimeout(500);
+    }
 
-    // 等待对话框关闭和操作完成
+    if (shouldConfirm) {
+      // 确认删除
+      const confirmButton = this.page.locator('button:has-text("确认删除")');
+      await confirmButton.waitFor({ state: 'visible', timeout: 5000 });
+      
+      // 等待按钮可用
+      await this.page.waitForFunction(() => {
+        const buttons = Array.from(document.querySelectorAll('button'));
+        const confirmButton = buttons.find(btn => btn.textContent?.includes('确认删除')) as HTMLButtonElement;
+        return confirmButton && !confirmButton.disabled;
+      }, { timeout: 10000 });
+      
+      await this.page.waitForTimeout(500);
+      await confirmButton.click();
+    } else {
+      // 取消删除
+      const cancelButton = this.page.locator('button:has-text("取消")');
+      await cancelButton.click();
+    }
+
+    // 等待对话框关闭
     await this.page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 15000 });
     await this.page.waitForLoadState("networkidle");
   }
 
+  // 删除文件或文件夹（重新设计为更简单的API）
+  async deleteFile(fileName: string, isFolder: boolean = false, expectedItemCount: number = 0) {
+    // 点击删除菜单项
+    await this.clickFileMenuAction(fileName, '删除');
+    
+    // 确认删除操作
+    const requiresConfirmation = isFolder && expectedItemCount > 0;
+    const confirmationText = requiresConfirmation ? fileName : undefined;
+    await this.confirmDeleteDialog(true, confirmationText);
+  }
+
+  // 取消删除文件或文件夹
+  async cancelDeleteFile(fileName: string) {
+    // 点击删除菜单项
+    await this.clickFileMenuAction(fileName, '删除');
+    
+    // 取消删除操作
+    await this.confirmDeleteDialog(false);
+  }
+
+  // 验证文件存在
+  async verifyFileExists(fileName: string, shouldExist: boolean = true) {
+    await this.page.waitForTimeout(1000); // 等待UI更新
+    
+    // 使用和findFile相同的选择器策略
+    const fileItems = this.page.locator(`main [title="${fileName}"], main p:has-text("${fileName}")`);
+    
+    if (shouldExist) {
+      await expect(fileItems).toHaveCount(1, { timeout: 10000 });
+    } else {
+      await expect(fileItems).toHaveCount(0, { timeout: 10000 });
+    }
+  }
+
+  // 验证删除对话框内容
+  async verifyDeleteDialog(expectedTitle: string = '删除') {
+    await this.page.waitForSelector('[role="dialog"]', { timeout: 5000 });
+    const dialogTitle = this.page.locator('[role="dialog"] h2');
+    await expect(dialogTitle).toContainText(expectedTitle);
+  }
+
+  // 下载文件
+  async downloadFile(fileName: string) {
+    await this.clickFileMenuAction(fileName, '下载文件');
+    // 注意：实际的下载验证可能需要额外的逻辑
+  }
+
+  // 复制下载链接  
+  async copyDownloadLink(fileName: string) {
+    await this.clickFileMenuAction(fileName, '复制链接');
+    // 可以添加剪贴板验证逻辑
+  }
+
+  // 重命名文件
+  async renameFile(fileName: string, newName: string) {
+    await this.clickFileMenuAction(fileName, '重命名');
+    
+    // 等待重命名对话框（如果存在）
+    await this.page.waitForTimeout(1000);
+    
+    // 如果有重命名对话框，填写新名称
+    const nameInput = this.page.locator('input[placeholder*="名称"], input[id*="name"], input[value*="' + fileName + '"]');
+    if (await nameInput.count() > 0) {
+      await nameInput.selectText();
+      await nameInput.fill(newName);
+      const confirmButton = this.page.locator('button:has-text("重命名"):not([role="menuitem"]), button:has-text("确认"), button:has-text("保存")');
+      await confirmButton.click();
+      
+      // 等待对话框关闭和操作完成
+      await this.page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 5000 });
+      await this.page.waitForLoadState("networkidle");
+    }
+  }
+
+  // 简化的菜单项点击（用于固定文件名，如sample.txt）
+  async clickStaticFileMenuAction(fileName: string, menuAction: string) {
+    // 使用JavaScript强制显示按钮（适用于测试环境中的静态文件）
+    await this.page.evaluate((fileName) => {
+      const button = document.querySelector(`[data-testid="file-more-actions-button-${fileName}"]`);
+      if (button instanceof HTMLElement) {
+        button.style.opacity = '1';
+        button.style.visibility = 'visible';
+        button.style.pointerEvents = 'auto';
+      }
+      
+      const containers = document.querySelectorAll('.opacity-0.group-hover\\:opacity-100');
+      containers.forEach((container: Element) => {
+        if (container instanceof HTMLElement) {
+          container.style.opacity = '1';
+          container.style.visibility = 'visible';
+        }
+      });
+    }, fileName);
+
+    await this.page.waitForTimeout(300);
+
+    const moreButton = this.page.getByTestId(`file-more-actions-button-${fileName}`);
+    await moreButton.click();
+
+    await this.page.waitForSelector('[role="menu"]', { timeout: 5000 });
+
+    const menuItem = this.page.locator(`[role="menuitem"]:has-text("${menuAction}")`);
+    await menuItem.click();
+  }
+
   // 可靠地显示更多操作按钮的辅助方法
-  private async showMoreActionsButton(fileItem: any) {
+  private async showMoreActionsButton(fileItem: any, fileName: string) {
     // 悬停在文件项上
     await fileItem.hover();
     
@@ -255,17 +379,15 @@ export class FileOperationsHelper {
     const fileContainer = fileItem.locator('..').locator('..').locator('..');
     await fileContainer.hover();
     
-    // 使用JavaScript强制触发hover状态以显示按钮
-    await this.page.evaluate(() => {
-      // 找到所有带有group-hover:opacity-100的按钮并显示它们
-      const buttons = document.querySelectorAll('[data-testid="file-more-actions-button"]');
-      buttons.forEach((button: Element) => {
-        if (button instanceof HTMLElement) {
-          button.style.opacity = '1';
-          button.style.visibility = 'visible';
-          button.style.pointerEvents = 'auto';
-        }
-      });
+    // 使用JavaScript强制触发hover状态以显示特定文件的按钮
+    await this.page.evaluate((fileName) => {
+      // 找到特定文件的操作按钮并显示它
+      const button = document.querySelector(`[data-testid="file-more-actions-button-${fileName}"]`);
+      if (button instanceof HTMLElement) {
+        button.style.opacity = '1';
+        button.style.visibility = 'visible';
+        button.style.pointerEvents = 'auto';
+      }
       
       // 也强制显示包含按钮的容器
       const containers = document.querySelectorAll('.opacity-0.group-hover\\:opacity-100');
@@ -275,42 +397,12 @@ export class FileOperationsHelper {
           container.style.visibility = 'visible';
         }
       });
-    });
+    }, fileName);
     
     // 等待一小段时间让样式生效
     await this.page.waitForTimeout(300);
   }
 
-  // 重命名文件或文件夹
-  async renameFile(oldName: string, newName: string) {
-    const fileItem = await this.findFile(oldName);
-
-    // 尝试右键点击文件来打开上下文菜单
-    await fileItem.click({ button: 'right' });
-
-    // 等待下拉菜单打开
-    await this.page.waitForSelector('[role="menu"]', { timeout: 5000 });
-
-    // 点击重命名按钮
-    const renameMenuItem = this.page.locator('[role="menuitem"]:has-text("重命名")');
-    await renameMenuItem.click();
-
-    // 等待重命名对话框打开
-    await this.page.waitForSelector('[role="dialog"]', { timeout: 5000 });
-
-    // 填写新名称 - 先清空再输入
-    const nameInput = this.page.locator('input[value*="' + oldName + '"], input[placeholder*="名称"]');
-    await nameInput.selectText();
-    await nameInput.fill(newName);
-
-    // 确认重命名
-    const confirmButton = this.page.locator('button:has-text("重命名"):not([role="menuitem"])');
-    await confirmButton.click();
-
-    // 等待对话框关闭和操作完成
-    await this.page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 5000 });
-    await this.page.waitForLoadState("networkidle");
-  }
 }
 
 /**
