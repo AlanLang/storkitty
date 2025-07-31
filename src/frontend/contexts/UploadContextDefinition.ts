@@ -28,21 +28,12 @@ export interface UploadContextType {
   setIsDrawerOpen: (open: boolean) => void;
 
   // Upload operations
-  addFiles: (
-    files: File[],
-    targetPath?: string,
-    maxSizeMB?: number,
-    directoryId?: string,
-  ) => void;
+  addFiles: (files: File[], targetPath?: string, maxSizeMB?: number) => void;
   removeFile: (id: string) => void;
   cancelUpload: (id: string) => void;
-  startUpload: (targetPath?: string, directoryId?: string) => Promise<void>;
+  startUpload: (targetPath?: string, currentPath?: string) => Promise<void>;
   clearCompleted: () => void;
   clearAll: () => void;
-
-  // Directory context
-  currentDirectoryId?: string;
-  setCurrentDirectoryId: (directoryId?: string) => void;
 
   // Statistics
   getUploadStats: () => {

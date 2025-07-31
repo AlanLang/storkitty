@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useCallback, useState } from "react";
 import {
   abortChunkedUpload,
@@ -7,6 +8,8 @@ import {
 } from "../api/chunkedUpload";
 import type { UploadResponse } from "../api/upload";
 import { uploadFiles, validateFile } from "../api/upload";
+import { useDirectory } from "../hooks/useDirectory";
+import { filesKeys } from "../hooks/useFiles";
 import type { UploadContextType, UploadItem } from "./UploadContextDefinition";
 import { UploadContext } from "./UploadContextDefinition";
 
@@ -15,6 +18,8 @@ interface UploadProviderProps {
 }
 
 export function UploadProvider({ children }: UploadProviderProps) {
+  const queryClient = useQueryClient();
+  const { selectedDirectoryId } = useDirectory();
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
@@ -22,23 +27,10 @@ export function UploadProvider({ children }: UploadProviderProps) {
   const [onUploadComplete, setOnUploadComplete] = useState<
     ((results: UploadResponse[]) => void) | undefined
   >();
-  const [currentDirectoryId, setCurrentDirectoryId] = useState<
-    string | undefined
-  >();
 
   const addFiles = useCallback(
-    (
-      files: File[],
-      _targetPath?: string,
-      maxSizeMB?: number,
-      directoryId?: string,
-    ) => {
+    (files: File[], _targetPath?: string, maxSizeMB?: number) => {
       setGlobalError(null);
-
-      // Update currentDirectoryId if a specific directoryId is provided
-      if (directoryId && directoryId !== currentDirectoryId) {
-        setCurrentDirectoryId(directoryId);
-      }
 
       const newItems: UploadItem[] = [];
 
@@ -58,7 +50,7 @@ export function UploadProvider({ children }: UploadProviderProps) {
 
       setUploadItems((prev) => [...prev, ...newItems]);
     },
-    [currentDirectoryId],
+    [],
   );
 
   const removeFile = useCallback((id: string) => {
@@ -86,7 +78,7 @@ export function UploadProvider({ children }: UploadProviderProps) {
   }, []);
 
   const startUpload = useCallback(
-    async (targetPath?: string, directoryId?: string) => {
+    async (targetPath?: string, currentPath?: string) => {
       const validItems = uploadItems.filter(
         (item) => item.status === "pending",
       );
@@ -95,8 +87,8 @@ export function UploadProvider({ children }: UploadProviderProps) {
       setIsUploading(true);
       setGlobalError(null);
 
-      // Use provided directoryId or fall back to currentDirectoryId
-      const activeDirectoryId = directoryId || currentDirectoryId;
+      // Use the selectedDirectoryId from DirectoryContext
+      const activeDirectoryId = selectedDirectoryId;
 
       try {
         const results: UploadResponse[] = [];
@@ -239,6 +231,20 @@ export function UploadProvider({ children }: UploadProviderProps) {
           }
         }
 
+        // 内置的文件列表和存储空间刷新
+        if (results.length > 0 && selectedDirectoryId) {
+          // 刷新文件列表
+          queryClient.invalidateQueries({
+            queryKey: filesKeys.list(currentPath, selectedDirectoryId),
+          });
+
+          // 刷新存储空间
+          queryClient.invalidateQueries({
+            queryKey: filesKeys.storage(selectedDirectoryId),
+          });
+        }
+
+        // 调用外部回调（如果有的话）
         onUploadComplete?.(results.filter(Boolean));
       } catch (error) {
         setGlobalError(error instanceof Error ? error.message : "上传失败");
@@ -246,7 +252,7 @@ export function UploadProvider({ children }: UploadProviderProps) {
         setIsUploading(false);
       }
     },
-    [uploadItems, onUploadComplete, currentDirectoryId],
+    [uploadItems, onUploadComplete, selectedDirectoryId, queryClient],
   );
 
   const clearCompleted = useCallback(() => {
@@ -300,8 +306,6 @@ export function UploadProvider({ children }: UploadProviderProps) {
     setOnUploadComplete: useCallback((callback) => {
       setOnUploadComplete(() => callback);
     }, []),
-    currentDirectoryId,
-    setCurrentDirectoryId,
   };
 
   return (
