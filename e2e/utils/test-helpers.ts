@@ -500,6 +500,49 @@ export class TestUtils {
     return filePath;
   }
 
+  // 创建大文件用于分片上传测试
+  static async createLargeFile(
+    sizeMB: number,
+    extension = ".txt",
+  ): Promise<string> {
+    const fileName = this.generateRandomFileName(extension);
+    const filePath = path.join(os.tmpdir(), fileName);
+    
+    // 使用流写入以避免内存溢出
+    const writeStream = fs.createWriteStream(filePath);
+    const chunkSize = 1024 * 1024; // 1MB chunks
+    const totalBytes = sizeMB * 1024 * 1024;
+    const chunk = Buffer.alloc(chunkSize, 'A');
+    
+    return new Promise((resolve, reject) => {
+      let written = 0;
+      
+      const writeChunk = () => {
+        if (written >= totalBytes) {
+          writeStream.end();
+          resolve(filePath);
+          return;
+        }
+        
+        const remainingBytes = totalBytes - written;
+        const currentChunkSize = Math.min(chunkSize, remainingBytes);
+        const currentChunk = currentChunkSize === chunkSize ? chunk : Buffer.alloc(currentChunkSize, 'A');
+        
+        writeStream.write(currentChunk, (err) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          written += currentChunkSize;
+          setImmediate(writeChunk);
+        });
+      };
+      
+      writeStream.on('error', reject);
+      writeChunk();
+    });
+  }
+
   // 等待指定时间
   static async wait(milliseconds: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, milliseconds));
