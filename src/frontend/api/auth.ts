@@ -66,12 +66,12 @@ export const authApi = {
       method: "POST",
       body: JSON.stringify(credentials),
     });
-    
+
     // 如果登录失败，抛出错误以便被 mutation 捕获
     if (!response.success) {
       throw new ApiError(response.message, 401, response);
     }
-    
+
     return response;
   },
 
