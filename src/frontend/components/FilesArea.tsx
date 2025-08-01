@@ -73,6 +73,18 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
     });
   };
 
+  // 处理文件点击 - 导航到预览页面
+  const handleFileClick = (fileName: string) => {
+    const filePath = currentPath ? `${currentPath}/${fileName}` : fileName;
+    navigate({
+      to: "/files/preview/$directoryId/$path",
+      params: {
+        directoryId: selectedDirectoryId,
+        path: filePath,
+      },
+    });
+  };
+
   // 导航到特定路径
   const handleNavigateToPath = (pathIndex: number) => {
     if (pathIndex === -1) {
@@ -353,12 +365,16 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
                   if (e.key === "Enter") {
                     if (file.file_type === "folder") {
                       handleFolderClick(file.name);
+                    } else {
+                      handleFileClick(file.name);
                     }
                   }
                 }}
                 onClick={() => {
                   if (file.file_type === "folder") {
                     handleFolderClick(file.name);
+                  } else {
+                    handleFileClick(file.name);
                   }
                 }}
               >

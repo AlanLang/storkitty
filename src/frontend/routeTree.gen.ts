@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from "./routes/login"
 import { Route as IndexRouteImport } from "./routes/index"
 import { Route as FilesIndexRouteImport } from "./routes/files.index"
 import { Route as FilesSplatRouteImport } from "./routes/files.$"
+import { Route as FilesPreviewDirectoryIdPathRouteImport } from "./routes/files.preview.$directoryId.$path"
 
 const SetupRoute = SetupRouteImport.update({
   id: "/setup",
@@ -40,6 +41,12 @@ const FilesSplatRoute = FilesSplatRouteImport.update({
   path: "/files/$",
   getParentRoute: () => rootRouteImport,
 } as any)
+const FilesPreviewDirectoryIdPathRoute =
+  FilesPreviewDirectoryIdPathRouteImport.update({
+    id: "/files/preview/$directoryId/$path",
+    path: "/files/preview/$directoryId/$path",
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
@@ -47,6 +54,7 @@ export interface FileRoutesByFullPath {
   "/setup": typeof SetupRoute
   "/files/$": typeof FilesSplatRoute
   "/files": typeof FilesIndexRoute
+  "/files/preview/$directoryId/$path": typeof FilesPreviewDirectoryIdPathRoute
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute
@@ -54,6 +62,7 @@ export interface FileRoutesByTo {
   "/setup": typeof SetupRoute
   "/files/$": typeof FilesSplatRoute
   "/files": typeof FilesIndexRoute
+  "/files/preview/$directoryId/$path": typeof FilesPreviewDirectoryIdPathRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +71,33 @@ export interface FileRoutesById {
   "/setup": typeof SetupRoute
   "/files/$": typeof FilesSplatRoute
   "/files/": typeof FilesIndexRoute
+  "/files/preview/$directoryId/$path": typeof FilesPreviewDirectoryIdPathRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: "/" | "/login" | "/setup" | "/files/$" | "/files"
+  fullPaths:
+    | "/"
+    | "/login"
+    | "/setup"
+    | "/files/$"
+    | "/files"
+    | "/files/preview/$directoryId/$path"
   fileRoutesByTo: FileRoutesByTo
-  to: "/" | "/login" | "/setup" | "/files/$" | "/files"
-  id: "__root__" | "/" | "/login" | "/setup" | "/files/$" | "/files/"
+  to:
+    | "/"
+    | "/login"
+    | "/setup"
+    | "/files/$"
+    | "/files"
+    | "/files/preview/$directoryId/$path"
+  id:
+    | "__root__"
+    | "/"
+    | "/login"
+    | "/setup"
+    | "/files/$"
+    | "/files/"
+    | "/files/preview/$directoryId/$path"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -77,6 +106,7 @@ export interface RootRouteChildren {
   SetupRoute: typeof SetupRoute
   FilesSplatRoute: typeof FilesSplatRoute
   FilesIndexRoute: typeof FilesIndexRoute
+  FilesPreviewDirectoryIdPathRoute: typeof FilesPreviewDirectoryIdPathRoute
 }
 
 declare module "@tanstack/react-router" {
@@ -116,6 +146,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof FilesSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/files/preview/$directoryId/$path": {
+      id: "/files/preview/$directoryId/$path"
+      path: "/files/preview/$directoryId/$path"
+      fullPath: "/files/preview/$directoryId/$path"
+      preLoaderRoute: typeof FilesPreviewDirectoryIdPathRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -125,6 +162,7 @@ const rootRouteChildren: RootRouteChildren = {
   SetupRoute: SetupRoute,
   FilesSplatRoute: FilesSplatRoute,
   FilesIndexRoute: FilesIndexRoute,
+  FilesPreviewDirectoryIdPathRoute: FilesPreviewDirectoryIdPathRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
