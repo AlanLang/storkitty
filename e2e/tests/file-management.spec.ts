@@ -234,10 +234,7 @@ test.describe("文件管理", () => {
       try {
         await fileOperationsHelper.uploadFile(tempFilePath);
         
-        // 通过点击背景关闭上传抽屉
-        await page.locator('.fixed.inset-0 .absolute.inset-0').first().click({ position: { x: 100, y: 100 } });
-        await page.waitForTimeout(1000);
-        
+        // uploadFile 方法现在会自动关闭抽屉，无需手动关闭
         // 验证文件存在于主文件列表中
         await page.waitForSelector(`main p:has-text("${testFileName}")`, { timeout: 10000 });
       } finally {

@@ -44,13 +44,25 @@ export class NavigationHelper {
     await this.page.waitForLoadState("networkidle");
   }
 
-  // 导航到特定目录
-  async goToDirectory(directoryId: string, path?: string) {
-    const url = path
-      ? `/files/${directoryId}/${path}`
-      : `/files/${directoryId}`;
-    await this.page.goto(url);
+  // 导航到特定目录 - 通过点击侧边栏目录按钮
+  async goToDirectory(directoryName: string, path?: string) {
+    // 首先导航到文件页面以确保侧边栏已加载
+    await this.goToFiles();
+    
+    // 点击侧边栏中的目录按钮
+    const directoryButton = this.page.locator(`button:has-text("${directoryName}")`);
+    await directoryButton.click();
+    
+    // 等待页面加载
     await this.page.waitForLoadState("networkidle");
+    await this.page.waitForTimeout(1000); // 额外等待确保目录切换完成
+    
+    // 如果指定了路径，再导航到该路径
+    if (path) {
+      const folderItem = this.page.locator(`p:has-text("${path}")`).first();
+      await folderItem.click();
+      await this.page.waitForLoadState("networkidle");
+    }
   }
 
   // 等待页面完全加载
@@ -163,8 +175,8 @@ export class FileOperationsHelper {
 
   // 上传文件
   async uploadFile(filePath: string) {
-    // 打开上传抽屉界面
-    const uploadButton = this.page.locator('button:has-text("上传")');
+    // 打开上传抽屉界面 - 使用更具体的选择器避免冲突
+    const uploadButton = this.page.locator('button:has-text("上传")').first();
     await uploadButton.click();
 
     // 等待抽屉打开 - 检查抽屉的translate-x-0类
@@ -183,6 +195,19 @@ export class FileOperationsHelper {
 
     // 等待上传完成 - 检查成功状态的图标或者已完成文字
     await this.page.waitForSelector('.text-green-500, svg[class*="CheckCircle"], :has-text("已完成")', { timeout: 15000 });
+    
+    // 自动关闭上传抽屉 - 点击右上角的X关闭按钮
+    const closeButton = this.page.locator('.translate-x-0 button.h-8.w-8, .translate-x-0 button:has-text("×"), .translate-x-0 button[class*="h-8"][class*="w-8"]').first();
+    
+    // 等待关闭按钮可见并点击
+    await closeButton.waitFor({ state: 'visible', timeout: 5000 });
+    await closeButton.click();
+    
+    // 等待抽屉关闭动画完成
+    await this.page.waitForTimeout(1000);
+    
+    // 等待网络请求完成，确保文件列表已更新
+    await this.page.waitForLoadState("networkidle");
   }
 
   // 创建文件夹
