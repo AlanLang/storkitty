@@ -1,7 +1,8 @@
 use axum::{
+    body::Body,
     extract::{Path, State, Json as ExtractJson},
     http::{HeaderMap, StatusCode, header::CONTENT_DISPOSITION},
-    response::Json,
+    response::{Json, Response},
     routing::{delete, get, post, put},
     Router,
 };
@@ -1160,6 +1161,110 @@ impl FileService {
             .unwrap())
     }
 
+    pub async fn download_file_with_directory(&self, directory_id: &str, file_path: String) -> Result<axum::response::Response, StatusCode> {
+        log::info!("Attempting to download file from directory {}: {}", directory_id, file_path);
+        
+        // 获取目录配置
+        let directory_config = {
+            let config = self.config.read().await;
+            match config.get_directory_by_id(directory_id) {
+                Some(dir) => dir,
+                None => {
+                    log::error!("Directory not found: {}", directory_id);
+                    return Err(StatusCode::NOT_FOUND);
+                }
+            }
+        };
+
+        // 构建完整的文件路径
+        let directory_path = match &directory_config.path {
+            Some(path) => PathBuf::from(path),
+            None => {
+                log::error!("Directory path not configured for: {}", directory_id);
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        };
+
+        let full_file_path = directory_path.join(&file_path);
+        log::info!("Full file path resolved to: {:?}", full_file_path);
+        
+        // 检查文件是否存在
+        if !full_file_path.exists() {
+            log::error!("File not found: {:?}", full_file_path);
+            return Err(StatusCode::NOT_FOUND);
+        }
+
+        // 检查是否为文件（不是目录）
+        if !full_file_path.is_file() {
+            log::error!("Path is not a file: {:?}", full_file_path);
+            return Err(StatusCode::BAD_REQUEST);
+        }
+
+        // 安全检查：确保文件在目录范围内
+        let canonical_file_path = match full_file_path.canonicalize() {
+            Ok(path) => path,
+            Err(e) => {
+                log::error!("Failed to canonicalize file path {:?}: {}", full_file_path, e);
+                return Err(StatusCode::NOT_FOUND);
+            }
+        };
+
+        let canonical_directory_path = match directory_path.canonicalize() {
+            Ok(path) => path,
+            Err(e) => {
+                log::error!("Failed to canonicalize directory path {:?}: {}", directory_path, e);
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        };
+
+        if !canonical_file_path.starts_with(&canonical_directory_path) {
+            log::error!("Security violation: file path outside directory scope");
+            return Err(StatusCode::FORBIDDEN);
+        }
+
+        // 打开文件
+        let file = match tokio::fs::File::open(&full_file_path).await {
+            Ok(file) => file,
+            Err(e) => {
+                log::error!("Failed to open file {:?}: {}", full_file_path, e);
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        };
+
+        // 获取文件大小
+        let file_size = match file.metadata().await {
+            Ok(metadata) => metadata.len(),
+            Err(e) => {
+                log::error!("Failed to get file metadata: {}", e);
+                return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        };
+
+        // 获取文件名用于下载
+        let file_name = full_file_path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("download");
+
+        // 创建响应流
+        let reader_stream = ReaderStream::new(file);
+        let body = Body::from_stream(reader_stream);
+
+        // 设置 Content-Disposition 头以触发下载
+        let content_disposition = format!("attachment; filename=\"{}\"", file_name);
+
+        log::info!("Successfully serving file: {:?} (size: {} bytes)", full_file_path, file_size);
+
+        Ok(Response::builder()
+            .status(StatusCode::OK)
+            .header("Content-Type", "application/octet-stream")
+            .header(CONTENT_DISPOSITION, content_disposition)
+            .header("Content-Length", file_size.to_string())
+            .header("Cache-Control", "no-cache")
+            .body(body)
+            .unwrap())
+    }
+
 }
 
 pub async fn list_files_handler(
@@ -1209,13 +1314,19 @@ pub async fn rename_file_handler(
     file_service.rename_file(&headers, file_path, request.new_name).await
 }
 
-// Temporarily disabled due to compilation issue
-// pub async fn download_file_handler(
-//     State(file_service): State<Arc<FileService>>,
-//     Path(file_path): Path<String>,
-// ) -> Result<axum::response::Response, StatusCode> {
-//     file_service.download_file(file_path).await
-// }
+pub async fn download_file_handler(
+    State(file_service): State<Arc<FileService>>,
+    Path(file_path): Path<String>,
+) -> Result<axum::response::Response, StatusCode> {
+    file_service.download_file(file_path).await
+}
+
+pub async fn download_file_with_directory_handler(
+    State(file_service): State<Arc<FileService>>,
+    Path((directory_id, file_path)): Path<(String, String)>,
+) -> Result<axum::response::Response, StatusCode> {
+    file_service.download_file_with_directory(&directory_id, file_path).await
+}
 
 
 pub async fn list_files_with_directory_handler(
@@ -1279,6 +1390,9 @@ pub fn files_router(file_service: Arc<FileService>) -> Router {
         .route("/dir/{directory_id}/mkdir/{*directory_path}", post(create_directory_with_directory_handler))
         .route("/dir/{directory_id}/rename/{*file_path}", put(rename_file_with_directory_handler))
         
-        // Note: Download endpoints are handled by static file server for public access
+        // Download endpoints (no authentication required for public access)
+        .route("/dir/{directory_id}/download/{*file_path}", get(download_file_with_directory_handler))
+        .route("/download/{*file_path}", get(download_file_handler)) // Legacy support
+        
         .with_state(file_service)
 }

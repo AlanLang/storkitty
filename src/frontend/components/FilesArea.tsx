@@ -131,7 +131,7 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
       return;
     }
     const filePath = currentPath ? `${currentPath}/${file.name}` : file.name;
-    downloadFile(filePath, file.name);
+    downloadFile(filePath, file.name, selectedDirectoryId);
   };
 
   const handleCopyDownloadLink = async (file: FileInfo) => {
@@ -139,7 +139,7 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
       return;
     }
     const filePath = currentPath ? `${currentPath}/${file.name}` : file.name;
-    const success = await copyDownloadLink(filePath);
+    const success = await copyDownloadLink(filePath, selectedDirectoryId);
 
     if (success) {
       toast.success("下载链接已复制到剪贴板");
