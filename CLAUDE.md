@@ -597,6 +597,8 @@ description = "Document storage area"
 icon = "file-text"
 storage_type = "local"
 path = "./documents"
+# Optional: disable this directory (default: false)
+# disable = true
 ```
 
 ### Configuration Fields
@@ -607,6 +609,7 @@ path = "./documents"
 - **Icon**: Lucide React icon name for UI display
 - **Storage Type**: Currently only "local" is supported
 - **Path**: Filesystem path relative to server root
+- **Disable**: Optional boolean to temporarily disable directory (default: false)
 - **Default Selection**: The first directory in the list is automatically selected as default
 
 ### Directory Selection System

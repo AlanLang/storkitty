@@ -19,6 +19,7 @@ allowed_extensions = []
 blocked_extensions = [".exe", ".bat", ".sh"]
 
 # 存储目录配置
+# 每个目录可以通过 disable = true 来临时禁用，不会在前端显示
 [[storage.directories]]
 id = "default"
 name = "默认"
@@ -35,7 +36,7 @@ name = "文档"
 description = "文档和文本文件"
 icon = "file-text"
 storage_type = "local"
-path = "./uploads/documents"
+path = "./documents"
 
 [[storage.directories]]
 id = "images"
@@ -43,7 +44,8 @@ name = "图片"
 description = "图片和媒体文件"
 icon = "image"
 storage_type = "local"
-path = "./uploads/images"
+path = "./images"
+disable = true
 
 [[storage.directories]]
 id = "videos" 
@@ -51,7 +53,8 @@ name = "视频"
 description = "视频文件"
 icon = "video"
 storage_type = "local"
-path = "./uploads/videos"
+path = "./videos"
+disable = true
 
 # OSS 存储配置示例（暂未实现）
 # [[storage.directories]]

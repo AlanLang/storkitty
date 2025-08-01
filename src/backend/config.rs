@@ -60,6 +60,12 @@ pub struct DirectoryConfig {
     pub storage_type: String,
     pub path: Option<String>, // 本地存储路径
     pub config: Option<HashMap<String, String>>, // 云存储配置
+    #[serde(default = "default_disable")]
+    pub disable: bool, // 是否禁用此目录
+}
+
+fn default_disable() -> bool {
+    false
 }
 
 impl Config {
@@ -84,10 +90,14 @@ impl Config {
         Ok(config)
     }
     
-    /// 获取可用的存储目录列表
+    /// 获取可用的存储目录列表（过滤被禁用的目录）
     pub fn get_storage_directories(&self) -> Vec<DirectoryConfig> {
         if let Some(storage) = &self.storage {
-            storage.directories.clone()
+            storage.directories
+                .iter()
+                .filter(|dir| !dir.disable)
+                .cloned()
+                .collect()
         } else {
             // 如果没有配置多目录，返回空列表
             vec![]
@@ -101,7 +111,7 @@ impl Config {
             .next()
     }
     
-    /// 根据ID获取存储目录
+    /// 根据ID获取存储目录（仅返回未被禁用的目录）
     pub fn get_directory_by_id(&self, id: &str) -> Option<DirectoryConfig> {
         self.get_storage_directories()
             .into_iter()

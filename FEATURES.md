@@ -71,6 +71,7 @@
   - ✅ 默认目录设置和自动目录创建
   - ✅ 目录级别的路径安全检查和沙盒隔离
   - ✅ 统一的目录化 API 端点设计
+  - ✅ **目录禁用功能**: 支持通过 `disable = true` 临时禁用目录
 - **前端**:
   - ✅ 现代化目录选择界面，侧边栏显示所有可用目录
   - ✅ 目录图标和描述的直观展示
@@ -94,6 +95,8 @@ description = "Document storage area"
 icon = "file-text"
 storage_type = "local"
 path = "./documents"
+# 可选：禁用此目录，不会在前端显示
+# disable = true
 ```
 
 **目录选择系统**:
