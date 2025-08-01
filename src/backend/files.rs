@@ -131,7 +131,7 @@ impl FileService {
         let config = self.config.read().await;
         
         // 获取默认目录配置
-        let default_dir = config.get_default_directory()
+        let default_dir = config.get_first_directory()
             .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
         
         let root_dir = StdPath::new(default_dir.path.as_ref().ok_or(StatusCode::INTERNAL_SERVER_ERROR)?);
@@ -321,7 +321,7 @@ impl FileService {
                         }
 
                         let config = self.config.read().await;
-                        let default_dir = config.get_default_directory()
+                        let default_dir = config.get_first_directory()
                             .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
                         let root_dir = StdPath::new(default_dir.path.as_ref().unwrap()).canonicalize().unwrap_or_else(|_| {
                             StdPath::new(default_dir.path.as_ref().unwrap()).to_path_buf()
@@ -535,7 +535,7 @@ impl FileService {
         self.verify_auth(headers).await?;
 
         let config = self.config.read().await;
-        let default_dir = config.get_default_directory()
+        let default_dir = config.get_first_directory()
             .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
         let root_path = StdPath::new(default_dir.path.as_ref().ok_or(StatusCode::INTERNAL_SERVER_ERROR)?);
         
@@ -952,7 +952,7 @@ impl FileService {
 
         // 确保新路径在安全范围内
         let config = self.config.read().await;
-        let default_dir = config.get_default_directory()
+        let default_dir = config.get_first_directory()
             .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
         let root_dir = StdPath::new(default_dir.path.as_ref().unwrap()).canonicalize().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
         

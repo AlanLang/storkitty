@@ -229,7 +229,7 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
 
   return (
     <main className="flex-1 flex flex-col overflow-hidden">
-      <div className="flex-shrink-0 p-4 md:p-6">
+      <div className="flex-shrink-0 p-4 md:p-6 md:pb-2 pb-2">
         {/* 工具栏 */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">

@@ -57,7 +57,6 @@ pub struct DirectoryConfig {
     pub name: String,
     pub description: String,
     pub icon: String,
-    pub default: bool,
     pub storage_type: String,
     pub path: Option<String>, // 本地存储路径
     pub config: Option<HashMap<String, String>>, // 云存储配置
@@ -95,11 +94,11 @@ impl Config {
         }
     }
     
-    /// 获取默认存储目录
-    pub fn get_default_directory(&self) -> Option<DirectoryConfig> {
+    /// 获取第一个存储目录（作为默认目录）
+    pub fn get_first_directory(&self) -> Option<DirectoryConfig> {
         self.get_storage_directories()
             .into_iter()
-            .find(|dir| dir.default)
+            .next()
     }
     
     /// 根据ID获取存储目录

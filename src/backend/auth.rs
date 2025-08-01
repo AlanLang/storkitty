@@ -53,7 +53,6 @@ pub struct DirectoryInfo {
     pub name: String,
     pub description: String,
     pub icon: String,
-    pub default: bool,
     pub storage_type: String,
 }
 
@@ -190,7 +189,6 @@ pub async fn verify_handler(
                     name: dir.name,
                     description: dir.description,
                     icon: dir.icon,
-                    default: dir.default,
                     storage_type: dir.storage_type,
                 })
                 .collect();

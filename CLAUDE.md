@@ -586,34 +586,46 @@ allow_delete = true
 allow_download = true
 
 # Multi-directory storage configuration
-[[storage_directories]]
+[[storage.directories]]
 id = "uploads"
 name = "My Files"
 description = "Personal file storage"
 icon = "hard-drive"
 storage_type = "local"
 path = "./uploads"
-default = true
 
-[[storage_directories]]
+[[storage.directories]]
 id = "documents"
 name = "Documents"
 description = "Document storage area"
 icon = "file-text"
 storage_type = "local"
 path = "./documents"
-default = false
 ```
 
 ### Configuration Fields
-- **Storage Directories**: Array of `[[storage_directories]]` entries
+- **Storage Directories**: Array of `[[storage.directories]]` entries
 - **Directory ID**: Unique identifier for API routing
 - **Directory Name**: Display name in the UI
 - **Description**: Optional description for the directory
 - **Icon**: Lucide React icon name for UI display
 - **Storage Type**: Currently only "local" is supported
 - **Path**: Filesystem path relative to server root
-- **Default**: Boolean indicating the default directory selection
+- **Default Selection**: The first directory in the list is automatically selected as default
+
+### Directory Selection System
+- **Automatic First Selection**: System automatically selects the first configured directory as the active storage location
+- **LocalStorage Persistence**: User's directory choice is saved in browser localStorage and restored on page refresh
+- **Storage Key**: `"storkitty_selected_directory"` - used to persist the selected directory ID
+- **Seamless Experience**: No configuration needed, works out of the box with clean UI
+- **Backwards Compatibility**: Existing configurations continue to work, any legacy `default` fields are ignored
+
+### Directory Selection Features
+- **Smart Initialization**: On first load, selects the first available directory
+- **Persistent Selection**: User's choice survives browser refresh and restart
+- **Fallback Handling**: If stored directory ID is not found, automatically falls back to first directory
+- **Clean UI**: Removed "默认" (default) labels for simplified interface
+- **SSR Compatible**: Handles server-side rendering safely with proper window checks
 
 ## API 优化
 
@@ -640,21 +652,41 @@ default = false
     "max_file_size_mb": 100,
     "allowed_extensions": [],
     "blocked_extensions": [".exe", ".bat", ".sh"]
-  }
+  },
+  "directories": [
+    {
+      "id": "uploads",
+      "name": "My Files",
+      "description": "Personal file storage",
+      "icon": "hard-drive",
+      "storage_type": "local"
+    },
+    {
+      "id": "documents",
+      "name": "Documents",
+      "description": "Document storage area",
+      "icon": "file-text",
+      "storage_type": "local"
+    }
+  ]
 }
 ```
 
 #### 技术实现
-- **后端变更**: 修改 `auth.rs` 中的 `VerifyResponse` 结构体，包含 `FileConfigInfo`
-- **前端变更**: 更新 `AuthContext` 暴露 `fileConfig` 属性，组件直接从认证上下文获取配置
+- **后端变更**: 修改 `auth.rs` 中的 `VerifyResponse` 结构体，包含 `FileConfigInfo` 和 `DirectoryInfo` 数组
+- **前端变更**: 更新 `AuthContext` 暴露 `fileConfig` 和 `directories` 属性，组件直接从认证上下文获取配置
 - **类型安全**: 统一在 `types/auth.ts` 中定义相关类型，移除重复定义
-- **向后兼容**: 保持现有API结构，只是数据更丰富
+- **目录选择优化**: 移除 `default` 字段，采用首个目录自动选择机制
+- **持久化存储**: 集成 localStorage 实现目录选择状态持久化
+- **向后兼容**: 保持现有API结构，只是数据更丰富，移除的 `default` 字段不影响旧配置
 
 #### 性能收益
 - **减少网络请求**: 从2个请求优化为1个请求
 - **降低延迟**: 用户登录后立即获得所有必要信息
-- **简化状态管理**: 统一在认证上下文中管理用户和配置信息
+- **简化状态管理**: 统一在认证上下文中管理用户、配置和目录信息
 - **改善用户体验**: 更快的界面响应和配置加载
+- **智能目录选择**: 自动选择首个目录，无需额外配置
+- **状态持久化**: 目录选择状态自动保存，用户体验更连贯
 
 ## 开发阶段与维护规则
 

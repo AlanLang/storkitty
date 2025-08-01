@@ -69,24 +69,30 @@
 
 **配置示例**:
 ```toml
-[[storage_directories]]
+[[storage.directories]]
 id = "uploads"
 name = "My Files"
 description = "Personal file storage"
 icon = "hard-drive"
 storage_type = "local"
 path = "./uploads"
-default = true
 
-[[storage_directories]]
+[[storage.directories]]
 id = "documents"
 name = "Documents"
 description = "Document storage area"
 icon = "file-text"
 storage_type = "local"
 path = "./documents"
-default = false
 ```
+
+**目录选择系统**:
+- ✅ **智能默认选择**: 自动选择配置中的第一个目录作为默认存储位置
+- ✅ **localStorage 持久化**: 用户选择的目录自动保存到浏览器本地存储
+- ✅ **无缝用户体验**: 刷新浏览器后自动恢复上次选择的目录
+- ✅ **简化配置**: 移除 `default = true/false` 字段，采用更简洁的配置方式
+- ✅ **向后兼容**: 现有配置文件继续有效，系统自动忽略遗留的 `default` 字段
+- ✅ **SSR 兼容**: 安全处理服务端渲染，避免 hydration 问题
 
 **API 优化**:
 - ✅ 统一认证响应：`/api/auth/verify` 现在返回用户信息 + 文件配置 + 目录列表
@@ -409,32 +415,29 @@ allow_delete = true
 allow_download = true
 
 # 多目录存储配置 ✅ (新增)
-[[storage_directories]]
+[[storage.directories]]
 id = "uploads"
 name = "My Files"
 description = "Personal file storage"
 icon = "hard-drive"
 storage_type = "local"
 path = "./uploads"
-default = true
 
-[[storage_directories]]
+[[storage.directories]]
 id = "documents"
 name = "Documents"
 description = "Document storage area"
 icon = "file-text"
 storage_type = "local"
 path = "./documents"
-default = false
 
-[[storage_directories]]
+[[storage.directories]]
 id = "media"
 name = "Media Files"
 description = "Photos, videos, and media"
 icon = "image"
 storage_type = "local"
 path = "./media"
-default = false
 ```
 
 ---
