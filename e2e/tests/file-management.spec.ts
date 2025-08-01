@@ -53,8 +53,8 @@ test.describe("文件管理", () => {
       const firstFile = files[0];
       await expect(firstFile).toBeVisible();
 
-      // 验证文件名显示（在卡片或列表中）
-      const fileName = await firstFile.locator('p[title], p:has-text(".")').first().textContent();
+      // 验证文件名显示（在列表中）
+      const fileName = await firstFile.locator('p.text-sm.font-medium').first().textContent();
       expect(fileName).toBeTruthy();
     });
 

@@ -153,17 +153,12 @@ export class FileOperationsHelper {
     await this.page.waitForSelector('.animate-spin', { state: 'hidden', timeout: 5000 });
   }
 
-  // 获取文件列表中的所有文件（Card组件或列表项）
+  // 获取文件列表中的所有文件（列表项）
   async getFileList() {
     await this.waitForFileList();
-    // 查找所有文件卡片或列表项
-    const gridItems = this.page.locator('.grid > div[class*="Card"], .grid > [class*="relative"]');
+    // 查找所有文件列表项
     const listItems = this.page.locator('.space-y-1 > div[class*="flex"][class*="items-center"]');
-    
-    const gridCount = await gridItems.count();
-    const listCount = await listItems.count();
-    
-    return gridCount > 0 ? await gridItems.all() : await listItems.all();
+    return await listItems.all();
   }
 
   // 查找特定名称的文件

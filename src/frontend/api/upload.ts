@@ -82,10 +82,7 @@ export async function uploadFileWithDirectory(
       reject(new Error("上传已取消"));
     });
 
-    xhr.open(
-      "POST",
-      `/api/upload/${encodeURIComponent(directoryId)}/simple`,
-    );
+    xhr.open("POST", `/api/upload/${encodeURIComponent(directoryId)}/simple`);
     xhr.setRequestHeader("Authorization", `Bearer ${token}`);
     xhr.send(formData);
   });
