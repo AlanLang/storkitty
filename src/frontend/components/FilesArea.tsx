@@ -7,9 +7,7 @@ import {
   Edit,
   File,
   FolderOpen,
-  Grid3X3,
   Home,
-  List,
   Loader2,
   MoreVertical,
   Search,
@@ -27,23 +25,17 @@ import {
   useRenameFileMutation,
 } from "../hooks/useFiles";
 import { useUpload } from "../hooks/useUploadContext";
-import { useViewMode } from "../hooks/useViewMode";
 import type { FileInfo } from "../types/files";
 import {
   canCopyToClipboard,
   copyDownloadLink,
   downloadFile,
 } from "../utils/download";
-import {
-  formatFileSize,
-  getFileIcon,
-  getFileIconColor,
-} from "../utils/fileUtils";
+import { formatFileSize } from "../utils/fileUtils";
 import { CreateDirectoryDialog } from "./CreateDirectoryDialog";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { RenameDialog } from "./RenameDialog";
 import { Button } from "./ui/button";
-import { Card, CardContent } from "./ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,7 +53,6 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
   const navigate = useNavigate();
   const { selectedDirectoryId } = useDirectory();
   const { isAuthenticated } = useAuth();
-  const { viewMode, setViewMode } = useViewMode();
   const { setIsDrawerOpen } = useUpload();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -264,25 +255,6 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
               <Upload className="h-4 w-4" />
               <span className="hidden sm:inline">上传</span>
             </Button>
-
-            <div className="flex rounded-md border">
-              <Button
-                variant={viewMode === "grid" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode("grid")}
-                className="rounded-r-none"
-              >
-                <Grid3X3 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === "list" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode("list")}
-                className="rounded-l-none"
-              >
-                <List className="h-4 w-4" />
-              </Button>
-            </div>
           </div>
         </div>
 
@@ -338,136 +310,6 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
             <p className="text-muted-foreground text-center">
               无法获取文件列表，请检查网络连接或重试
             </p>
-          </div>
-        ) : viewMode === "grid" ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4">
-            {filteredFiles.map((file, index) => (
-              <Card
-                key={`${file.path}-${index}`}
-                className="relative overflow-hidden border-0 bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50 hover:bg-card/70 hover:shadow-md transition-all duration-200 cursor-pointer group"
-                onClick={() => {
-                  if (file.file_type === "folder") {
-                    handleFolderClick(file.name);
-                  }
-                }}
-              >
-                {/* 操作菜单 */}
-                <div className="absolute bottom-2 right-2 z-10">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 rounded-md opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 transition-opacity hover:bg-muted/50"
-                        onClick={(e) => e.stopPropagation()}
-                        data-testid={`file-more-actions-button-${file.name}`}
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="start"
-                      side="bottom"
-                      sideOffset={5}
-                      className="w-48"
-                    >
-                      {file.file_type === "file" && (
-                        <>
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDownload(file);
-                            }}
-                            className="cursor-pointer focus-visible:outline-none"
-                          >
-                            <Download className="mr-2 h-4 w-4" />
-                            下载文件
-                          </DropdownMenuItem>
-                          {canCopyToClipboard() && (
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCopyDownloadLink(file);
-                              }}
-                              className="cursor-pointer focus-visible:outline-none"
-                            >
-                              <Copy className="mr-2 h-4 w-4" />
-                              复制下载链接
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuSeparator />
-                        </>
-                      )}
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRenameClick(file);
-                        }}
-                        className="cursor-pointer focus-visible:outline-none"
-                      >
-                        <Edit className="mr-2 h-4 w-4" />
-                        重命名
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteClick(file);
-                        }}
-                        className="cursor-pointer text-destructive focus:text-destructive focus-visible:outline-none"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        删除
-                        {file.file_type === "folder" ? "文件夹" : "文件"}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-
-                <CardContent className="p-4">
-                  <div className="flex flex-col items-center space-y-3">
-                    {/* 图标区域 */}
-                    <div className="relative">
-                      <div className="w-16 h-16 flex items-center justify-center rounded-2xl bg-gradient-to-br from-muted/50 to-muted group-hover:from-muted/60 group-hover:to-muted/80 transition-all duration-200">
-                        {(() => {
-                          const IconComponent = getFileIcon(
-                            file.name,
-                            file.file_type,
-                          );
-                          const iconColor = getFileIconColor(
-                            file.name,
-                            file.file_type,
-                          );
-
-                          return (
-                            <IconComponent
-                              className={`h-8 w-8 ${iconColor} group-hover:scale-110 transition-all duration-200`}
-                            />
-                          );
-                        })()}
-                      </div>
-                    </div>
-
-                    {/* 文件信息 */}
-                    <div className="text-center w-full space-y-1">
-                      <p
-                        className="text-sm font-medium text-foreground leading-tight truncate w-full px-1"
-                        title={file.name}
-                      >
-                        {file.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {file.file_type === "folder"
-                          ? `${file.items || 0} 项目`
-                          : file.size
-                            ? formatFileSize(file.size)
-                            : "未知大小"}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
           </div>
         ) : (
           <div className="space-y-1">

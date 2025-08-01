@@ -194,7 +194,7 @@ The application features an automatic setup wizard for first-time use:
 │       │   ├── RenameDialog.tsx # File/folder rename dialog with validation and conflict detection
 │       │   ├── UploadDrawer.tsx # Upload drawer component with progress tracking
 │       │   ├── UploadIndicator.tsx # Floating upload indicator button
-│       │   └── FilesPageComponent.tsx # Shared file management component
+│       │   └── FilesArea.tsx # Main file management component with list view
 │       └── routes/             # File-based route definitions
 │           ├── __root.tsx      # Root layout with AuthProvider
 │           ├── index.tsx       # Home route (intelligent auto-redirect)
@@ -227,7 +227,7 @@ The application features an automatic setup wizard for first-time use:
 - **File type restrictions**: Configurable allowed/blocked file extensions
 - **Automatic directory creation**: Creates upload directory on startup
 - **Path security**: Restricted to configured root directory with path validation
-- **File browser interface**: Modern responsive design with grid/list view modes
+- **File browser interface**: Modern responsive design with streamlined list view
 - **Folder navigation**: Click folders to navigate into subdirectories with URL path reflection
 - **Breadcrumb navigation**: Interactive breadcrumb showing current path with clickable navigation
 - **File metadata**: File size formatting, type detection, and modification dates
@@ -273,7 +273,7 @@ The application features an automatic setup wizard for first-time use:
 - **Component architecture**: 
   - Shared UI components in `src/frontend/components/ui/` (shadcn/ui)
   - Business logic components in `src/frontend/components/`
-  - FilesPageComponent: Shared component for file browser functionality
+  - FilesArea: Main component for file browser functionality with simplified list interface
   - CreateDirectoryDialog: Dialog for creating new folders with input validation and error handling
   - DeleteConfirmDialog: Confirmation dialog for file/folder deletion with safety features
   - RenameDialog: Dialog for renaming files/folders with real-time validation and conflict detection
@@ -431,26 +431,26 @@ The project uses TailwindCSS 4.x with the following setup:
 - **Back navigation**: Use browser back/forward buttons or breadcrumb links
 
 ### UI Components
-- **Grid/List views**: Toggle between card grid and detailed list views
-- **Smart file icons**: Color-coded Lucide React icons based on file type (images=green, videos=red, documents=blue, code=purple, archives=orange)
-- **Modern card design**: Rounded cards with gradient icon containers and smooth hover effects
-- **Interactive hover effects**: Subtle shadow and icon scaling on hover for enhanced UX
-- **File metadata**: Size, modification date, and item count for folders
+- **List View Interface**: Clean, modern list-based file browser with consistent design
+- **Smart file icons**: Color-coded Lucide React icons based on file type (files and folders)
+- **Interactive hover effects**: Subtle background highlight and smooth transitions on hover for enhanced UX
+- **File metadata**: Size, modification date, and item count for folders displayed in compact format
 - **Search filter**: Real-time filtering of files and folders by name
 - **Storage display**: Real-time storage usage with progress bar
-- **Responsive layout**: Adaptive grid from 2-7 columns across different screen sizes
-- **File action menus**: Radix UI dropdown menus for file operations (download, copy link, delete)
-- **Smart menu positioning**: Grid mode menus expand right-down, list mode menus expand naturally
+- **Responsive layout**: Single-column list layout that adapts to different screen sizes
+- **File action menus**: Radix UI dropdown menus for file operations (download, copy link, rename, delete)
+- **Context-sensitive menus**: Action menus appear on hover with appropriate options based on file type
 - **Toast notifications**: Sonner-based notifications for user feedback and status updates
 
 ### Technical Implementation
-- **Shared component**: `FilesPageComponent` handles all file browser logic
+- **Main component**: `FilesArea` component handles all file browser logic with simplified list-only interface
 - **Route separation**: 
   - `files.index.tsx` - Root directory browser (index route)
   - `files.$path.tsx` - Dynamic path navigation
 - **State management**: TanStack Query for caching and data fetching
 - **URL encoding**: Automatic encoding/decoding of special characters in paths
 - **Error handling**: Graceful handling of navigation errors and loading states
+- **Simplified architecture**: Removed view mode switching and grid layout complexity
 
 ## Directory Management System
 
@@ -520,10 +520,10 @@ The project uses TailwindCSS 4.x with the following setup:
 ## File Deletion System
 
 ### Deletion Interface
-- **Context-sensitive Delete Buttons**: Hover-activated delete buttons in both grid and list views
-- **Grid View**: Floating delete button in top-right corner of file cards
-- **List View**: Delete button in action menu that appears on hover
+- **Context-sensitive Delete Buttons**: Hover-activated delete buttons integrated into list view interface
+- **Action Menu Integration**: Delete button appears in dropdown action menu on hover
 - **Visual Feedback**: Red destructive styling with trash icon for clear identification
+- **Intuitive Placement**: Consistent positioning within the file action menu
 
 ### Deletion Features
 - **Confirmation Dialog**: Modern modal dialog with detailed information about deletion

@@ -68,8 +68,22 @@ test.describe("大文件分片上传", () => {
         { timeout: 15000 } // 15秒超时
       );
 
-      // 关闭上传抽屉
-      await page.keyboard.press('Escape');
+      // 关闭上传抽屉 - 使用更可靠的关闭方法
+      const closeButton = page.locator('.translate-x-0 button.h-8.w-8, .translate-x-0 button:has-text("×"), .translate-x-0 button[class*="h-8"][class*="w-8"]').first();
+      
+      if (await closeButton.count() > 0) {
+        await closeButton.waitFor({ state: 'visible', timeout: 5000 });
+        await closeButton.click();
+        console.log("点击关闭按钮关闭上传抽屉");
+      } else {
+        // 备用方法：使用 ESC 键
+        await page.keyboard.press('Escape');
+        console.log("使用 ESC 键关闭上传抽屉");
+      }
+      
+      // 等待抽屉完全关闭
+      await page.waitForSelector('.translate-x-0', { state: 'hidden', timeout: 5000 });
+      console.log("上传抽屉已关闭");
 
       // 等待文件列表刷新
       await page.waitForTimeout(3000);
@@ -82,13 +96,18 @@ test.describe("大文件分片上传", () => {
       console.log(`✅ 大文件 "${fileName}" 上传成功`);
 
       // 验证文件大小显示正确（应该显示为15MB左右）
-      // 根据文件卡片结构，文件大小在文件名下方的第二个p标签中
-      const fileNameElement = page.locator(`[title="${fileName}"]`);
-      const fileSizeElement = fileNameElement.locator('..').locator('p').nth(1); // 第二个p标签包含文件大小
+      // 直接从文件名元素的父容器中找到大小信息
+      const uploadedFileElement = await fileOperationsHelper.findFile(fileName);
+      await expect(uploadedFileElement).toBeVisible();
+      
+      // 从文件名的父容器中找到文件大小信息（就在文件名下方）
+      const fileSizeElement = uploadedFileElement.locator('..').locator('p.text-xs.text-muted-foreground');
       const sizeContent = await fileSizeElement.textContent();
       
+      console.log(`文件大小显示内容: "${sizeContent}"`);
+      
       // 验证大小显示包含MB单位且接近15MB
-      expect(sizeContent).toMatch(/1[4-6]\.\d\s*MB/); // 允许14-16MB的范围，考虑格式化误差
+      expect(sizeContent).toMatch(/1[4-6]\.\d+\s*MB/); // 允许14-16MB的范围，考虑格式化误差
 
       console.log(`✅ 文件大小验证通过: ${sizeContent}`);
 
