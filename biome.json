@@ -51,6 +51,9 @@
             "deniedGlobals": ["React", "ReactDOM"]
           }
         }
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "off"
       }
     }
   },

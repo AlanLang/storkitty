@@ -19,6 +19,7 @@
 - 文件类型识别
 - 实时搜索和过滤
 - 简洁的列表视图界面
+- **README.md 自动渲染** ✨ 类似 GitHub 的 Markdown 预览功能
 
 ### 🎨 前端界面
 - 现代化的文件管理界面
@@ -226,12 +227,13 @@ allow_download = true
 - `POST /api/auth/verify` - Token 验证（包含用户信息和文件配置）
 
 #### 文件管理
-- `GET /api/files/list` - 获取根目录文件列表
-- `GET /api/files/list/{path}` - 获取指定路径文件列表
-- `GET /api/files/storage` - 获取存储空间信息
-- `DELETE /api/files/delete/{path}` - 删除文件或目录
-- `POST /api/files/mkdir/{path}` - 创建新目录
-- `GET /api/files/download/{path}` - 文件下载（无需认证）
+- `GET /api/files/{directory_id}/list` - 获取指定目录的文件列表
+- `GET /api/files/{directory_id}/list/{path}` - 获取指定路径文件列表
+- `GET /api/files/{directory_id}/storage` - 获取存储空间信息
+- `DELETE /api/files/{directory_id}/delete/{path}` - 删除文件或目录
+- `POST /api/files/{directory_id}/mkdir/{path}` - 创建新目录
+- `GET /api/files/{directory_id}/download/{path}` - 文件下载（无需认证）
+- `GET /api/files/{directory_id}/show/{path}` - 预览 Markdown 文件内容 ✨
 
 #### 文件上传
 - `POST /api/upload/simple` - 简单文件上传

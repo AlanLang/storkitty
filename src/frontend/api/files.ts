@@ -2,6 +2,7 @@ import type {
   CreateDirectoryResponse,
   DeleteResponse,
   FilesResponse,
+  ReadmeResponse,
   RenameResponse,
   StorageResponse,
 } from "../types/files";
@@ -141,6 +142,17 @@ export const filesApi = {
         body: JSON.stringify({ new_name: newName }),
       },
     );
+  },
+
+  // 展示指定目录中的文件内容（主要用于 Markdown 预览）
+  async showFileContentWithDirectory(
+    directoryId: string,
+    filePath: string,
+  ): Promise<ReadmeResponse> {
+    const endpoint = `/files/${encodeURIComponent(directoryId)}/show/${encodeURIComponent(filePath)}`;
+    return apiRequest<ReadmeResponse>(endpoint, {
+      method: "GET",
+    });
   },
 
   // Note: File config is now included in auth/verify response

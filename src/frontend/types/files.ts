@@ -49,4 +49,10 @@ export interface RenameResponse {
   message: string;
 }
 
+export interface ReadmeResponse {
+  success: boolean;
+  content?: string;
+  message?: string;
+}
+
 // Note: File config is now included in auth/verify response (types/auth.ts)

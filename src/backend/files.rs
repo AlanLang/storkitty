@@ -74,6 +74,13 @@ pub struct RenameRequest {
     pub new_name: String,
 }
 
+#[derive(Debug, Serialize)]
+pub struct ReadmeResponse {
+    pub success: bool,
+    pub content: Option<String>,
+    pub message: Option<String>,
+}
+
 pub struct FileService {
     config: Arc<RwLock<Config>>,
     auth_service: Arc<AuthService>,
@@ -462,6 +469,67 @@ impl FileService {
             .body(body)
             .unwrap())
     }
+
+    pub async fn show_file_content_with_directory(&self, headers: &HeaderMap, directory_id: &str, file_path: String) -> Result<Json<ReadmeResponse>, StatusCode> {
+        self.verify_auth(headers).await?;
+
+        let config = self.config.read().await;
+        let directory_config = config.get_directory_by_id(directory_id)
+            .ok_or(StatusCode::NOT_FOUND)?;
+
+        let directory_path = PathBuf::from(directory_config.path.as_ref().unwrap());
+        let target_path = directory_path.join(&file_path);
+
+        // 检查文件是否存在
+        if !target_path.exists() {
+            return Ok(Json(ReadmeResponse {
+                success: false,
+                content: None,
+                message: Some("文件不存在".to_string()),
+            }));
+        }
+
+        // 只处理文件，不处理目录
+        if !target_path.is_file() {
+            return Ok(Json(ReadmeResponse {
+                success: false,
+                content: None,
+                message: Some("不是文件".to_string()),
+            }));
+        }
+
+        // 检查文件扩展名是否为 markdown
+        let file_name = target_path.file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("");
+        
+        if !file_name.to_lowercase().ends_with(".md") {
+            return Ok(Json(ReadmeResponse {
+                success: false,
+                content: None,
+                message: Some("不是 Markdown 文件".to_string()),
+            }));
+        }
+
+        // 读取并返回文件内容
+        match fs::read_to_string(&target_path) {
+            Ok(content) => {
+                Ok(Json(ReadmeResponse {
+                    success: true,
+                    content: Some(content),
+                    message: None,
+                }))
+            }
+            Err(e) => {
+                log::error!("Failed to read markdown file {:?}: {}", target_path, e);
+                Ok(Json(ReadmeResponse {
+                    success: false,
+                    content: None,
+                    message: Some("无法读取文件".to_string()),
+                }))
+            }
+        }
+    }
 }
 
 // Handler functions
@@ -521,6 +589,14 @@ pub async fn download_file_with_directory_handler(
     file_service.download_file_with_directory(&directory_id, file_path).await
 }
 
+pub async fn show_file_with_directory_handler(
+    State(file_service): State<Arc<FileService>>,
+    headers: HeaderMap,
+    Path((directory_id, file_path)): Path<(String, String)>,
+) -> Result<Json<ReadmeResponse>, StatusCode> {
+    file_service.show_file_content_with_directory(&headers, &directory_id, file_path).await
+}
+
 // Router
 pub fn files_router(file_service: Arc<FileService>) -> Router {
     Router::new()
@@ -531,5 +607,6 @@ pub fn files_router(file_service: Arc<FileService>) -> Router {
         .route("/{directory_id}/mkdir/{*directory_path}", post(create_directory_with_directory_handler))
         .route("/{directory_id}/rename/{*file_path}", put(rename_file_with_directory_handler))
         .route("/{directory_id}/download/{*file_path}", get(download_file_with_directory_handler))
+        .route("/{directory_id}/show/{*file_path}", get(show_file_with_directory_handler))
         .with_state(file_service)
 }

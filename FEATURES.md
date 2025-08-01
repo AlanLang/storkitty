@@ -135,6 +135,7 @@ path = "./documents"
   - ✅ TanStack Query 缓存管理
   - ✅ 加载状态和错误处理
   - ✅ 存储空间信息实时显示
+  - ✅ **README.md 自动渲染**: 类似 GitHub 的 Markdown 预览功能 ✨
 
 **UI 设计特性**:
 - ✅ 侧边栏导航设计
@@ -151,9 +152,10 @@ path = "./documents"
 
 **API 接口** (目录化统一 API):
 ```
-GET /api/files/dir/{directory_id}/list              # 获取指定目录的文件列表
-GET /api/files/dir/{directory_id}/list/{path}       # 获取指定目录中指定路径的文件列表
-GET /api/files/dir/{directory_id}/storage           # 获取指定目录的存储空间信息
+GET /api/files/{directory_id}/list              # 获取指定目录的文件列表
+GET /api/files/{directory_id}/list/{path}       # 获取指定目录中指定路径的文件列表
+GET /api/files/{directory_id}/storage           # 获取指定目录的存储空间信息
+GET /api/files/{directory_id}/show/{path}       # ✨ 预览 Markdown 文件内容（README 渲染）
 
 Response: {
   "success": true,
@@ -295,7 +297,64 @@ Response: {
 
 ---
 
-### 7. 文件搜索模块 🔮 (未来功能)
+### 7. README 渲染模块 ✅ (已实现)
+
+**功能描述**: 类似 GitHub 的 README.md 自动检测和渲染功能，为文件目录提供美观的文档展示
+
+**实现方案**:
+- **后端**:
+  - ✅ 智能文件检测：自动检测目录中的 README.md、readme.md、Readme.md、ReadMe.md
+  - ✅ 文件类型验证：仅支持 .md 扩展名的文件
+  - ✅ 安全读取：路径验证和权限检查
+  - ✅ RESTful API：`GET /api/files/{directory_id}/show/{file_path}`
+- **前端**:
+  - ✅ 动态加载：使用 CDN 动态加载 markdown-it 库，不增加打包体积
+  - ✅ 智能检测：自动扫描文件列表中的 README 文件
+  - ✅ 缓存机制：markdown-it 实例缓存，避免重复加载
+  - ✅ 错误处理：加载失败时降级为纯文本显示
+  - ✅ 响应式设计：适配桌面和移动设备
+
+**UI 设计特性**:
+- ✅ **GitHub 风格**: 模仿 GitHub 的 README 渲染效果
+- ✅ **Typography 优化**: 使用 @tailwindcss/typography + 自定义样式
+- ✅ **行距优化**: 调整段落、标题、列表间距，提升阅读体验
+- ✅ **标题装饰**: H1/H2 标题添加底部边框线，符合 GitHub 设计规范
+- ✅ **主题适配**: 自动适配亮色/暗色主题
+- ✅ **位置优化**: README 内容显示在文件列表下方，保持自然的浏览流程
+
+**技术特性**:
+- ✅ **零打包体积**: markdown-it 通过 CDN 动态加载
+- ✅ **类型安全**: 完整的 TypeScript 类型定义
+- ✅ **性能优化**: TanStack Query 缓存和错误处理
+- ✅ **代码规范**: 通过 Biome 代码检查，符合项目规范
+
+**API 接口**:
+```
+GET /api/files/{directory_id}/show/{file_path}
+
+Response:
+{
+  "success": true,
+  "content": "# README 内容...",
+  "message": null
+}
+
+Error Response:
+{
+  "success": false,
+  "content": null,
+  "message": "文件不存在"
+}
+```
+
+**支持的文件格式**:
+- ✅ README.md / readme.md / Readme.md / ReadMe.md
+- ✅ 任意 .md 扩展名的 Markdown 文件
+- ✅ 完整的 Markdown 语法支持（标题、列表、链接、代码块等）
+
+---
+
+### 8. 文件搜索模块 🔮 (未来功能)
 
 **功能描述**: 在指定目录中搜索文件
 
@@ -308,7 +367,7 @@ Response: {
 
 ---
 
-### 8. 文件预览模块 🔮 (未来功能)
+### 9. 文件预览模块 🔮 (未来功能)
 
 **功能描述**: 支持常见文件类型的在线预览
 
@@ -484,7 +543,14 @@ path = "./media"
 5. ✅ **上传抽屉优化**: 修复并优化上传界面自动关闭逻辑
 6. ✅ **CI/CD 支持**: 适配持续集成的测试配置和报告生成
 
-### 第五阶段 (增强功能)
+### 第五阶段 ✅ 已完成 (README 渲染功能)
+1. ✅ **README.md 自动检测**: 智能检测目录中的 README.md、readme.md 等文件
+2. ✅ **Markdown 渲染引擎**: 动态 CDN 加载 markdown-it，不增加打包体积
+3. ✅ **GitHub 风格样式**: 使用 @tailwindcss/typography + 自定义样式优化
+4. ✅ **RESTful API 设计**: `/api/files/{directory_id}/show/{file_path}` 端点
+5. ✅ **UI 集成优化**: README 内容显示在文件列表下方，保持流畅体验
+
+### 第六阶段 (增强功能)
 1. 🔮 文件搜索
 2. 🔮 文件预览
 3. 🔮 访问日志记录

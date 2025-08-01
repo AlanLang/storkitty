@@ -10,6 +10,8 @@ export const filesKeys = {
     [...filesKeys.lists(), directoryId || "default", path || "root"] as const,
   storage: (directoryId?: string) =>
     [...filesKeys.all, "storage", directoryId || "default"] as const,
+  show: (filePath: string, directoryId: string) =>
+    [...filesKeys.all, "show", directoryId, filePath] as const,
 };
 
 // Legacy function - now redirects to directory-based API
@@ -119,6 +121,21 @@ export function useRenameFileMutation() {
         queryKey: filesKeys.storage(directoryId),
       });
     },
+  });
+}
+
+// 展示指定目录中的文件内容
+export function useShowFileQuery(
+  directoryId: string,
+  filePath: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: filesKeys.show(filePath, directoryId),
+    queryFn: () => filesApi.showFileContentWithDirectory(directoryId, filePath),
+    enabled,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 }
 

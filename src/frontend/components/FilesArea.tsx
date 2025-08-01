@@ -23,6 +23,7 @@ import {
   useDeleteFileMutation,
   useFileListWithDirectoryQuery,
   useRenameFileMutation,
+  useShowFileQuery,
 } from "../hooks/useFiles";
 import { useUpload } from "../hooks/useUploadContext";
 import type { FileInfo } from "../types/files";
@@ -34,6 +35,7 @@ import {
 import { formatFileSize } from "../utils/fileUtils";
 import { CreateDirectoryDialog } from "./CreateDirectoryDialog";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
+import { MarkdownRenderer } from "./MarkdownRenderer";
 import { RenameDialog } from "./RenameDialog";
 import { Button } from "./ui/button";
 import {
@@ -115,6 +117,33 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
   );
 
   const files = filesData?.files || [];
+
+  // 检测当前目录中是否有 README 文件
+  const readmeFile = useMemo(() => {
+    if (!files || files.length === 0) return null;
+
+    const readmeNames = ["README.md", "readme.md", "Readme.md", "ReadMe.md"];
+    return files.find(
+      (file) => file.file_type === "file" && readmeNames.includes(file.name),
+    );
+  }, [files]);
+
+  // 构造 README 文件的完整路径
+  const readmeFilePath = useMemo(() => {
+    if (!readmeFile) return null;
+    return currentPath ? `${currentPath}/${readmeFile.name}` : readmeFile.name;
+  }, [readmeFile, currentPath]);
+
+  // 查询 README 内容
+  const { data: readmeData } = useShowFileQuery(
+    selectedDirectoryId,
+    readmeFilePath || "",
+    isAuthenticated && !filesLoading && !filesError && !!readmeFilePath,
+  );
+
+  // 检查是否有 README 内容可显示
+  const hasReadmeContent =
+    readmeFile && readmeData?.success && readmeData.content;
 
   // 文件操作处理函数
   const handleDownload = (file: FileInfo) => {
@@ -451,6 +480,16 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
                 上传文件
               </Button>
             )}
+          </div>
+        )}
+
+        {/* README 渲染区域 - 显示在文件列表下方 */}
+        {hasReadmeContent && readmeData?.content && (
+          <div className="mt-4">
+            <MarkdownRenderer
+              content={readmeData.content}
+              className="shadow-none rounded-none py-0"
+            />
           </div>
         )}
       </div>
