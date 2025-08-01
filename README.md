@@ -134,7 +134,7 @@ npm install
 bun run dev
 
 # 2. 启动后端服务器（另一个终端，端口 3330）
-cargo run --bin storkitty
+cargo run
 
 # 3. 访问应用
 # 前端: http://localhost:3001
@@ -179,8 +179,6 @@ storkitty/
 │   │   ├── hooks/        # React Hooks
 │   │   ├── contexts/     # React Context
 │   │   └── styles/       # 样式文件
-│   ├── bin/              # 命令行工具
-│   │   └── hash_password.rs # 密码哈希生成工具
 │   └── main.rs           # Rust 入口文件
 ├── config.example.toml   # 配置文件模板（复制为 config.toml）
 ├── uploads/              # 文件存储目录（.gitignore）

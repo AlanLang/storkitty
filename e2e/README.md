@@ -43,7 +43,7 @@ bunx playwright install
 bun run build
 
 # 启动 Rust 服务器（测试会自动启动，也可手动启动）
-cargo run --bin storkitty
+cargo run
 ```
 
 ### 3. 运行测试

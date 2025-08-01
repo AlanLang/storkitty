@@ -94,7 +94,7 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: build
-        args: --release --target ${{ matrix.target }} --bin storkitty
+        args: --release --target ${{ matrix.target }}
     
     - name: Create release directory and package
       run: |
@@ -160,13 +160,15 @@ jobs:
         
         1. Download the appropriate tarball for your system
         2. Extract: \`tar -xzf storkitty-v${{ needs.check-version.outputs.version }}-x86_64-unknown-linux-gnu.tar.gz\`
-        3. Copy \`config.example.toml\` to \`config.toml\` and configure as needed
+        3. Copy \`config.example.toml\` to \`config.toml\` (or create an empty config file)
         4. Run: \`./storkitty\`
         5. Access the web interface at \`http://localhost:3330\`
+        6. **First-time setup**: The system will automatically guide you through creating an admin account
         
-        ## Default Credentials
-        - Username: \`admin\`
-        - Password: \`admin123\`
+        ## Security
+        - **No default credentials**: System is secure by default
+        - **Interactive setup**: First visit automatically redirects to setup wizard
+        - **Immediate access**: Setup wizard creates your admin account and logs you in automatically
         
         **Full Changelog**: https://github.com/${{ github.repository }}/compare/$LAST_TAG...v${{ needs.check-version.outputs.version }}
         EOF

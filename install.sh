@@ -203,7 +203,7 @@ create_config() {
     
     log_success "配置文件创建完成"
     log_warning "请修改 JWT secret_key 以提高安全性"
-    log_info "默认登录账号: admin / admin123"
+    log_info "首次访问将自动引导您创建管理员账户"
 }
 
 # 解析配置文件中的上传目录并创建
@@ -310,7 +310,7 @@ start_service() {
         log_success "Storkitty 服务启动成功"
         log_info "服务状态: $(systemctl is-active $SERVICE_NAME)"
         log_info "访问地址: http://localhost:3330"
-        log_info "默认账号: admin / admin123"
+        log_info "首次访问将自动引导您完成系统设置"
     else
         log_error "Storkitty 服务启动失败"
         log_info "查看日志: journalctl -u $SERVICE_NAME -f"

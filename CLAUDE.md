@@ -47,8 +47,7 @@ The application uses a dual-language architecture where:
 - `cargo fmt` - Format Rust code
 
 ### Backend Development
-- `cargo run --bin storkitty` - Start the Rust server (serves `web/` directory and API on port 3330)
-- `cargo run --bin hash_password` - Generate bcrypt hash for new passwords
+- `cargo run` - Start the Rust server (serves `web/` directory and API on port 3330)
 - `cargo build` - Build the Rust application
 - `cargo build --release` - Build optimized release version
 
@@ -65,7 +64,7 @@ The application features an automatic setup wizard for first-time use:
 1. Copy `config.example.toml` to `config.toml` (or create with empty user credentials)
 2. Run `bun install` to install frontend dependencies  
 3. Run `bun run build` to build the frontend
-4. Run `cargo run --bin storkitty` to start the backend server
+4. Run `cargo run` to start the backend server
 5. Access the application at `http://localhost:3330`
 6. **First visit**: System will automatically redirect to setup wizard (`/setup`) if no admin user is configured
 7. **Complete setup**: Enter your desired admin username, password, and email
@@ -146,8 +145,6 @@ The application features an automatic setup wizard for first-time use:
 │   └── README.md               # E2E testing documentation
 ├── src/
 │   ├── main.rs                 # Main server entry point
-│   ├── bin/
-│   │   └── hash_password.rs    # Password hashing utility
 │   ├── backend/
 │   │   ├── mod.rs              # Backend module exports
 │   │   ├── auth.rs             # Authentication logic and handlers (async-safe)
@@ -222,7 +219,6 @@ The application features an automatic setup wizard for first-time use:
   - JWT secret and expiration configurable in `config.toml` under `[jwt]` section
   - Server host and port configurable in `config.toml` under `[server]` section  
   - Security permissions configurable in `config.toml` under `[security]` section (allow_mkdir, allow_delete, allow_download)
-  - To manually generate password hashes: Run `cargo run --bin hash_password`
 - **Security**: `config.toml` is gitignored to prevent accidental credential commits
 
 ### File Management

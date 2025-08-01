@@ -71,7 +71,7 @@ export default defineConfig({
   // 测试服务器配置
   webServer: {
     // 启动 Rust 服务器的命令，使用测试配置文件
-    command: "CONFIG_PATH=e2e/fixtures/test-config.toml cargo run --bin storkitty",
+    command: "CONFIG_PATH=e2e/fixtures/test-config.toml cargo run",
     port: 3331,
     reuseExistingServer: !process.env.CI,
     // 等待服务器启动的超时时间
