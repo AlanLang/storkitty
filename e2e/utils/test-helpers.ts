@@ -157,7 +157,7 @@ export class FileOperationsHelper {
   async getFileList() {
     await this.waitForFileList();
     // 查找所有文件列表项
-    const listItems = this.page.locator('.space-y-1 > div[class*="flex"][class*="items-center"]');
+    const listItems = this.page.locator('[data-testid="file-list"] > div[class*="flex"][class*="items-center"]');
     return await listItems.all();
   }
 

@@ -326,7 +326,7 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
       </div>
 
       {/* 文件列表 - 可滚动区域 */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-4 md:pb-6">
+      <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-4 md:pb-6 ">
         {filesLoading ? (
           <div className="flex flex-col items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
@@ -341,11 +341,14 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
             </p>
           </div>
         ) : (
-          <div className="space-y-1">
+          <div
+            data-testid="file-list"
+            className="divide-y divide-border border"
+          >
             {filteredFiles.map((file, index) => (
               <div
                 key={`${file.path}-${index}`}
-                className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 cursor-pointer group"
+                className="flex items-center justify-between p-3 hover:bg-muted/50 cursor-pointer group mt-0"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     if (file.file_type === "folder") {
