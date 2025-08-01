@@ -77,10 +77,10 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
   const handleFileClick = (fileName: string) => {
     const filePath = currentPath ? `${currentPath}/${fileName}` : fileName;
     navigate({
-      to: "/files/preview/$directoryId/$path",
+      to: "/files/preview/$directoryId/$",
       params: {
         directoryId: selectedDirectoryId,
-        path: filePath,
+        _splat: filePath,
       },
     });
   };
