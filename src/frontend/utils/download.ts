@@ -1,23 +1,16 @@
 /**
  * 生成文件下载URL
  */
-export function generateDownloadUrl(filePath: string, directoryId?: string): string {
+export function generateDownloadUrl(filePath: string, directoryId: string): string {
   const baseUrl = window.location.origin;
   const encodedPath = encodeURIComponent(filePath);
-  
-  if (directoryId) {
-    // 使用多目录下载端点
-    return `${baseUrl}/api/files/dir/${directoryId}/download/${encodedPath}`;
-  } else {
-    // 向后兼容的下载端点
-    return `${baseUrl}/api/files/download/${encodedPath}`;
-  }
+  return `${baseUrl}/api/files/${directoryId}/download/${encodedPath}`;
 }
 
 /**
  * 直接下载文件
  */
-export function downloadFile(filePath: string, fileName?: string, directoryId?: string): void {
+export function downloadFile(filePath: string, fileName: string, directoryId: string): void {
   const url = generateDownloadUrl(filePath, directoryId);
 
   // 创建一个临时的a标签来触发下载
@@ -79,7 +72,7 @@ function fallbackCopyTextToClipboard(text: string): Promise<boolean> {
 /**
  * 复制下载链接到剪贴板
  */
-export async function copyDownloadLink(filePath: string, directoryId?: string): Promise<boolean> {
+export async function copyDownloadLink(filePath: string, directoryId: string): Promise<boolean> {
   const url = generateDownloadUrl(filePath, directoryId);
 
   // 首先尝试使用现代的 clipboard API（仅在HTTPS环境下可用）

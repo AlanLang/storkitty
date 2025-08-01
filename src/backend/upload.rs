@@ -766,7 +766,7 @@ pub fn upload_router(upload_service: Arc<UploadService>, max_file_size_mb: u64) 
     let max_size_bytes = max_file_size_mb * 1024 * 1024;
     Router::new()
         // Unified directory-based upload endpoint
-        .route("/dir/{directory_id}/simple", post(simple_upload_with_directory_handler))
+        .route("/{directory_id}/simple", post(simple_upload_with_directory_handler))
         // Chunked upload support
         .route("/init", post(init_upload_handler))
         .route("/complete", post(complete_upload_handler))

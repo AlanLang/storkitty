@@ -69,8 +69,8 @@ export const filesApi = {
     path?: string,
   ): Promise<FilesResponse> {
     const endpoint = path
-      ? `/files/dir/${encodeURIComponent(directoryId)}/list/${encodeURIComponent(path)}`
-      : `/files/dir/${encodeURIComponent(directoryId)}/list`;
+      ? `/files/${encodeURIComponent(directoryId)}/list/${encodeURIComponent(path)}`
+      : `/files/${encodeURIComponent(directoryId)}/list`;
     return apiRequest<FilesResponse>(endpoint, {
       method: "GET",
     });
@@ -81,7 +81,7 @@ export const filesApi = {
     directoryId: string,
   ): Promise<StorageResponse> {
     return apiRequest<StorageResponse>(
-      `/files/dir/${encodeURIComponent(directoryId)}/storage`,
+      `/files/${encodeURIComponent(directoryId)}/storage`,
       {
         method: "GET",
       },
@@ -94,7 +94,7 @@ export const filesApi = {
     filePath: string,
   ): Promise<DeleteResponse> {
     const response = await apiRequest<DeleteResponse>(
-      `/files/dir/${encodeURIComponent(directoryId)}/delete/${encodeURIComponent(filePath)}`,
+      `/files/${encodeURIComponent(directoryId)}/delete/${encodeURIComponent(filePath)}`,
       {
         method: "DELETE",
       },
@@ -114,7 +114,7 @@ export const filesApi = {
     directoryPath: string,
   ): Promise<CreateDirectoryResponse> {
     const response = await apiRequest<CreateDirectoryResponse>(
-      `/files/dir/${encodeURIComponent(directoryId)}/mkdir/${encodeURIComponent(directoryPath)}`,
+      `/files/${encodeURIComponent(directoryId)}/mkdir/${encodeURIComponent(directoryPath)}`,
       {
         method: "POST",
       },
@@ -135,7 +135,7 @@ export const filesApi = {
     newName: string,
   ): Promise<RenameResponse> {
     return apiRequest<RenameResponse>(
-      `/files/dir/${encodeURIComponent(directoryId)}/rename/${encodeURIComponent(filePath)}`,
+      `/files/${encodeURIComponent(directoryId)}/rename/${encodeURIComponent(filePath)}`,
       {
         method: "PUT",
         body: JSON.stringify({ new_name: newName }),

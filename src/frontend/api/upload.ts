@@ -84,7 +84,7 @@ export async function uploadFileWithDirectory(
 
     xhr.open(
       "POST",
-      `/api/upload/dir/${encodeURIComponent(directoryId)}/simple`,
+      `/api/upload/${encodeURIComponent(directoryId)}/simple`,
     );
     xhr.setRequestHeader("Authorization", `Bearer ${token}`);
     xhr.send(formData);

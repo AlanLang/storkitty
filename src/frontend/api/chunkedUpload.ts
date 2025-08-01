@@ -144,7 +144,7 @@ export async function startChunkedUpload(
         formData.append("targetPath", `.chunks/${session.uploadId}`);
 
         const response = await fetch(
-          `/api/upload/dir/${encodeURIComponent(session.directoryId)}/simple`,
+          `/api/upload/${encodeURIComponent(session.directoryId)}/simple`,
           {
             method: "POST",
             headers: {
@@ -253,7 +253,7 @@ async function combineChunks(
   }
 
   const response = await fetch(
-    `/api/upload/dir/${encodeURIComponent(session.directoryId)}/simple`,
+    `/api/upload/${encodeURIComponent(session.directoryId)}/simple`,
     {
       method: "POST",
       headers: {
