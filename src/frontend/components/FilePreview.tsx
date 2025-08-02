@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Download, File, FileText, Image } from "lucide-react";
+import { ArrowLeft, Code, Download, File, FileText, Image } from "lucide-react";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import { useAuth } from "../hooks/useAuth";
@@ -9,6 +9,7 @@ import {
   downloadFile,
 } from "../utils/download";
 import {
+  CodePreview,
   ImagePreview,
   MarkdownPreview,
   UnsupportedFilePreview,
@@ -38,13 +39,78 @@ export function FilePreview({ directoryId, filePath }: FilePreviewProps) {
     const imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"];
     const isImage = imageExtensions.includes(fileExtension);
 
+    // 支持的文本/代码文件格式
+    const textExtensions = [
+      // JavaScript 系列
+      "js",
+      "jsx",
+      "ts",
+      "tsx",
+      "mjs",
+      "cjs",
+      // Python
+      "py",
+      "pyw",
+      // Rust
+      "rs",
+      // Go
+      "go",
+      // Java/Kotlin
+      "java",
+      "kt",
+      "kts",
+      // C/C++
+      "c",
+      "cpp",
+      "cxx",
+      "cc",
+      "h",
+      "hpp",
+      // PHP
+      "php",
+      // Ruby
+      "rb",
+      // Swift
+      "swift",
+      // Shell
+      "sh",
+      "bash",
+      "zsh",
+      "fish",
+      // Web
+      "html",
+      "htm",
+      "css",
+      "scss",
+      "sass",
+      "less",
+      // 配置文件
+      "json",
+      "xml",
+      "yaml",
+      "yml",
+      "toml",
+      "ini",
+      "conf",
+      "config",
+      // 数据库
+      "sql",
+      // 其他
+      "txt",
+      "log",
+      "gitignore",
+      "dockerfile",
+    ];
+    const isTextFile = textExtensions.includes(fileExtension);
+
     return {
       name: fileName,
       extension: fileExtension,
       parentPath,
       isMarkdown: fileExtension === "md",
       isImage,
-      isPreviewable: fileExtension === "md" || isImage,
+      isTextFile,
+      isPreviewable: fileExtension === "md" || isImage || isTextFile,
     };
   }, [filePath]);
 
@@ -100,6 +166,8 @@ export function FilePreview({ directoryId, filePath }: FilePreviewProps) {
                     <FileText className="h-4 w-4 text-primary" />
                   ) : fileInfo.isImage ? (
                     <Image className="h-4 w-4 text-green-600" />
+                  ) : fileInfo.isTextFile ? (
+                    <Code className="h-4 w-4 text-orange-600" />
                   ) : (
                     <File className="h-4 w-4 text-muted-foreground" />
                   )}
@@ -164,6 +232,13 @@ export function FilePreview({ directoryId, filePath }: FilePreviewProps) {
           <MarkdownPreview directoryId={directoryId} filePath={filePath} />
         ) : fileInfo.isImage ? (
           <ImagePreview
+            directoryId={directoryId}
+            filePath={filePath}
+            fileName={fileInfo.name}
+            fileExtension={fileInfo.extension}
+          />
+        ) : fileInfo.isTextFile ? (
+          <CodePreview
             directoryId={directoryId}
             filePath={filePath}
             fileName={fileInfo.name}

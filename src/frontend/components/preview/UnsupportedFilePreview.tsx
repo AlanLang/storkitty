@@ -47,7 +47,7 @@ export function UnsupportedFilePreview({
         </CardHeader>
         <CardContent className="text-center">
           <p className="text-muted-foreground mb-6">
-            当前支持预览 Markdown (.md) 文件和图片文件 (.jpg, .png, .gif 等)。
+            当前支持预览 Markdown 文件、图片文件和代码/文本文件。
             <br />
             该文件类型
             <span className="font-mono text-sm bg-muted px-1 rounded">
@@ -80,14 +80,16 @@ export function UnsupportedFilePreview({
             <div className="grid grid-cols-2 gap-2 text-sm text-green-600 mb-4">
               <div>• Markdown 文件 (.md)</div>
               <div>• 图片文件 (.jpg, .png, .gif, .webp)</div>
+              <div>• 代码文件 (.js, .ts, .py, .rs, .go)</div>
+              <div>• 文本文件 (.txt, .log, .json, .xml)</div>
             </div>
 
             <h3 className="font-medium mb-3">即将支持的文件类型</h3>
             <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
-              <div>• 文本文件 (.txt, .log)</div>
               <div>• PDF 文档 (.pdf)</div>
-              <div>• 代码文件 (.js, .ts, .py, .rs)</div>
               <div>• 视频文件 (.mp4, .webm)</div>
+              <div>• 音频文件 (.mp3, .wav)</div>
+              <div>• 表格文件 (.csv, .xlsx)</div>
             </div>
           </div>
         </CardContent>
