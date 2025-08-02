@@ -1,31 +1,7 @@
-import { BookOpen } from "lucide-react";
 import { useEffect, useState } from "react";
 import { isMarkdownSupported, renderMarkdown } from "../utils/markdown";
-import { Card } from "./ui/card";
 
-interface MarkdownRendererProps {
-  content: string;
-  className?: string;
-}
-
-export function MarkdownRenderer({
-  content,
-  className = "",
-}: MarkdownRendererProps) {
-  return (
-    <Card className={`${className}`}>
-      <div className="flex flex-col divide-y divide-border">
-        <div className="p-4 flex items-center gap-3 mb-4 text-muted-foreground">
-          <BookOpen className="h-5 w-5" />
-          <span className="font-medium">README</span>
-        </div>
-        <MarkdownRendererContent content={content} />
-      </div>
-    </Card>
-  );
-}
-
-function MarkdownRendererContent({ content }: { content: string }) {
+export function MarkdownRenderer({ content }: { content: string }) {
   const [renderedContent, setRenderedContent] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

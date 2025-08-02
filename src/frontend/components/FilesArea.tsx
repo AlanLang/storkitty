@@ -1,5 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import {
+  BookOpen,
   Calendar,
   ChevronRight,
   Copy,
@@ -504,11 +505,12 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
 
         {/* README 渲染区域 - 显示在文件列表下方 */}
         {hasReadmeContent && readmeData?.content && (
-          <div className="mt-4">
-            <MarkdownRenderer
-              content={readmeData.content}
-              className="shadow-none rounded-none py-0"
-            />
+          <div className="mt-4 flex flex-col divide-y divide-border border">
+            <div className="p-4 flex items-center gap-3 mb-4 text-muted-foreground">
+              <BookOpen className="h-5 w-5" />
+              <span className="font-medium">README</span>
+            </div>
+            <MarkdownRenderer content={readmeData.content} />
           </div>
         )}
       </div>
