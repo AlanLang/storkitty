@@ -30,7 +30,7 @@ export function FilePreview({ directoryId, filePath }: FilePreviewProps) {
   const navigate = useNavigate();
   const { isAuthenticated, directories } = useAuth();
 
-  // 获取目录信息
+  // 获取目录信息（如果已登录）
   const directoryInfo = directories?.find((dir) => dir.id === directoryId);
 
   // 解析文件信息
@@ -48,7 +48,7 @@ export function FilePreview({ directoryId, filePath }: FilePreviewProps) {
     };
   }, [filePath]);
 
-  // 查询文件内容（仅对 Markdown 文件）
+  // 查询文件内容（Markdown 文件，无需认证）
   const {
     data: fileData,
     isLoading,
@@ -56,10 +56,10 @@ export function FilePreview({ directoryId, filePath }: FilePreviewProps) {
   } = useShowFileQuery(
     directoryId,
     filePath,
-    isAuthenticated && fileInfo.isMarkdown,
+    fileInfo.isMarkdown, // 移除认证检查
   );
 
-  // 处理返回
+  // 处理返回（仅登录用户可用）
   const handleGoBack = () => {
     if (fileInfo.parentPath) {
       navigate({
@@ -93,15 +93,17 @@ export function FilePreview({ directoryId, filePath }: FilePreviewProps) {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleGoBack}
-                className="gap-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                返回
-              </Button>
+              {isAuthenticated && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleGoBack}
+                  className="gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  返回
+                </Button>
+              )}
 
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 flex items-center justify-center rounded bg-muted">
@@ -116,6 +118,11 @@ export function FilePreview({ directoryId, filePath }: FilePreviewProps) {
                   <p className="text-sm text-muted-foreground">
                     {directoryInfo?.name || directoryId}
                     {fileInfo.parentPath && ` / ${fileInfo.parentPath}`}
+                    {!isAuthenticated && (
+                      <span className="ml-2 px-2 py-1 text-xs bg-muted rounded">
+                        公开预览
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>
@@ -140,6 +147,19 @@ export function FilePreview({ directoryId, filePath }: FilePreviewProps) {
                   className="gap-2"
                 >
                   复制链接
+                </Button>
+              )}
+
+              {/* 未来编辑功能：仅登录用户可见 */}
+              {isAuthenticated && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled
+                  className="gap-2 opacity-50"
+                  title="编辑功能即将推出"
+                >
+                  编辑
                 </Button>
               )}
             </div>

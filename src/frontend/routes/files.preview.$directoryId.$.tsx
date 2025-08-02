@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FilePreview } from "../components/FilePreview";
-import { useAuth } from "../hooks/useAuth";
 
 export const Route = createFileRoute("/files/preview/$directoryId/$")({
   component: FilePreviewPage,
@@ -8,11 +7,7 @@ export const Route = createFileRoute("/files/preview/$directoryId/$")({
 
 function FilePreviewPage() {
   const { directoryId, _splat } = Route.useParams();
-  const { isAuthenticated } = useAuth();
 
-  if (!isAuthenticated) {
-    return null; // Will be handled by auth redirect
-  }
-
+  // 移除认证检查，允许未登录用户预览文件
   return <FilePreview directoryId={directoryId} filePath={_splat} />;
 }

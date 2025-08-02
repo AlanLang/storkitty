@@ -470,8 +470,8 @@ impl FileService {
             .unwrap())
     }
 
-    pub async fn show_file_content_with_directory(&self, headers: &HeaderMap, directory_id: &str, file_path: String) -> Result<Json<ReadmeResponse>, StatusCode> {
-        self.verify_auth(headers).await?;
+    pub async fn show_file_content_with_directory(&self, _headers: &HeaderMap, directory_id: &str, file_path: String) -> Result<Json<ReadmeResponse>, StatusCode> {
+        // 移除认证检查，允许公开预览文件内容
 
         let config = self.config.read().await;
         let directory_config = config.get_directory_by_id(directory_id)
