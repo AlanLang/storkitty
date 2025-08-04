@@ -121,7 +121,8 @@ The application features an automatic setup wizard for first-time use:
 - `POST /api/files/{directory_id}/mkdir/{path}` - Create new directory (requires allow_mkdir permission)
 - `PUT /api/files/{directory_id}/rename/{path}` - Rename file or directory (with conflict detection and validation)
 - `GET /api/files/{directory_id}/download/{path}` - Download file with streaming support (no authentication required)
-- `GET /api/files/{directory_id}/show/{path}` - Get file content for preview (text/markdown files, no authentication required)
+- `GET /api/files/{directory_id}/show/{path}` - Get file content for preview (supports 30+ text file formats, no authentication required)
+- `PUT /api/files/{directory_id}/save/{path}` - Save file content (requires authentication, supports online editing)
 
 #### File Upload
 - `POST /api/upload/simple` - Simple file upload with multipart form data
@@ -167,7 +168,8 @@ The application features an automatic setup wizard for first-time use:
 │       ├── utils/
 │       │   ├── download.ts     # File download utilities and link generation
 │       │   ├── markdown.ts     # Dynamic markdown-it loading and rendering utilities
-│       │   └── pdf.ts          # PDF.js loading and rendering utilities
+│       │   ├── pdf.ts          # PDF.js loading and rendering utilities
+│       │   └── editor.ts       # Monaco Editor dynamic loading and management utilities
 │       ├── contexts/
 │       │   ├── AuthContext.tsx # Authentication state management
 │       │   ├── UploadContext.tsx # Upload state management and operations
@@ -205,6 +207,7 @@ The application features an automatic setup wizard for first-time use:
 │       │       ├── PDFPreview.tsx # PDF file preview with full controls
 │       │       ├── ImagePreview.tsx # Image file preview
 │       │       ├── CodePreview.tsx # Code file preview with syntax highlighting
+│       │       ├── TextEditor.tsx # Online text editor with Monaco Editor
 │       │       └── UnsupportedFilePreview.tsx # Fallback for unsupported files
 │       └── routes/             # File-based route definitions
 │           ├── __root.tsx      # Root layout with AuthProvider
@@ -267,6 +270,7 @@ The application features an automatic setup wizard for first-time use:
 - **Public preview**: All file previews work without authentication for easy sharing via URLs
 - **Modern interface**: Clean, responsive preview interface with consistent design
 - **Route-based preview**: URL structure `/files/preview/{directoryId}/{filePath}` for bookmarkable preview links
+- **Online editing**: Integrated text editor for logged-in users with Monaco Editor support
 
 #### Markdown Preview
 - **Dynamic rendering**: Uses markdown-it library loaded via CDN to avoid bundle bloat
@@ -298,6 +302,21 @@ The application features an automatic setup wizard for first-time use:
 - **Wide language support**: JavaScript, TypeScript, Python, Rust, Go, Java, PHP, Ruby, Swift, Shell, HTML, CSS, JSON, XML, YAML, SQL, and more
 - **Professional presentation**: Color-coded syntax with proper formatting and line numbers
 
+#### Online Text Editor
+- **Monaco Editor integration**: Full-featured code editor using VS Code's Monaco Editor via CDN
+- **Authentication required**: Only logged-in users can access editing functionality
+- **Multi-language support**: 30+ programming languages and file formats supported
+- **Real-time editing**: Live syntax highlighting, code completion, and error detection
+- **Save functionality**: 
+  - Ctrl+S keyboard shortcut for quick saving
+  - Visual indicators for unsaved changes
+  - Automatic file validation and conflict detection
+- **User experience**:
+  - Seamless edit/preview mode switching
+  - Confirmation dialogs for unsaved changes
+  - ESC key to exit editing mode
+  - Professional editing interface with toolbar and status indicators
+
 #### Technical Implementation
 - **File type detection**: Automatic file type identification based on extension
 - **Route structure**: Dedicated preview routes with directory and file path parameters
@@ -306,7 +325,9 @@ The application features an automatic setup wizard for first-time use:
   - `PDFPreview.tsx` - Complete PDF viewer with PDF.js
   - `ImagePreview.tsx` - Image display component
   - `CodePreview.tsx` - Syntax-highlighted code display
+  - `TextEditor.tsx` - Online text editor with Monaco Editor
   - `UnsupportedFilePreview.tsx` - Fallback for unsupported formats
+- **Dynamic loading**: Monaco Editor and PDF.js loaded on-demand to minimize bundle size
 - **Binary data handling**: Specialized API endpoint for PDF and image data retrieval
 - **Error boundaries**: Comprehensive error handling with graceful fallbacks
 - **Loading states**: Progressive loading with visual feedback throughout the preview process
@@ -776,12 +797,13 @@ path = "./documents"
 3. ✅ **测试工具链**: 测试助手、数据工厂、全局设置和清理
 4. ✅ **CI/CD 支持**: 适配持续集成的测试配置和报告生成
 
-#### 第五阶段 ✅ 已完成 (文件预览与增强功能)
+#### 第五阶段 ✅ 已完成 (文件预览与在线编辑)
 1. ✅ **文件预览系统**: 支持 Markdown、PDF、图片和代码文件的完整预览功能
-2. 🔮 文件搜索
-3. 🔮 访问日志记录
-4. 🔮 多用户权限管理
-5. 🔮 云存储支持 (S3, 阿里云 OSS 等)
+2. ✅ **在线文本编辑**: 基于 Monaco Editor 的专业级在线编辑器，支持 30+ 种文件格式
+3. 🔮 文件搜索
+4. 🔮 访问日志记录
+5. 🔮 多用户权限管理
+6. 🔮 云存储支持 (S3, 阿里云 OSS 等)
 
 #### 第六阶段 (未来功能)
 1. 🔮 全文搜索和索引

@@ -156,5 +156,28 @@ export function useFileBinaryQuery(
   });
 }
 
+// 保存文件内容 mutation
+export function useSaveFileMutation(directoryId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      filePath,
+      content,
+    }: { filePath: string; content: string }) =>
+      filesApi.saveFileContentWithDirectory(directoryId, filePath, content),
+    retry: 0,
+    onSuccess: (_, { filePath }) => {
+      // 保存成功后，刷新相关缓存
+      queryClient.invalidateQueries({
+        queryKey: filesKeys.show(filePath, directoryId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: filesKeys.binary(filePath, directoryId),
+      });
+    },
+  });
+}
+
 // Note: File config is now included in auth/verify response
 // useFileConfigQuery removed - use useAuth().fileConfig instead

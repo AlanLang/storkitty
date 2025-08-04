@@ -81,6 +81,17 @@ pub struct ReadmeResponse {
     pub message: Option<String>,
 }
 
+#[derive(Debug, Serialize)]
+pub struct SaveFileResponse {
+    pub success: bool,
+    pub message: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SaveFileRequest {
+    pub content: String,
+}
+
 pub struct FileService {
     config: Arc<RwLock<Config>>,
     auth_service: Arc<AuthService>,
@@ -498,16 +509,25 @@ impl FileService {
             }));
         }
 
-        // 检查文件扩展名是否为 markdown
-        let file_name = target_path.file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("");
-        
-        if !file_name.to_lowercase().ends_with(".md") {
+        // 检查文件扩展名是否为支持的文本文件格式
+        let extension = target_path.extension()
+            .and_then(|ext| ext.to_str())
+            .unwrap_or("")
+            .to_lowercase();
+
+        // 支持的文本文件扩展名（用于预览和编辑）
+        let supported_extensions = [
+            "md", "txt", "js", "jsx", "ts", "tsx", "py", "rs", "go", "java", "kt",
+            "c", "cpp", "h", "hpp", "php", "rb", "swift", "sh", "bash", "html", 
+            "htm", "css", "scss", "sass", "less", "json", "xml", "yaml", "yml", 
+            "toml", "ini", "conf", "config", "sql", "log", "gitignore", "dockerfile"
+        ];
+
+        if !supported_extensions.contains(&extension.as_str()) {
             return Ok(Json(ReadmeResponse {
                 success: false,
                 content: None,
-                message: Some("不是 Markdown 文件".to_string()),
+                message: Some("不支持的文件类型".to_string()),
             }));
         }
 
@@ -526,6 +546,103 @@ impl FileService {
                     success: false,
                     content: None,
                     message: Some("无法读取文件".to_string()),
+                }))
+            }
+        }
+    }
+
+    // 保存文件内容（需要认证）
+    pub async fn save_file_content_with_directory(
+        &self, 
+        headers: &HeaderMap, 
+        directory_id: &str, 
+        file_path: String, 
+        request: SaveFileRequest
+    ) -> Result<Json<SaveFileResponse>, StatusCode> {
+        // 验证用户身份
+        if let Err(_) = self.verify_auth(headers).await {
+            return Err(StatusCode::UNAUTHORIZED);
+        }
+
+        let config = self.config.read().await;
+        let directory_config = config.get_directory_by_id(directory_id)
+            .ok_or(StatusCode::NOT_FOUND)?;
+
+        let directory_path = PathBuf::from(directory_config.path.as_ref().unwrap());
+        let target_path = directory_path.join(&file_path);
+
+        // 安全检查：确保目标路径在指定目录内
+        let canonical_dir = fs::canonicalize(&directory_path)
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        
+        // 检查文件是否存在，如果存在则验证路径安全性
+        if target_path.exists() {
+            let canonical_target = fs::canonicalize(&target_path)
+                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+            if !canonical_target.starts_with(&canonical_dir) {
+                return Err(StatusCode::FORBIDDEN);
+            }
+        } else {
+            // 如果文件不存在，检查父目录是否在安全范围内
+            if let Some(parent) = target_path.parent() {
+                let canonical_parent = fs::canonicalize(parent)
+                    .map_err(|_| StatusCode::BAD_REQUEST)?;
+                if !canonical_parent.starts_with(&canonical_dir) {
+                    return Err(StatusCode::FORBIDDEN);
+                }
+            }
+        }
+
+        // 检查文件类型是否可编辑（文本文件）
+        let _file_name = target_path.file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("");
+        
+        let extension = target_path.extension()
+            .and_then(|ext| ext.to_str())
+            .unwrap_or("")
+            .to_lowercase();
+
+        // 支持的可编辑文件扩展名
+        let editable_extensions = [
+            "md", "txt", "js", "jsx", "ts", "tsx", "py", "rs", "go", "java", "kt",
+            "c", "cpp", "h", "hpp", "php", "rb", "swift", "sh", "bash", "html", 
+            "htm", "css", "scss", "sass", "less", "json", "xml", "yaml", "yml", 
+            "toml", "ini", "conf", "config", "sql", "log", "gitignore", "dockerfile"
+        ];
+
+        if !editable_extensions.contains(&extension.as_str()) {
+            return Ok(Json(SaveFileResponse {
+                success: false,
+                message: "不支持编辑此类型的文件".to_string(),
+            }));
+        }
+
+        // 确保父目录存在
+        if let Some(parent) = target_path.parent() {
+            if let Err(e) = fs::create_dir_all(parent) {
+                log::error!("Failed to create parent directory {:?}: {}", parent, e);
+                return Ok(Json(SaveFileResponse {
+                    success: false,
+                    message: "无法创建父目录".to_string(),
+                }));
+            }
+        }
+
+        // 保存文件内容
+        match fs::write(&target_path, &request.content) {
+            Ok(_) => {
+                log::info!("File saved successfully: {:?}", target_path);
+                Ok(Json(SaveFileResponse {
+                    success: true,
+                    message: "文件保存成功".to_string(),
+                }))
+            }
+            Err(e) => {
+                log::error!("Failed to save file {:?}: {}", target_path, e);
+                Ok(Json(SaveFileResponse {
+                    success: false,
+                    message: "文件保存失败".to_string(),
                 }))
             }
         }
@@ -597,6 +714,15 @@ pub async fn show_file_with_directory_handler(
     file_service.show_file_content_with_directory(&headers, &directory_id, file_path).await
 }
 
+pub async fn save_file_with_directory_handler(
+    State(file_service): State<Arc<FileService>>,
+    headers: HeaderMap,
+    Path((directory_id, file_path)): Path<(String, String)>,
+    ExtractJson(request): ExtractJson<SaveFileRequest>,
+) -> Result<Json<SaveFileResponse>, StatusCode> {
+    file_service.save_file_content_with_directory(&headers, &directory_id, file_path, request).await
+}
+
 // Router
 pub fn files_router(file_service: Arc<FileService>) -> Router {
     Router::new()
@@ -608,5 +734,6 @@ pub fn files_router(file_service: Arc<FileService>) -> Router {
         .route("/{directory_id}/rename/{*file_path}", put(rename_file_with_directory_handler))
         .route("/{directory_id}/download/{*file_path}", get(download_file_with_directory_handler))
         .route("/{directory_id}/show/{*file_path}", get(show_file_with_directory_handler))
+        .route("/{directory_id}/save/{*file_path}", put(save_file_with_directory_handler))
         .with_state(file_service)
 }

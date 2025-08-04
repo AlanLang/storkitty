@@ -1,6 +1,14 @@
 import { useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Code, Download, File, FileText, Image } from "lucide-react";
-import { useMemo } from "react";
+import {
+  ArrowLeft,
+  Code,
+  Download,
+  Edit,
+  File,
+  FileText,
+  Image,
+} from "lucide-react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "../hooks/useAuth";
 import {
@@ -8,11 +16,13 @@ import {
   copyDownloadLink,
   downloadFile,
 } from "../utils/download";
+import { isEditable } from "../utils/editor";
 import {
   CodePreview,
   ImagePreview,
   MarkdownPreview,
   PDFPreview,
+  TextEditor,
   UnsupportedFilePreview,
 } from "./preview";
 import { Button } from "./ui/button";
@@ -25,6 +35,7 @@ interface FilePreviewProps {
 export function FilePreview({ directoryId, filePath }: FilePreviewProps) {
   const navigate = useNavigate();
   const { isAuthenticated, directories } = useAuth();
+  const [isEditMode, setIsEditMode] = useState(false);
 
   // 获取目录信息（如果已登录）
   const directoryInfo = directories?.find((dir) => dir.id === directoryId);
@@ -105,6 +116,7 @@ export function FilePreview({ directoryId, filePath }: FilePreviewProps) {
     const isTextFile = textExtensions.includes(fileExtension);
 
     const isPDF = fileExtension === "pdf";
+    const canEdit = isEditable(fileExtension);
 
     return {
       name: fileName,
@@ -114,6 +126,7 @@ export function FilePreview({ directoryId, filePath }: FilePreviewProps) {
       isImage,
       isTextFile,
       isPDF,
+      canEdit,
       isPreviewable: fileExtension === "md" || isImage || isTextFile || isPDF,
     };
   }, [filePath]);
@@ -143,6 +156,16 @@ export function FilePreview({ directoryId, filePath }: FilePreviewProps) {
     } else {
       toast.error("复制下载链接失败");
     }
+  };
+
+  // 切换编辑模式
+  const handleToggleEdit = () => {
+    setIsEditMode(!isEditMode);
+  };
+
+  // 退出编辑模式
+  const handleExitEdit = () => {
+    setIsEditMode(false);
   };
 
   return (
@@ -215,16 +238,16 @@ export function FilePreview({ directoryId, filePath }: FilePreviewProps) {
                 </Button>
               )}
 
-              {/* 未来编辑功能：仅登录用户可见 */}
-              {isAuthenticated && (
+              {/* 编辑功能：仅登录用户且可编辑文件可见 */}
+              {isAuthenticated && fileInfo.canEdit && (
                 <Button
-                  variant="outline"
+                  variant={isEditMode ? "default" : "outline"}
                   size="sm"
-                  disabled
-                  className="gap-2 opacity-50"
-                  title="编辑功能即将推出"
+                  onClick={handleToggleEdit}
+                  className="gap-2"
                 >
-                  编辑
+                  <Edit className="h-4 w-4" />
+                  {isEditMode ? "退出编辑" : "编辑"}
                 </Button>
               )}
             </div>
@@ -234,7 +257,15 @@ export function FilePreview({ directoryId, filePath }: FilePreviewProps) {
 
       {/* 主要内容区域 */}
       <div className="container mx-auto px-4 py-6">
-        {fileInfo.isMarkdown ? (
+        {isEditMode && fileInfo.canEdit ? (
+          <TextEditor
+            directoryId={directoryId}
+            filePath={filePath}
+            fileName={fileInfo.name}
+            fileExtension={fileInfo.extension}
+            onExitEdit={handleExitEdit}
+          />
+        ) : fileInfo.isMarkdown ? (
           <MarkdownPreview directoryId={directoryId} filePath={filePath} />
         ) : fileInfo.isImage ? (
           <ImagePreview

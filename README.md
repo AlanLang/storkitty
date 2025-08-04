@@ -19,7 +19,13 @@
 - 文件类型识别
 - 实时搜索和过滤
 - 简洁的列表视图界面
-- **README.md 自动渲染** ✨ 类似 GitHub 的 Markdown 预览功能
+- **多格式文件预览** ✨ 支持 Markdown、PDF、图片和代码文件预览
+- **在线文本编辑** 🔥 基于 Monaco Editor 的专业级代码编辑器
+  - 支持 30+ 种编程语言语法高亮
+  - 实时代码补全和错误检测
+  - VS Code 级别的编辑体验
+  - 键盘快捷键支持 (Ctrl+S 保存, ESC 退出)
+  - 仅登录用户可访问，确保数据安全
 
 ### 🎨 前端界面
 - 现代化的文件管理界面
@@ -174,8 +180,13 @@ storkitty/
 │   │   ├── api/          # API 客户端
 │   │   │   ├── auth.ts   # 认证 & 设置 API
 │   │   │   └── files.ts  # 文件管理 API
+│   │   ├── utils/        # 工具函数
+│   │   │   ├── editor.ts # Monaco Editor 动态加载
+│   │   │   ├── pdf.ts    # PDF.js 动态加载
+│   │   │   └── markdown.ts # Markdown-it 动态加载
 │   │   ├── types/        # TypeScript 类型定义
 │   │   ├── components/   # UI 组件
+│   │   │   └── preview/  # 文件预览组件
 │   │   ├── routes/       # 文件路由页面
 │   │   ├── hooks/        # React Hooks
 │   │   ├── contexts/     # React Context
@@ -232,8 +243,10 @@ allow_download = true
 - `GET /api/files/{directory_id}/storage` - 获取存储空间信息
 - `DELETE /api/files/{directory_id}/delete/{path}` - 删除文件或目录
 - `POST /api/files/{directory_id}/mkdir/{path}` - 创建新目录
+- `PUT /api/files/{directory_id}/rename/{path}` - 重命名文件或目录
 - `GET /api/files/{directory_id}/download/{path}` - 文件下载（无需认证）
-- `GET /api/files/{directory_id}/show/{path}` - 预览 Markdown 文件内容 ✨
+- `GET /api/files/{directory_id}/show/{path}` - 预览文本文件内容（支持 30+ 格式）✨
+- `PUT /api/files/{directory_id}/save/{path}` - 保存文件内容（需要认证）🔥
 
 #### 文件上传
 - `POST /api/upload/simple` - 简单文件上传

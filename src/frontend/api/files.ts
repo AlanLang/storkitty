@@ -192,5 +192,27 @@ export const filesApi = {
     }
   },
 
+  // 保存指定目录中的文件内容（需要认证）
+  async saveFileContentWithDirectory(
+    directoryId: string,
+    filePath: string,
+    content: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const response = await apiRequest<{ success: boolean; message: string }>(
+      `/files/${encodeURIComponent(directoryId)}/save/${encodeURIComponent(filePath)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ content }),
+      },
+    );
+
+    // 检查操作是否成功，如果失败则抛出错误
+    if (!response.success) {
+      throw new ApiError(response.message, 400, response);
+    }
+
+    return response;
+  },
+
   // Note: File config is now included in auth/verify response
 };
