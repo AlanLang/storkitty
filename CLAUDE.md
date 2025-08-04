@@ -114,13 +114,14 @@ The application features an automatic setup wizard for first-time use:
 - `POST /api/setup/init` - Initialize system with admin account (returns success status + JWT token)
 
 #### File Management
-- `GET /api/files/list` - Get root directory file list
-- `GET /api/files/list/{path}` - Get file list for specific path
-- `GET /api/files/storage` - Get storage space information
-- `DELETE /api/files/delete/{path}` - Delete file or directory (requires allow_delete permission)
-- `POST /api/files/mkdir/{path}` - Create new directory (requires allow_mkdir permission)
-- `PUT /api/files/rename/{path}` - Rename file or directory (with conflict detection and validation)
-- `GET /api/files/download/{path}` - Download file with streaming support (no authentication required)
+- `GET /api/files/{directory_id}/list` - Get root directory file list
+- `GET /api/files/{directory_id}/list/{path}` - Get file list for specific path
+- `GET /api/files/{directory_id}/storage` - Get storage space information
+- `DELETE /api/files/{directory_id}/delete/{path}` - Delete file or directory (requires allow_delete permission)
+- `POST /api/files/{directory_id}/mkdir/{path}` - Create new directory (requires allow_mkdir permission)
+- `PUT /api/files/{directory_id}/rename/{path}` - Rename file or directory (with conflict detection and validation)
+- `GET /api/files/{directory_id}/download/{path}` - Download file with streaming support (no authentication required)
+- `GET /api/files/{directory_id}/show/{path}` - Get file content for preview (text/markdown files, no authentication required)
 
 #### File Upload
 - `POST /api/upload/simple` - Simple file upload with multipart form data
@@ -164,7 +165,9 @@ The application features an automatic setup wizard for first-time use:
 │       │   ├── upload.ts       # Simple file upload API functions and utilities
 │       │   └── chunkedUpload.ts # Chunked upload API for large files
 │       ├── utils/
-│       │   └── download.ts     # File download utilities and link generation
+│       │   ├── download.ts     # File download utilities and link generation
+│       │   ├── markdown.ts     # Dynamic markdown-it loading and rendering utilities
+│       │   └── pdf.ts          # PDF.js loading and rendering utilities
 │       ├── contexts/
 │       │   ├── AuthContext.tsx # Authentication state management
 │       │   ├── UploadContext.tsx # Upload state management and operations
@@ -194,14 +197,23 @@ The application features an automatic setup wizard for first-time use:
 │       │   ├── RenameDialog.tsx # File/folder rename dialog with validation and conflict detection
 │       │   ├── UploadDrawer.tsx # Upload drawer component with progress tracking
 │       │   ├── UploadIndicator.tsx # Floating upload indicator button
-│       │   └── FilesArea.tsx # Main file management component with list view
+│       │   ├── MarkdownRenderer.tsx # Markdown content rendering component
+│       │   ├── FilesArea.tsx # Main file management component with list view
+│       │   └── preview/        # File preview components
+│       │       ├── index.ts    # Preview component exports
+│       │       ├── MarkdownPreview.tsx # Markdown file preview
+│       │       ├── PDFPreview.tsx # PDF file preview with full controls
+│       │       ├── ImagePreview.tsx # Image file preview
+│       │       ├── CodePreview.tsx # Code file preview with syntax highlighting
+│       │       └── UnsupportedFilePreview.tsx # Fallback for unsupported files
 │       └── routes/             # File-based route definitions
 │           ├── __root.tsx      # Root layout with AuthProvider
 │           ├── index.tsx       # Home route (intelligent auto-redirect)
 │           ├── setup.tsx       # Initial setup wizard route
 │           ├── login.tsx       # Login page route
 │           ├── files.index.tsx # Root directory file browser
-│           └── files.$path.tsx # Dynamic path file browser
+│           ├── files.$path.tsx # Dynamic path file browser
+│           └── files.preview.$directoryId.$.tsx # File preview route
 ```
 
 ### User Management & Initial Setup
@@ -249,6 +261,55 @@ The application features an automatic setup wizard for first-time use:
 - **Directory creation**: Create new folders with validation and security checks
 - **File renaming**: Rename files and folders with real-time validation and conflict detection
 - **Name validation**: Automatic validation of file/directory names against illegal characters and system reserved names
+
+### File Preview System
+- **Multi-format support**: Comprehensive preview system for Markdown, images, code files, and PDF documents
+- **Public preview**: All file previews work without authentication for easy sharing via URLs
+- **Modern interface**: Clean, responsive preview interface with consistent design
+- **Route-based preview**: URL structure `/files/preview/{directoryId}/{filePath}` for bookmarkable preview links
+
+#### Markdown Preview
+- **Dynamic rendering**: Uses markdown-it library loaded via CDN to avoid bundle bloat
+- **Rich formatting**: Full Markdown support with HTML, line breaks, and automatic link detection
+- **Responsive design**: Optimized typography with prose classes for excellent readability
+- **Syntax highlighting**: Integrated support for code blocks within Markdown documents
+
+#### PDF Preview
+- **Full-featured viewer**: Complete PDF preview with page navigation, zoom controls, and page jumping
+- **PDF.js integration**: Uses PDF.js 3.11.174 via CDN for high-quality client-side rendering
+- **Interactive controls**: 
+  - Page navigation (previous/next buttons)
+  - Zoom control (50%-300% range with 25% increments)
+  - Direct page input and quick jump buttons
+  - Page count display and progress indication
+- **Performance optimized**: 
+  - ArrayBuffer data caching with plain array storage to prevent detachment issues
+  - Canvas-based rendering for optimal display quality
+  - Efficient memory management and error handling
+- **Responsive design**: Sticky toolbar and adaptive canvas sizing for different screen sizes
+
+#### Image Preview
+- **Direct display**: Clean image preview with proper aspect ratio maintenance
+- **Format support**: JPG, JPEG, PNG, GIF, BMP, WebP, SVG formats supported
+- **Download integration**: Seamless download and link sharing functionality
+
+#### Code Preview
+- **Syntax highlighting**: Prism.js integration for comprehensive language support
+- **Wide language support**: JavaScript, TypeScript, Python, Rust, Go, Java, PHP, Ruby, Swift, Shell, HTML, CSS, JSON, XML, YAML, SQL, and more
+- **Professional presentation**: Color-coded syntax with proper formatting and line numbers
+
+#### Technical Implementation
+- **File type detection**: Automatic file type identification based on extension
+- **Route structure**: Dedicated preview routes with directory and file path parameters
+- **Shared components**: Modular preview components in `src/frontend/components/preview/`
+  - `MarkdownPreview.tsx` - Markdown rendering with markdown-it
+  - `PDFPreview.tsx` - Complete PDF viewer with PDF.js
+  - `ImagePreview.tsx` - Image display component
+  - `CodePreview.tsx` - Syntax-highlighted code display
+  - `UnsupportedFilePreview.tsx` - Fallback for unsupported formats
+- **Binary data handling**: Specialized API endpoint for PDF and image data retrieval
+- **Error boundaries**: Comprehensive error handling with graceful fallbacks
+- **Loading states**: Progressive loading with visual feedback throughout the preview process
 
 ### Dependencies
 **Backend**: axum (with multipart), tokio, tokio-util, serde, jsonwebtoken, bcrypt, tower-http, uuid, mime, bytes, futures-util
@@ -715,12 +776,18 @@ path = "./documents"
 3. ✅ **测试工具链**: 测试助手、数据工厂、全局设置和清理
 4. ✅ **CI/CD 支持**: 适配持续集成的测试配置和报告生成
 
-#### 第五阶段 (增强功能)
-1. 🔮 文件搜索
-2. 🔮 文件预览
+#### 第五阶段 ✅ 已完成 (文件预览与增强功能)
+1. ✅ **文件预览系统**: 支持 Markdown、PDF、图片和代码文件的完整预览功能
+2. 🔮 文件搜索
 3. 🔮 访问日志记录
 4. 🔮 多用户权限管理
 5. 🔮 云存储支持 (S3, 阿里云 OSS 等)
+
+#### 第六阶段 (未来功能)
+1. 🔮 全文搜索和索引
+2. 🔮 文件版本控制
+3. 🔮 高级用户权限系统
+4. 🔮 API 速率限制和访问控制
 
 ### 文档维护规则
 

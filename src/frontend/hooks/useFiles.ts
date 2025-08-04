@@ -12,6 +12,8 @@ export const filesKeys = {
     [...filesKeys.all, "storage", directoryId || "default"] as const,
   show: (filePath: string, directoryId: string) =>
     [...filesKeys.all, "show", directoryId, filePath] as const,
+  binary: (filePath: string, directoryId: string) =>
+    [...filesKeys.all, "binary", directoryId, filePath] as const,
 };
 
 // Legacy function - now redirects to directory-based API
@@ -136,6 +138,21 @@ export function useShowFileQuery(
     enabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+}
+
+// 获取指定目录中的文件二进制内容（主要用于PDF预览）
+export function useFileBinaryQuery(
+  directoryId: string,
+  filePath: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: filesKeys.binary(filePath, directoryId),
+    queryFn: () => filesApi.getBinaryFileWithDirectory(directoryId, filePath),
+    enabled,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 15 * 60 * 1000, // 15 minutes
   });
 }
 

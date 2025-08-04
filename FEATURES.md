@@ -367,43 +367,68 @@ Error Response:
 
 ---
 
-### 9. 文件预览模块 ✅ (已实现 - Markdown 支持)
+### 9. 文件预览模块 ✅ (已完成 - 多格式支持)
 
-**功能描述**: 支持常见文件类型的在线预览，当前支持 Markdown 文件
+**功能描述**: 支持多种文件类型的在线预览，包括 Markdown、PDF、图片和代码文件
 
 **实现方案**:
 - **Markdown 预览** ✅:
   - ✅ 点击文件自动导航到预览页面
-  - ✅ 全屏 Markdown 渲染界面
+  - ✅ 全屏 Markdown 渲染界面，使用动态 CDN 加载 markdown-it
   - ✅ GitHub 风格样式和 Typography 优化
   - ✅ 完整的导航工具栏（返回、下载、复制链接）
   - ✅ 响应式设计，适配桌面和移动设备
-  - ✅ 面包屑导航显示文件路径
-- **不支持的文件类型** ✅:
-  - ✅ 友好的提示界面，说明当前仅支持 Markdown
-  - ✅ 提供下载和复制链接功能
-  - ✅ 展示即将支持的文件类型预告
-- **路由设计** ✅:
-  - ✅ 新增预览路由：`/files/preview/{directory_id}/{file_path}`
-  - ✅ 自动路由生成和 TypeScript 类型安全
+  - ✅ 支持 HTML、换行符转换和自动链接识别
+
+- **PDF 预览** ✅ (新增):
+  - ✅ **完整的 PDF 阅读器**: 基于 PDF.js 3.11.174 的专业级 PDF 预览
+  - ✅ **交互式控制**:
+    - 页面导航（前一页/后一页按钮）
+    - 缩放控制（50%-300% 范围，25% 步进）
+    - 直接页码输入和快速跳转
+    - 页面数量显示和进度指示
+  - ✅ **性能优化**:
+    - Canvas 高质量渲染
+    - ArrayBuffer 数据缓存，使用普通数组存储防止分离问题
+    - 高效的内存管理和错误处理
+  - ✅ **用户界面**:
+    - 粘性工具栏，固定在顶部便于操作
+    - 自适应画布大小，支持不同屏幕尺寸
+    - 多页 PDF 的快速跳转按钮（超过 5 页时显示）
+
+- **图片预览** ✅:
+  - ✅ 直接图片展示，保持原始宽高比
+  - ✅ 支持格式：JPG, JPEG, PNG, GIF, BMP, WebP, SVG
+  - ✅ 集成下载和分享功能
+
+- **代码预览** ✅:
+  - ✅ Prism.js 语法高亮集成
+  - ✅ 广泛语言支持：JavaScript、TypeScript、Python、Rust、Go、Java、PHP、Ruby、Swift、Shell、HTML、CSS、JSON、XML、YAML、SQL 等
+  - ✅ 专业代码展示，带行号和颜色标记
+
+- **通用特性** ✅:
+  - ✅ **公开预览**: 所有预览功能无需认证，支持直接分享预览链接
+  - ✅ **统一界面**: 一致的预览界面设计和交互体验
+  - ✅ **路由设计**: `/files/preview/{directory_id}/{file_path}` 预览路由
+  - ✅ **错误处理**: 不支持的文件类型显示友好提示界面
+  - ✅ **加载状态**: 所有预览类型都有优雅的加载动画
 
 **API 接口**:
 ```
-GET /api/files/{directory_id}/show/{file_path}   # 获取文件内容（Markdown 预览）
+GET /api/files/{directory_id}/show/{file_path}      # 获取文本文件内容（Markdown/代码预览）
+GET /api/files/{directory_id}/download/{file_path}  # 获取二进制文件内容（PDF/图片预览）
 ```
 
-**UI 设计特性**:
-- ✅ **全屏预览界面**: 沉浸式文件预览体验
-- ✅ **工具栏设计**: 返回按钮、文件信息、操作按钮
-- ✅ **文件信息显示**: 文件名、路径、目录信息
-- ✅ **加载状态**: 优雅的加载动画和错误处理
-- ✅ **响应式布局**: 移动端友好的预览界面
-
-**即将支持的文件类型** 🔮:
-- **图片**: 直接显示缩略图和原图 (jpg, png, gif)
-- **文本**: 语法高亮显示 (txt, log, js, ts, py, rs)
-- **PDF**: 使用 PDF.js 预览
-- **音视频**: HTML5 播放器
+**技术实现细节**:
+- ✅ **组件化架构**: 模块化预览组件设计
+  - `MarkdownPreview.tsx` - Markdown 渲染组件
+  - `PDFPreview.tsx` - PDF 预览组件，完整的阅读器功能
+  - `ImagePreview.tsx` - 图片预览组件
+  - `CodePreview.tsx` - 代码语法高亮组件
+  - `UnsupportedFilePreview.tsx` - 不支持格式的回退组件
+- ✅ **动态库加载**: PDF.js 和 markdown-it 通过 CDN 加载，不增加打包体积
+- ✅ **文件类型检测**: 基于文件扩展名的智能类型识别
+- ✅ **数据处理优化**: PDF 使用纯数组存储避免 ArrayBuffer 分离问题
 
 ---
 
@@ -450,7 +475,9 @@ src/frontend/
 │   ├── upload.ts          ✅ (文件上传 API)
 │   └── chunkedUpload.ts   ✅ (分片上传 API)
 ├── utils/                 # 工具函数
-│   └── download.ts        ✅ (下载工具函数)
+│   ├── download.ts        ✅ (下载工具函数)
+│   ├── markdown.ts        ✅ (动态 markdown-it 加载工具)
+│   └── pdf.ts             ✅ (PDF.js 加载和渲染工具)
 ├── types/                 # TypeScript 类型定义
 │   ├── auth.ts            ✅ (认证相关类型)
 │   └── files.ts           ✅ (文件管理类型)
@@ -458,7 +485,8 @@ src/frontend/
 │   ├── __root.tsx         ✅ (根布局 + Query Provider)
 │   ├── index.tsx          ✅ (首页重定向)
 │   ├── login.tsx          ✅ (登录页面)
-│   └── files.tsx          ✅ (文件管理页面)
+│   ├── files.tsx          ✅ (文件管理页面)
+│   └── files.preview.$directoryId.$.tsx ✅ (文件预览路由)
 ├── hooks/                 # React Hooks
 │   ├── useAuth.ts         ✅ (认证 Hook)
 │   ├── useAuthQueries.ts  ✅ (认证 TanStack Query Hooks)
@@ -476,8 +504,16 @@ src/frontend/
 │   ├── CreateDirectoryDialog.tsx ✅ (创建文件夹对话框)
 │   ├── DeleteConfirmDialog.tsx   ✅ (删除确认对话框)
 │   ├── RenameDialog.tsx          ✅ (文件重命名对话框)
-│   ├── FilePreview.tsx        🔮 (文件预览组件)
-│   └── FileOperations.tsx     ✅ (文件操作菜单 - 集成在主组件)
+│   ├── MarkdownRenderer.tsx      ✅ (Markdown 内容渲染组件)
+│   ├── FilePreview.tsx           ✅ (文件预览主组件)
+│   ├── preview/                  ✅ (预览组件模块)
+│   │   ├── index.ts              ✅ (预览组件导出)
+│   │   ├── MarkdownPreview.tsx   ✅ (Markdown 预览组件)
+│   │   ├── PDFPreview.tsx        ✅ (PDF 预览组件)
+│   │   ├── ImagePreview.tsx      ✅ (图片预览组件)
+│   │   ├── CodePreview.tsx       ✅ (代码预览组件)
+│   │   └── UnsupportedFilePreview.tsx ✅ (不支持格式回退组件)
+│   └── FileOperations.tsx        ✅ (文件操作菜单 - 集成在主组件)
 ```
 
 ---
@@ -578,12 +614,19 @@ path = "./media"
 4. ✅ **RESTful API 设计**: `/api/files/{directory_id}/show/{file_path}` 端点
 5. ✅ **UI 集成优化**: README 内容显示在文件列表下方，保持流畅体验
 
-### 第六阶段 (增强功能)
+### 第六阶段 ✅ 已完成 (文件预览系统)
+1. ✅ **完整文件预览系统**: 支持 Markdown、PDF、图片、代码文件的专业级预览功能
+2. ✅ **PDF 阅读器**: 基于 PDF.js 的功能完整的 PDF 预览，包含页面导航、缩放控制、页码跳转
+3. ✅ **代码语法高亮**: Prism.js 集成，支持 20+ 编程语言的语法高亮显示
+4. ✅ **统一预览界面**: 一致的用户体验和响应式设计
+5. ✅ **性能优化**: 动态 CDN 加载，ArrayBuffer 分离问题解决方案
+
+### 第七阶段 (未来功能)
 1. 🔮 文件搜索
-2. 🔮 文件预览
-3. 🔮 访问日志记录
-4. 🔮 多用户权限管理
-5. 🔮 云存储支持 (S3, 阿里云 OSS 等)
+2. 🔮 访问日志记录
+3. 🔮 多用户权限管理
+4. 🔮 云存储支持 (S3, 阿里云 OSS 等)
+5. 🔮 音视频预览 (HTML5 播放器)
 
 ---
 

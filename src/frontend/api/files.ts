@@ -155,5 +155,42 @@ export const filesApi = {
     });
   },
 
+  // 获取指定目录中的文件二进制内容（主要用于 PDF 预览）
+  async getBinaryFileWithDirectory(
+    directoryId: string,
+    filePath: string,
+  ): Promise<{ success: boolean; data?: ArrayBuffer; message?: string }> {
+    try {
+      const url = `/api/files/${encodeURIComponent(directoryId)}/download/${encodeURIComponent(filePath)}`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        // 不需要认证头，因为下载是公开的
+      });
+
+      if (!response.ok) {
+        return {
+          success: false,
+          message: `HTTP error! status: ${response.status}`,
+        };
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      // Clone the ArrayBuffer to prevent detachment issues
+      const clonedBuffer = arrayBuffer.slice(0);
+
+      return {
+        success: true,
+        data: clonedBuffer,
+      };
+    } catch (error) {
+      console.error("Failed to fetch binary file:", error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "网络错误",
+      };
+    }
+  },
+
   // Note: File config is now included in auth/verify response
 };

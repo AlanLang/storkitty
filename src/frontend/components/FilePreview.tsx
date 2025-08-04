@@ -12,6 +12,7 @@ import {
   CodePreview,
   ImagePreview,
   MarkdownPreview,
+  PDFPreview,
   UnsupportedFilePreview,
 } from "./preview";
 import { Button } from "./ui/button";
@@ -103,6 +104,8 @@ export function FilePreview({ directoryId, filePath }: FilePreviewProps) {
     ];
     const isTextFile = textExtensions.includes(fileExtension);
 
+    const isPDF = fileExtension === "pdf";
+
     return {
       name: fileName,
       extension: fileExtension,
@@ -110,7 +113,8 @@ export function FilePreview({ directoryId, filePath }: FilePreviewProps) {
       isMarkdown: fileExtension === "md",
       isImage,
       isTextFile,
-      isPreviewable: fileExtension === "md" || isImage || isTextFile,
+      isPDF,
+      isPreviewable: fileExtension === "md" || isImage || isTextFile || isPDF,
     };
   }, [filePath]);
 
@@ -168,6 +172,8 @@ export function FilePreview({ directoryId, filePath }: FilePreviewProps) {
                     <Image className="h-4 w-4 text-green-600" />
                   ) : fileInfo.isTextFile ? (
                     <Code className="h-4 w-4 text-orange-600" />
+                  ) : fileInfo.isPDF ? (
+                    <FileText className="h-4 w-4 text-red-600" />
                   ) : (
                     <File className="h-4 w-4 text-muted-foreground" />
                   )}
@@ -244,6 +250,8 @@ export function FilePreview({ directoryId, filePath }: FilePreviewProps) {
             fileName={fileInfo.name}
             fileExtension={fileInfo.extension}
           />
+        ) : fileInfo.isPDF ? (
+          <PDFPreview directoryId={directoryId} filePath={filePath} />
         ) : (
           <UnsupportedFilePreview
             directoryId={directoryId}
