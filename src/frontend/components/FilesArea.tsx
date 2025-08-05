@@ -436,7 +436,7 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
                     <span>{file.modified}</span>
                   </div>
 
-                  <div className="flex items-center opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 transition-opacity">
+                  <div className="flex items-center opacity-0 group-hover:opacity-100 [&:has([data-state=open])]:opacity-100 transition-opacity">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
