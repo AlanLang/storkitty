@@ -69,7 +69,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
 
   return (
     <div
-      className="prose prose-gray dark:prose-invert max-w-none p-4"
+      className="prose prose-gray dark:prose-invert max-w-none p-4 [&>*:first-child]:mt-0"
       dangerouslySetInnerHTML={{ __html: renderedContent }}
     />
   );
