@@ -1,7 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import {
   BookOpen,
-  Calendar,
   ChevronRight,
   Copy,
   Download,
@@ -43,6 +42,7 @@ import { CreateFileDialog } from "./CreateFileDialog";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { RenameDialog } from "./RenameDialog";
+import { TimeDisplay } from "./TimeDisplay";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -446,9 +446,8 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
                 </div>
 
                 <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-1 text-xs text-muted-foreground">
-                    <Calendar className="h-3 w-3" />
-                    <span>{file.modified}</span>
+                  <div className="text-xs text-muted-foreground">
+                    <TimeDisplay timeString={file.modified} />
                   </div>
 
                   <div className="flex items-center opacity-0 group-hover:opacity-100 [&:has([data-state=open])]:opacity-100 transition-opacity">
