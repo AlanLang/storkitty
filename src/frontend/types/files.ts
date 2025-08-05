@@ -55,4 +55,9 @@ export interface ReadmeResponse {
   message?: string;
 }
 
+export interface CreateFileResponse {
+  success: boolean;
+  message: string;
+}
+
 // Note: File config is now included in auth/verify response (types/auth.ts)

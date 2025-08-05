@@ -1,5 +1,6 @@
 import type {
   CreateDirectoryResponse,
+  CreateFileResponse,
   DeleteResponse,
   FilesResponse,
   ReadmeResponse,
@@ -203,6 +204,28 @@ export const filesApi = {
       {
         method: "PUT",
         body: JSON.stringify({ content }),
+      },
+    );
+
+    // 检查操作是否成功，如果失败则抛出错误
+    if (!response.success) {
+      throw new ApiError(response.message, 400, response);
+    }
+
+    return response;
+  },
+
+  // 在指定目录中创建文件（需要认证）
+  async createFileWithDirectory(
+    directoryId: string,
+    filename: string,
+    content?: string,
+  ): Promise<CreateFileResponse> {
+    const response = await apiRequest<CreateFileResponse>(
+      `/files/${encodeURIComponent(directoryId)}/create`,
+      {
+        method: "POST",
+        body: JSON.stringify({ filename, content }),
       },
     );
 

@@ -229,6 +229,35 @@ export class FileOperationsHelper {
     await this.page.waitForLoadState("networkidle");
   }
 
+  // 创建新文件
+  async createFile(fileName: string, fileType: string) {
+    // 点击新建文件按钮 - 使用更精确的选择器
+    const createFileButton = this.page.locator('button:has-text("新建文件"):not(:has-text("新建文件夹"))');
+    await createFileButton.click();
+
+    // 等待对话框打开
+    await this.page.waitForSelector('[role="dialog"]', { timeout: 5000 });
+
+    // 输入文件名（不包含扩展名）
+    const baseFileName = fileName.replace(/\.[^/.]+$/, "");
+    const filenameInput = this.page.locator('input[id="filename"]');
+    await filenameInput.fill(baseFileName);
+
+    // 选择文件类型
+    const fileTypeButton = this.page.locator(`button:has-text(".${fileType}")`);
+    await fileTypeButton.click();
+
+    // 创建文件
+    const createButton = this.page.locator('button:has-text("创建文件")');
+    await createButton.click();
+
+    // 等待对话框关闭
+    await this.page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 5000 });
+    
+    // 等待网络请求完成
+    await this.page.waitForLoadState("networkidle");
+  }
+
   // 点击文件的操作菜单项
   async clickFileMenuAction(fileName: string, menuAction: string) {
     // 找到文件
@@ -596,6 +625,29 @@ export class TestDataFactory {
     return {
       name: TestUtils.generateRandomDirectoryName(),
       description: "Test directory created by E2E tests",
+    };
+  }
+
+  // 创建测试 Markdown 数据
+  static createTestMarkdownData() {
+    return {
+      fileName: `test-markdown-${Date.now()}.md`,
+      content: `# 测试文档
+
+这是一个测试 Markdown 文档，用于 E2E 测试。
+
+## 功能测试
+
+- 文本渲染
+- 代码块
+- 列表项
+
+\`\`\`javascript
+console.log('Hello World');
+\`\`\`
+
+**粗体文本** 和 *斜体文本*
+`,
     };
   }
 }

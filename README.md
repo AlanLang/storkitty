@@ -19,6 +19,11 @@
 - 文件类型识别
 - 实时搜索和过滤
 - 简洁的列表视图界面
+- **新建文件功能** 🆕 支持创建多种文本文件类型
+  - 支持 30+ 种文件类型（.md, .txt, .js, .ts, .py, .json, .yaml, .css, .html 等）
+  - 智能文件类型选择和自定义扩展名
+  - 实时文件名验证和重复检测
+  - 仅允许文本类型文件，确保系统安全
 - **多格式文件预览** ✨ 支持 Markdown、PDF、图片和代码文件预览
 - **在线文本编辑** 🔥 基于 Monaco Editor 的专业级代码编辑器
   - 支持 30+ 种编程语言语法高亮
@@ -243,6 +248,7 @@ allow_download = true
 - `GET /api/files/{directory_id}/storage` - 获取存储空间信息
 - `DELETE /api/files/{directory_id}/delete/{path}` - 删除文件或目录
 - `POST /api/files/{directory_id}/mkdir/{path}` - 创建新目录
+- `POST /api/files/{directory_id}/create` - 创建新文件 🆕
 - `PUT /api/files/{directory_id}/rename/{path}` - 重命名文件或目录
 - `GET /api/files/{directory_id}/download/{path}` - 文件下载（无需认证）
 - `GET /api/files/{directory_id}/show/{path}` - 预览文本文件内容（支持 30+ 格式）✨

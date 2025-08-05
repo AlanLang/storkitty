@@ -57,7 +57,7 @@ export function TextEditor({
     if (
       !editorContainerRef.current ||
       !fileData?.success ||
-      !fileData.content
+      fileData.content === undefined
     ) {
       return;
     }
@@ -75,7 +75,7 @@ export function TextEditor({
       // 创建新编辑器
       const editor = await createEditor(
         editorContainerRef.current,
-        fileData.content,
+        fileData.content || "", // 确保不传递 undefined
         language,
         {
           theme: "vs", // 使用浅色主题

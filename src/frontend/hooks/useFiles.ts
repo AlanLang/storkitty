@@ -179,5 +179,29 @@ export function useSaveFileMutation(directoryId: string) {
   });
 }
 
+// 创建文件 mutation（支持目录选择）
+export function useCreateFileMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      filename,
+      directoryId,
+      content,
+    }: { filename: string; directoryId: string; content?: string }) => {
+      return filesApi.createFileWithDirectory(directoryId, filename, content);
+    },
+    retry: 0,
+    onSuccess: (_, { directoryId }) => {
+      // 刷新所有文件列表查询
+      queryClient.invalidateQueries({ queryKey: filesKeys.lists() });
+      // 刷新相应的存储空间信息
+      queryClient.invalidateQueries({
+        queryKey: filesKeys.storage(directoryId),  
+      });
+    },
+  });
+}
+
 // Note: File config is now included in auth/verify response
 // useFileConfigQuery removed - use useAuth().fileConfig instead

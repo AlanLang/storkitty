@@ -7,6 +7,7 @@ import {
   Download,
   Edit,
   File,
+  FileText,
   FolderOpen,
   Home,
   Loader2,
@@ -21,6 +22,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useDirectory } from "../hooks/useDirectory";
 import {
   useCreateDirectoryMutation,
+  useCreateFileMutation,
   useDeleteFileMutation,
   useFileListWithDirectoryQuery,
   useRenameFileMutation,
@@ -35,6 +37,7 @@ import {
 } from "../utils/download";
 import { formatFileSize } from "../utils/fileUtils";
 import { CreateDirectoryDialog } from "./CreateDirectoryDialog";
+import { CreateFileDialog } from "./CreateFileDialog";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { RenameDialog } from "./RenameDialog";
@@ -110,12 +113,14 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isCreateDirectoryDialogOpen, setIsCreateDirectoryDialogOpen] =
     useState(false);
+  const [isCreateFileDialogOpen, setIsCreateFileDialogOpen] = useState(false);
   const [renameFile, setRenameFile] = useState<FileInfo | null>(null);
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
 
   // Mutations
   const deleteFileMutation = useDeleteFileMutation();
   const createDirectoryMutation = useCreateDirectoryMutation();
+  const createFileMutation = useCreateFileMutation();
   const renameFileMutation = useRenameFileMutation();
 
   // 获取文件数据
@@ -223,6 +228,22 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
     setIsCreateDirectoryDialogOpen(false);
   };
 
+  const handleCreateFileClick = () => {
+    setIsCreateFileDialogOpen(true);
+  };
+
+  const handleCreateFileConfirm = async (filename: string) => {
+    await createFileMutation.mutateAsync({
+      filename,
+      directoryId: selectedDirectoryId,
+      content: "", // 创建空文件
+    });
+  };
+
+  const handleCreateFileDialogClose = () => {
+    setIsCreateFileDialogOpen(false);
+  };
+
   const handleRenameClick = (file: FileInfo) => {
     setRenameFile(file);
     setIsRenameDialogOpen(true);
@@ -278,6 +299,16 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
           </div>
 
           <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={handleCreateFileClick}
+            >
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">新建文件</span>
+            </Button>
+
             <Button
               variant="outline"
               size="sm"
@@ -530,6 +561,14 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
         onClose={handleCreateDirectoryDialogClose}
         onConfirm={handleCreateDirectoryConfirm}
         isCreating={createDirectoryMutation.isPending}
+      />
+
+      {/* 创建文件对话框 */}
+      <CreateFileDialog
+        isOpen={isCreateFileDialogOpen}
+        onClose={handleCreateFileDialogClose}
+        onConfirm={handleCreateFileConfirm}
+        currentPath={currentPath}
       />
 
       {/* 重命名对话框 */}

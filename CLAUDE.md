@@ -195,6 +195,7 @@ The application features an automatic setup wizard for first-time use:
 │       │   ├── LoginForm.tsx   # Login form component (clean, no demo credentials)
 │       │   ├── SetupForm.tsx   # Initial setup form component with validation
 │       │   ├── CreateDirectoryDialog.tsx # Directory creation dialog with validation
+│       │   ├── CreateFileDialog.tsx # File creation dialog with type selection and validation
 │       │   ├── DeleteConfirmDialog.tsx # File deletion confirmation dialog
 │       │   ├── RenameDialog.tsx # File/folder rename dialog with validation and conflict detection
 │       │   ├── UploadDrawer.tsx # Upload drawer component with progress tracking
@@ -599,6 +600,46 @@ The project uses TailwindCSS 4.x with the following setup:
 - **Keyboard Support**: ESC key to close drawer, proper focus management
 - **Accessibility**: ARIA labels, semantic markup, and screen reader support
 
+## File Creation System
+
+### Creation Interface
+- **Create File Dialog**: Modern modal dialog for creating new text files with validation
+- **File Type Selection**: Support for 30+ common text file extensions (md, txt, json, js, ts, py, etc.)
+- **Custom Extension Support**: Allow users to input custom file extensions for flexibility
+- **Real-time Validation**: Immediate feedback on filename validity and duplicate detection
+- **Visual File Preview**: Shows complete filename with extension before creation
+
+### Creation Features
+- **Text File Restriction**: Only allows creation of text-based file types for security
+- **Duplicate Prevention**: Automatically detects and prevents creation of files with existing names
+- **Extension Intelligence**: Smart file type categorization with appropriate icons and descriptions
+- **Path-aware Creation**: Creates files in the current directory location
+- **Input Validation**: Comprehensive validation for illegal characters and reserved names
+- **Filename Sanitization**: Prevents creation of files with system-reserved names or invalid characters
+
+### Technical Implementation
+- **Backend API**: `POST /api/files/{directory_id}/create` endpoint with authentication
+- **Validation Layer**: Server-side validation for file names, extensions, and permissions
+- **Frontend Dialog**: `CreateFileDialog` component with real-time validation
+- **File Type Registry**: Predefined list of supported text file extensions
+- **State Management**: TanStack Query integration for creation and cache invalidation
+- **Permission System**: Respects user permissions and directory-specific settings
+
+### User Experience
+- **Intuitive Workflow**: Click "新建文件" → Enter name → Select type → Create
+- **Smart Defaults**: Common file types prominently displayed with custom option available
+- **Error Handling**: Clear error messages for validation failures and conflicts
+- **Keyboard Navigation**: Full keyboard support with Enter to confirm, Escape to cancel
+- **Animation Consistency**: Smooth dialog transitions matching application design language
+
+### Supported File Types
+- **Documentation**: .md, .txt, .rst, .adoc
+- **Web Technologies**: .html, .css, .js, .ts, .jsx, .tsx
+- **Programming**: .py, .java, .cpp, .c, .go, .rs, .php, .rb
+- **Configuration**: .json, .yaml, .yml, .toml, .ini, .conf
+- **Data**: .csv, .xml, .sql
+- **Custom Extensions**: Support for any text-based extension via manual input
+
 ## File Deletion System
 
 ### Deletion Interface
@@ -769,6 +810,57 @@ path = "./documents"
 - **智能目录选择**: 自动选择首个目录，无需额外配置
 - **状态持久化**: 目录选择状态自动保存，用户体验更连贯
 
+## E2E Testing Framework
+
+### Testing Architecture
+- **Framework**: Playwright + TypeScript for reliable, cross-browser testing
+- **Test Organization**: Organized by feature area (auth, file-management, multi-directory, ui-interactions)
+- **Helper Classes**: Comprehensive testing utilities for common operations
+- **Test Data**: Automatic test data generation and cleanup
+- **Environment**: Isolated test environment with dedicated config and storage directories
+
+### Test Coverage
+- **Authentication**: Login/logout, session management, token validation, form validation
+- **File Management**: File listing, upload, download, delete, rename, directory creation
+- **File Creation Workflow**: Complete end-to-end testing of file creation process
+  - Create new file with type selection and validation
+  - Navigate to preview mode
+  - Enter edit mode with Monaco Editor initialization
+  - Content input and validation
+  - Save file and exit edit mode
+  - Verify saved content persistence
+- **Multi-Directory**: Directory switching, independent storage, URL routing
+- **UI Interactions**: Responsive design, view switching, search, drag-drop, animations
+- **Error Handling**: Network errors, validation errors, permission errors
+
+### File Creation Test Details
+- **Test File**: `e2e/tests/create-file-simple.spec.ts`
+- **Workflow Coverage**: 
+  1. Create file dialog interaction and validation
+  2. File type selection (Markdown, text, code files)
+  3. Preview page navigation
+  4. Edit button activation
+  5. Monaco Editor initialization detection
+  6. Content input with proper focus handling
+  7. File saving with keyboard shortcuts
+  8. Edit mode exit
+  9. Content verification after page reload
+- **Monaco Editor Integration**: Proper handling of editor initialization states
+- **Real-world Simulation**: Accurate timing and user interaction patterns
+
+### Test Execution
+- **Parallel Execution**: Tests run in parallel for faster feedback
+- **Cross-Browser**: Chromium, Firefox, WebKit, and mobile browsers
+- **Automatic Setup**: Test environment prepared and cleaned automatically
+- **Rich Reporting**: HTML reports with screenshots, videos, and traces
+- **CI/CD Ready**: Optimized for continuous integration pipelines
+
+### Test Maintenance
+- **Page Object Model**: Organized helper classes for maintainable tests
+- **Data Isolation**: Each test uses unique data to prevent conflicts
+- **Error Recovery**: Robust error handling and cleanup mechanisms
+- **Documentation**: Comprehensive test documentation and examples
+
 ## 开发阶段与维护规则
 
 ### 开发优先级
@@ -782,8 +874,9 @@ path = "./documents"
 #### 第二阶段 ✅ 已完成
 1. ✅ 文件操作 (删除功能)
 2. ✅ 新建文件夹功能
-3. ✅ 文件重命名功能
-4. 🔄 批量操作支持
+3. ✅ **新建文件功能**: 支持创建多种文本类型文件，带有类型选择和重复检测
+4. ✅ 文件重命名功能
+5. 🔄 批量操作支持
 
 #### 第三阶段 ✅ 已完成 (多目录与性能优化)
 1. ✅ **多目录存储系统**: 支持配置多个独立存储目录
@@ -794,8 +887,9 @@ path = "./documents"
 #### 第四阶段 ✅ 已完成 (E2E 测试框架)
 1. ✅ **E2E 测试框架**: 基于 Playwright + TypeScript 的端到端测试系统
 2. ✅ **全面测试覆盖**: 用户认证、文件管理、多目录存储、UI 交互测试
-3. ✅ **测试工具链**: 测试助手、数据工厂、全局设置和清理
-4. ✅ **CI/CD 支持**: 适配持续集成的测试配置和报告生成
+3. ✅ **新建文件工作流测试**: 完整的创建→预览→编辑→保存→验证流程测试
+4. ✅ **测试工具链**: 测试助手、数据工厂、全局设置和清理
+5. ✅ **CI/CD 支持**: 适配持续集成的测试配置和报告生成
 
 #### 第五阶段 ✅ 已完成 (文件预览与在线编辑)
 1. ✅ **文件预览系统**: 支持 Markdown、PDF、图片和代码文件的完整预览功能
