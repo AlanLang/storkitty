@@ -8,7 +8,7 @@ import {
   FileText,
   Image,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "../hooks/useAuth";
 import {
@@ -30,9 +30,10 @@ import { Button } from "./ui/button";
 interface FilePreviewProps {
   directoryId: string;
   filePath: string;
+  startInEditMode?: boolean;
 }
 
-export function FilePreview({ directoryId, filePath }: FilePreviewProps) {
+export function FilePreview({ directoryId, filePath, startInEditMode = false }: FilePreviewProps) {
   const navigate = useNavigate();
   const { isAuthenticated, directories } = useAuth();
   const [isEditMode, setIsEditMode] = useState(false);
@@ -130,6 +131,13 @@ export function FilePreview({ directoryId, filePath }: FilePreviewProps) {
       isPreviewable: fileExtension === "md" || isImage || isTextFile || isPDF,
     };
   }, [filePath]);
+
+  // 处理初始编辑模式
+  useEffect(() => {
+    if (startInEditMode && isAuthenticated && fileInfo.canEdit) {
+      setIsEditMode(true);
+    }
+  }, [startInEditMode, isAuthenticated, fileInfo.canEdit]);
 
   // 处理返回（仅登录用户可用）
   const handleGoBack = () => {

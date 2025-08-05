@@ -12,6 +12,7 @@ import {
   Home,
   Loader2,
   MoreVertical,
+  PencilLine,
   Search,
   Trash2,
   Upload,
@@ -35,6 +36,7 @@ import {
   copyDownloadLink,
   downloadFile,
 } from "../utils/download";
+import { isEditable } from "../utils/editor";
 import { formatFileSize } from "../utils/fileUtils";
 import { CreateDirectoryDialog } from "./CreateDirectoryDialog";
 import { CreateFileDialog } from "./CreateFileDialog";
@@ -86,6 +88,19 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
         directoryId: selectedDirectoryId,
         _splat: filePath,
       },
+    });
+  };
+
+  // 处理编辑点击 - 导航到预览页面的编辑模式
+  const handleEditClick = (fileName: string) => {
+    const filePath = currentPath ? `${currentPath}/${fileName}` : fileName;
+    navigate({
+      to: "/files/preview/$directoryId/$",
+      params: {
+        directoryId: selectedDirectoryId,
+        _splat: filePath,
+      },
+      search: { edit: true },
     });
   };
 
@@ -452,6 +467,25 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
                       <DropdownMenuContent align="end" className="w-48">
                         {file.file_type === "file" && (
                           <>
+                            {/* 编辑选项 - 仅对可编辑文件且已登录用户显示 */}
+                            {isAuthenticated &&
+                              isEditable(
+                                file.name.split(".").pop()?.toLowerCase() || "",
+                              ) && (
+                                <>
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEditClick(file.name);
+                                    }}
+                                    className="cursor-pointer focus-visible:outline-none"
+                                  >
+                                    <PencilLine className="mr-2 h-4 w-4" />
+                                    编辑文件
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                </>
+                              )}
                             <DropdownMenuItem
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -537,9 +571,22 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
         {/* README 渲染区域 - 显示在文件列表下方 */}
         {hasReadmeContent && readmeData?.content && (
           <div className="mt-4 flex flex-col divide-y divide-border border">
-            <div className="p-4 flex items-center gap-3 mb-4 text-muted-foreground">
-              <BookOpen className="h-5 w-5" />
-              <span className="font-medium">README</span>
+            <div className="p-4 flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3 text-muted-foreground">
+                <BookOpen className="h-5 w-5" />
+                <span className="font-medium">README</span>
+              </div>
+              {/* README 编辑按钮 - 仅登录用户可见 */}
+              {isAuthenticated && readmeFile && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleEditClick(readmeFile.name)}
+                  className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                >
+                  <PencilLine className="h-4 w-4" />
+                </Button>
+              )}
             </div>
             <MarkdownRenderer content={readmeData.content} />
           </div>
