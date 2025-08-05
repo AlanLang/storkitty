@@ -2,6 +2,8 @@
 
 一个基于 Rust 和 React 的轻量级文件管理系统，提供安全的用户认证和现代化的文件浏览界面。
 
+![screely-1754393213853.png](https://cdn.sa.net/2025/08/05/YZNtHdKpMJ627hq.png)
+
 ## 功能特性
 
 ### 🔐 用户认证系统
