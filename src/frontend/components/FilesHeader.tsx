@@ -3,7 +3,7 @@ import { useAuth } from "../hooks/useAuth";
 import { Button } from "./ui/button";
 
 export function FilesHeader() {
-  const { user, logout } = useAuth();
+  const { user, version, logout } = useAuth();
   return (
     <header className="flex-shrink-0 border-b bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">
       <div className="flex h-16 items-center px-6">
@@ -11,6 +11,11 @@ export function FilesHeader() {
           <div className="flex items-center space-x-2">
             <HardDrive className="h-6 w-6 text-primary" />
             <h1 className="text-xl font-semibold">Storkitty</h1>
+            {version && (
+              <span className="text-xs text-muted-foreground font-medium px-1.5 py-0.5 bg-muted/60 rounded border border-border/50 translate-y-0.5">
+                v{version}
+              </span>
+            )}
           </div>
         </div>
 

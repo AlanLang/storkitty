@@ -26,6 +26,7 @@ export interface VerifyResponse {
   user: UserInfo;
   file_config: FileConfigInfo;
   directories: DirectoryInfo[];
+  version: string;
 }
 
 export interface SetupRequest {

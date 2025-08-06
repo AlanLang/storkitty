@@ -61,6 +61,7 @@ pub struct VerifyResponse {
     pub user: UserInfo,
     pub file_config: FileConfigInfo,
     pub directories: Vec<DirectoryInfo>,
+    pub version: String,
 }
 
 pub struct AuthService {
@@ -197,6 +198,7 @@ pub async fn verify_handler(
                 user: user_info,
                 file_config,
                 directories,
+                version: env!("CARGO_PKG_VERSION").to_string(),
             };
             
             Ok(Json(response))

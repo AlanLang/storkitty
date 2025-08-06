@@ -11,6 +11,7 @@ export interface AuthContextType {
   user: UserInfo | null;
   fileConfig: FileConfigInfo | null;
   directories: DirectoryInfo[] | null;
+  version: string | null;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -81,6 +82,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const user = verifyResponse?.user || null;
   const fileConfig = verifyResponse?.file_config || null;
   const directories = verifyResponse?.directories || null;
+  const version = verifyResponse?.version || null;
   const isAuthenticated = !!user && !!token && !verifyError;
   const loginError = loginMutation.error?.message || null;
 
@@ -88,6 +90,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     user,
     fileConfig,
     directories,
+    version,
     token,
     isAuthenticated,
     isLoading,
