@@ -294,7 +294,7 @@ export function TextEditor({
       {/* 底部提示 */}
       <div className="mt-4 text-center">
         <p className="text-sm text-muted-foreground">
-          使用 <kbd className="px-2 py-1 bg-muted rounded text-xs">Ctrl+S</kbd>{" "}
+          使用 <kbd className="px-2 py-1 bg-muted rounded text-xs">Ctrl+S</kbd>
           保存文件，
           <kbd className="px-2 py-1 bg-muted rounded text-xs">ESC</kbd> 退出编辑
         </p>

@@ -197,7 +197,7 @@ export function useCreateFileMutation() {
       queryClient.invalidateQueries({ queryKey: filesKeys.lists() });
       // 刷新相应的存储空间信息
       queryClient.invalidateQueries({
-        queryKey: filesKeys.storage(directoryId),  
+        queryKey: filesKeys.storage(directoryId),
       });
     },
   });

@@ -11,7 +11,7 @@
 export function formatRelativeTime(timeString: string): string {
   try {
     // 解析时间字符串为 Date 对象
-    const fileTime = new Date(timeString.replace(' ', 'T'));
+    const fileTime = new Date(timeString.replace(" ", "T"));
     const now = new Date();
     const diffMs = now.getTime() - fileTime.getTime();
     const diffSeconds = Math.floor(diffMs / 1000);
@@ -47,7 +47,7 @@ export function formatRelativeTime(timeString: string): string {
     const diffYears = Math.floor(diffMonths / 12);
     return `${diffYears}年前`;
   } catch (error) {
-    console.warn('Failed to parse time string:', timeString, error);
+    console.warn("Failed to parse time string:", timeString, error);
     return timeString; // 解析失败时返回原始字符串
   }
 }
@@ -59,18 +59,18 @@ export function formatRelativeTime(timeString: string): string {
  */
 export function formatFullTime(timeString: string): string {
   try {
-    const date = new Date(timeString.replace(' ', 'T'));
-    return date.toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
+    const date = new Date(timeString.replace(" ", "T"));
+    return date.toLocaleString("zh-CN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
     });
   } catch (error) {
-    console.warn('Failed to format time string:', timeString, error);
+    console.warn("Failed to format time string:", timeString, error);
     return timeString; // 格式化失败时返回原始字符串
   }
 }

@@ -33,7 +33,11 @@ interface FilePreviewProps {
   startInEditMode?: boolean;
 }
 
-export function FilePreview({ directoryId, filePath, startInEditMode = false }: FilePreviewProps) {
+export function FilePreview({
+  directoryId,
+  filePath,
+  startInEditMode = false,
+}: FilePreviewProps) {
   const navigate = useNavigate();
   const { isAuthenticated, directories } = useAuth();
   const [isEditMode, setIsEditMode] = useState(false);
