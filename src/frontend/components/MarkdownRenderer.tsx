@@ -54,11 +54,10 @@ export function MarkdownRenderer({ content }: { content: string }) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-center gap-2 p-20">
         <div className="h-2 w-2 bg-primary rounded-full animate-bounce" />
         <div className="h-2 w-2 bg-primary rounded-full animate-bounce delay-100" />
         <div className="h-2 w-2 bg-primary rounded-full animate-bounce delay-200" />
-        <span className="ml-2">Loading README...</span>
       </div>
     );
   }
