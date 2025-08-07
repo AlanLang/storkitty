@@ -143,17 +143,36 @@ jobs:
       id: changelog
       run: |
         # Get commits since last tag (excluding the current commit that triggers the release)
-        # Get the previous tag (not the current one being released)
-        PREV_TAG=$(git tag -l | sort -V | tail -n 2 | head -n 1)
         CURRENT_VERSION="v${{ needs.check-version.outputs.version }}"
         
-        if [ -z "$PREV_TAG" ] || [ "$PREV_TAG" = "$CURRENT_VERSION" ]; then
-          # No previous tag or only current tag exists
-          COMMITS=$(git log --pretty=format:"- %s" --reverse --skip=1)
+        # Get all tags sorted by version, then find the previous tag
+        ALL_TAGS=$(git tag -l | sort -V)
+        PREV_TAG=""
+        
+        # Find previous tag by getting all tags except the current one if it exists
+        for tag in $ALL_TAGS; do
+          if [ "$tag" != "$CURRENT_VERSION" ]; then
+            PREV_TAG="$tag"
+          else
+            break
+          fi
+        done
+        
+        echo "Current version: $CURRENT_VERSION"
+        echo "Previous tag: $PREV_TAG"
+        
+        if [ -z "$PREV_TAG" ]; then
+          # No previous tag exists, get all commits except the current one
+          echo "No previous tag found, getting all commits except current"
+          COMMITS=$(git log --pretty=format:"- %s" --reverse HEAD^ 2>/dev/null || echo "")
         else
           # Get commits from previous tag to current commit (excluding current commit)
-          COMMITS=$(git log --pretty=format:"- %s" --reverse $PREV_TAG..HEAD^)
+          echo "Getting commits from $PREV_TAG to HEAD^"
+          COMMITS=$(git log --pretty=format:"- %s" --reverse $PREV_TAG..HEAD^ 2>/dev/null || echo "")
         fi
+        
+        echo "Generated commits:"
+        echo "$COMMITS"
         
         # Create changelog
         cat > CHANGELOG.md << EOF
@@ -175,7 +194,7 @@ jobs:
         - **Interactive setup**: First visit automatically redirects to setup wizard
         - **Immediate access**: Setup wizard creates your admin account and logs you in automatically
         
-        **Full Changelog**: https://github.com/${{ github.repository }}/compare/$LAST_TAG...v${{ needs.check-version.outputs.version }}
+        **Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREV_TAG:-HEAD}...v${{ needs.check-version.outputs.version }}
         EOF
     
     - name: Delete existing release if force_release is true
