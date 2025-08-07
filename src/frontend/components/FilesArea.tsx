@@ -252,8 +252,13 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
   };
 
   const handleCreateFileConfirm = async (filename: string) => {
+    // 构建完整的文件路径
+    const filePath = currentPath
+      ? `${currentPath}/${filename}`
+      : filename;
+
     await createFileMutation.mutateAsync({
-      filename,
+      filename: filePath,
       directoryId: selectedDirectoryId,
       content: "", // 创建空文件
     });
