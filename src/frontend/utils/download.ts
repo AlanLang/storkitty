@@ -6,7 +6,8 @@ export function generateDownloadUrl(
   directoryId: string,
 ): string {
   const baseUrl = window.location.origin;
-  const encodedPath = encodeURIComponent(filePath);
+  // 对路径的每个部分进行编码，但保留路径分隔符 /
+  const encodedPath = filePath.split('/').map(segment => encodeURIComponent(segment)).join('/');
   return `${baseUrl}/api/files/${directoryId}/download/${encodedPath}`;
 }
 
