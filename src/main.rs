@@ -7,7 +7,7 @@ use tokio::sync::RwLock;
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::cors::{CorsLayer, Any};
 
-use backend::{auth::AuthService, config::Config, files::FileService, upload::UploadService, setup::SetupService};
+use backend::{auth::AuthService, config::Config, files::FileService, upload::UploadService, setup::SetupService, download::DownloadManager};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -25,6 +25,7 @@ async fn main() -> anyhow::Result<()> {
   let file_service = Arc::new(FileService::new(config.clone(), auth_service.clone()));
   let upload_service = Arc::new(UploadService::new(config.clone(), auth_service.clone()));
   let setup_service = Arc::new(SetupService::new(config.clone(), auth_service.clone()));
+  let download_manager = Arc::new(DownloadManager::new(config.clone(), auth_service.clone()));
 
   // 创建API路由
   let max_file_size = {
@@ -36,7 +37,8 @@ async fn main() -> anyhow::Result<()> {
     .nest("/auth", backend::auth::auth_router(auth_service))
     .nest("/files", backend::files::files_router(file_service))
     .nest("/upload", backend::upload::upload_router(upload_service.clone(), max_file_size))
-    .nest("/setup", backend::setup::setup_router(setup_service));
+    .nest("/setup", backend::setup::setup_router(setup_service))
+    .nest("/download", backend::download::download_router(download_manager));
 
   // 主应用路由 - 使用 Axum 推荐的 SPA 模式
   let app = Router::new()

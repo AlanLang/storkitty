@@ -152,6 +152,7 @@ The application features an automatic setup wizard for first-time use:
 │   │   ├── auth.rs             # Authentication logic and handlers (async-safe)
 │   │   ├── files.rs            # File management logic and handlers
 │   │   ├── upload.rs           # File upload logic and handlers
+│   │   ├── download.rs         # Remote download management system with async processing
 │   │   ├── setup.rs            # Initial setup and configuration management
 │   │   └── config.rs           # Configuration file parsing
 │   └── frontend/
@@ -159,12 +160,14 @@ The application features an automatic setup wizard for first-time use:
 │       ├── routeTree.gen.ts    # Auto-generated route tree (do not edit)
 │       ├── types/
 │       │   ├── auth.ts         # Authentication & setup type definitions
-│       │   └── files.ts        # File management type definitions
+│       │   ├── files.ts        # File management type definitions
+│       │   └── download.ts     # Remote download type definitions
 │       ├── api/
 │       │   ├── auth.ts         # Authentication & setup API functions with error handling
 │       │   ├── files.ts        # File management API functions
 │       │   ├── upload.ts       # Simple file upload API functions and utilities
-│       │   └── chunkedUpload.ts # Chunked upload API for large files
+│       │   ├── chunkedUpload.ts # Chunked upload API for large files
+│       │   └── download.ts     # Remote download API functions and utilities
 │       ├── utils/
 │       │   ├── download.ts     # File download utilities and link generation
 │       │   ├── markdown.ts     # Dynamic markdown-it loading and rendering utilities
@@ -177,6 +180,7 @@ The application features an automatic setup wizard for first-time use:
 │       ├── hooks/
 │       │   ├── useAuth.ts      # Authentication hook
 │       │   ├── useAuthQueries.ts # TanStack Query hooks for auth
+│       │   ├── useDownload.ts  # TanStack Query hooks for download management with smart polling
 │       │   ├── useFiles.ts     # TanStack Query hooks for file management
 │       │   └── useUploadContext.ts # Upload context hook
 │       ├── lib/
@@ -200,6 +204,9 @@ The application features an automatic setup wizard for first-time use:
 │       │   ├── RenameDialog.tsx # File/folder rename dialog with validation and conflict detection
 │       │   ├── UploadDrawer.tsx # Upload drawer component with progress tracking
 │       │   ├── UploadIndicator.tsx # Floating upload indicator button
+│       │   ├── DownloadDialog.tsx # Remote download URL input dialog
+│       │   ├── DownloadDrawer.tsx # Download task management drawer with progress tracking
+│       │   ├── DownloadIndicator.tsx # Floating download status indicator with smart polling
 │       │   ├── MarkdownRenderer.tsx # Markdown content rendering component
 │       │   ├── FilesArea.tsx # Main file management component with list view
 │       │   └── preview/        # File preview components
@@ -334,7 +341,7 @@ The application features an automatic setup wizard for first-time use:
 - **Loading states**: Progressive loading with visual feedback throughout the preview process
 
 ### Dependencies
-**Backend**: axum (with multipart), tokio, tokio-util, serde, jsonwebtoken, bcrypt, tower-http, uuid, mime, bytes, futures-util
+**Backend**: axum (with multipart), tokio, tokio-util, tokio-stream, serde, jsonwebtoken, bcrypt, tower-http, uuid, mime, bytes, futures-util, reqwest, url
 **Frontend**: react, @tanstack/react-router, @tanstack/router-cli, @tanstack/router-devtools, @tanstack/react-query, @tanstack/react-query-devtools, react-dropzone, sonner
 **UI Framework**: @tailwindcss/postcss (TailwindCSS 4.x), class-variance-authority, clsx, tailwind-merge, lucide-react, @radix-ui/react-slot, @radix-ui/react-dialog, @radix-ui/react-dropdown-menu, shadcn/ui components
 **Animation**: TailwindCSS animate classes, CSS transitions and transforms for smooth user interactions, custom CSS keyframes for heartbeat effects
@@ -599,6 +606,97 @@ The project uses TailwindCSS 4.x with the following setup:
 - **Responsive Design**: Drawer adapts to different screen sizes (28rem width)
 - **Keyboard Support**: ESC key to close drawer, proper focus management
 - **Accessibility**: ARIA labels, semantic markup, and screen reader support
+
+## Remote Download System
+
+### Remote Download Overview
+The system provides comprehensive remote file downloading capabilities with background processing, real-time progress tracking, and intelligent management. Downloads continue even when the frontend is closed, making it ideal for large files or unstable connections.
+
+### Core Features
+- **Multi-URL Input**: Support for downloading multiple files simultaneously from different URLs
+- **Background Processing**: Downloads continue server-side even if the frontend is closed
+- **Real-time Progress**: Live progress updates with download speed, ETA, and completion status
+- **Smart Management**: Intelligent task categorization, cleanup, and state management
+- **Concurrent Downloads**: Multiple downloads can run simultaneously with proper resource management
+
+### User Interface
+- **Download Dialog**: Modern modal interface for URL input and task creation
+  - Multi-line URL input (one URL per line)
+  - Real-time URL validation with visual feedback
+  - Download preview with filename extraction
+  - Target location display with current path
+  - Support for HTTP/HTTPS URLs
+- **Download Indicator**: Floating status indicator in bottom-right corner
+  - Displays only when tasks exist (auto-hides when empty)
+  - Color-coded status: Blue (downloading), Green (completed), Red (failed)
+  - Progress ring for active downloads
+  - Task count badge
+  - Animated bounce arrow for active downloads
+- **Download Drawer**: Full-featured management interface
+  - Task categorization: Active, Completed, Failed/Cancelled
+  - Individual progress bars with speed and ETA
+  - Cancel active downloads
+  - Clear completed/failed tasks
+  - Real-time status updates
+
+### Technical Implementation
+
+#### Backend Architecture
+- **Download Manager**: Centralized task management with async processing
+- **Task Persistence**: In-memory task storage with status tracking
+- **Concurrent Processing**: Tokio-based async download with streaming
+- **Progress Tracking**: Real-time progress calculation with speed monitoring
+- **Smart Polling**: Intelligent progress updates only when tasks are active
+
+#### API Endpoints
+- `POST /api/download/start` - Create download tasks from URLs
+- `GET /api/download/list` - Get download task list with filtering
+- `DELETE /api/download/cancel/{task_id}` - Cancel active download
+- `DELETE /api/download/clear` - Clear completed/failed tasks
+
+#### Frontend Architecture
+- **TanStack Query Integration**: Intelligent caching and state management
+- **Smart Polling**: Automatic polling that starts/stops based on task status
+  - Polls every 2 seconds when active tasks exist
+  - Stops polling when no active tasks remain
+  - Resumes polling when new tasks are created
+- **Mutation Hooks**: Declarative mutations for task operations
+- **Real-time Updates**: SSE integration for live progress updates
+- **Optimistic Updates**: Immediate UI feedback with server synchronization
+
+### File Structure
+```
+src/backend/download.rs              # Complete download management system
+src/frontend/hooks/useDownload.ts    # TanStack Query hooks and smart polling
+src/frontend/api/download.ts         # Download API functions and utilities
+src/frontend/components/
+├── DownloadDialog.tsx               # URL input and task creation interface
+├── DownloadIndicator.tsx            # Floating status indicator with animations
+└── DownloadDrawer.tsx               # Full-featured task management drawer
+src/frontend/types/download.ts       # TypeScript type definitions
+```
+
+### Download Process Flow
+1. **Task Creation**: User inputs URLs via dialog interface
+2. **Validation**: URLs are validated client-side with visual feedback
+3. **Background Processing**: Server creates async tasks for each URL
+4. **Progress Tracking**: Real-time updates via polling and SSE
+5. **Task Management**: Users can monitor, cancel, or clean up tasks
+6. **Completion**: Files are saved to the specified directory
+
+### Performance Optimizations
+- **Intelligent Polling**: Only polls when necessary, saving bandwidth
+- **Resource Management**: Concurrent downloads with proper limiting
+- **Memory Efficiency**: Streaming downloads to avoid memory issues
+- **State Caching**: TanStack Query provides optimal caching strategies
+- **Background Processing**: Server-side processing independent of frontend
+
+### User Experience Enhancements
+- **Visual Feedback**: Clear status indicators and progress visualization
+- **Minimal Interruption**: Success operations don't show toast notifications
+- **Error Communication**: Clear error messages only when needed
+- **Responsive Design**: Works seamlessly across different screen sizes
+- **Keyboard Accessibility**: Full keyboard navigation support
 
 ## File Creation System
 
@@ -894,10 +992,11 @@ path = "./documents"
 #### 第五阶段 ✅ 已完成 (文件预览与在线编辑)
 1. ✅ **文件预览系统**: 支持 Markdown、PDF、图片和代码文件的完整预览功能
 2. ✅ **在线文本编辑**: 基于 Monaco Editor 的专业级在线编辑器，支持 30+ 种文件格式
-3. 🔮 文件搜索
-4. 🔮 访问日志记录
-5. 🔮 多用户权限管理
-6. 🔮 云存储支持 (S3, 阿里云 OSS 等)
+3. ✅ **远程下载系统**: 完整的远程文件下载功能，支持后台下载和智能轮询进度跟踪
+4. 🔮 文件搜索
+5. 🔮 访问日志记录
+6. 🔮 多用户权限管理
+7. 🔮 云存储支持 (S3, 阿里云 OSS 等)
 
 #### 第六阶段 (未来功能)
 1. 🔮 全文搜索和索引

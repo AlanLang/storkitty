@@ -34,6 +34,14 @@
   - 键盘快捷键支持 (Ctrl+S 保存, ESC 退出)
   - 多种编辑入口：右键菜单、URL 参数、README 快速编辑按钮
   - 仅登录用户可访问，确保数据安全
+- **远程下载系统** 🚀 支持从远程URL下载文件
+  - 多URL同时下载，每行输入一个链接
+  - 后台下载处理，前端关闭不影响下载进度
+  - 智能轮询进度更新，只在活跃任务时才请求服务器
+  - 实时进度显示，包括下载速度和剩余时间
+  - 智能任务管理：活跃、已完成、失败分类显示
+  - 浮动状态指示器，自动隐藏/显示
+  - 支持任务取消和批量清理功能
 
 ### 🎨 前端界面
 - 现代化的文件管理界面
@@ -183,21 +191,28 @@ storkitty/
 │   │   ├── mod.rs        # 模块导出
 │   │   ├── auth.rs       # 认证模块（异步安全）
 │   │   ├── files.rs      # 文件管理模块
+│   │   ├── download.rs   # 远程下载管理系统 🚀
 │   │   ├── setup.rs      # 初始设置和配置管理
 │   │   └── config.rs     # 配置文件解析
 │   ├── frontend/         # React 前端代码
 │   │   ├── api/          # API 客户端
 │   │   │   ├── auth.ts   # 认证 & 设置 API
-│   │   │   └── files.ts  # 文件管理 API
+│   │   │   ├── files.ts  # 文件管理 API
+│   │   │   └── download.ts # 远程下载 API 🚀
 │   │   ├── utils/        # 工具函数
 │   │   │   ├── editor.ts # Monaco Editor 动态加载
 │   │   │   ├── pdf.ts    # PDF.js 动态加载
 │   │   │   └── markdown.ts # Markdown-it 动态加载
 │   │   ├── types/        # TypeScript 类型定义
+│   │   │   └── download.ts # 下载系统类型定义 🚀
 │   │   ├── components/   # UI 组件
-│   │   │   └── preview/  # 文件预览组件
+│   │   │   ├── preview/  # 文件预览组件
+│   │   │   ├── DownloadDialog.tsx # 远程下载对话框 🚀
+│   │   │   ├── DownloadDrawer.tsx # 下载任务管理抽屉 🚀
+│   │   │   └── DownloadIndicator.tsx # 浮动下载状态指示器 🚀
 │   │   ├── routes/       # 文件路由页面
 │   │   ├── hooks/        # React Hooks
+│   │   │   └── useDownload.ts # 下载系统 Hooks 🚀
 │   │   ├── contexts/     # React Context
 │   │   └── styles/       # 样式文件
 │   └── main.rs           # Rust 入口文件
@@ -260,6 +275,12 @@ allow_download = true
 
 #### 文件上传
 - `POST /api/upload/simple` - 简单文件上传
+
+#### 远程下载 🚀
+- `POST /api/download/start` - 创建远程下载任务（支持多URL）
+- `GET /api/download/list` - 获取下载任务列表（支持状态过滤）
+- `DELETE /api/download/cancel/{task_id}` - 取消指定下载任务
+- `DELETE /api/download/clear` - 清理已完成/失败的下载任务
 
 ## 开发规范
 

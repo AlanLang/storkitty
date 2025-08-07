@@ -22,3 +22,6 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 mime = "0.3"
 bytes = "1.0"
 futures-util = "0.3"
+reqwest = { version = "0.12", features = ["json", "stream"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
+url = "2.5"

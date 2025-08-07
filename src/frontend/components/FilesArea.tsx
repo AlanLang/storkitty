@@ -40,6 +40,9 @@ import { formatFileSize } from "../utils/fileUtils";
 import { CreateDirectoryDialog } from "./CreateDirectoryDialog";
 import { CreateFileDialog } from "./CreateFileDialog";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
+import { DownloadDialog } from "./DownloadDialog";
+import { DownloadDrawer } from "./DownloadDrawer";
+import { DownloadIndicator } from "./DownloadIndicator";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { RenameDialog } from "./RenameDialog";
 import { TimeDisplay } from "./TimeDisplay";
@@ -131,6 +134,7 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
   const [isCreateFileDialogOpen, setIsCreateFileDialogOpen] = useState(false);
   const [renameFile, setRenameFile] = useState<FileInfo | null>(null);
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+  const [isDownloadDrawerOpen, setIsDownloadDrawerOpen] = useState(false);
 
   // Mutations
   const deleteFileMutation = useDeleteFileMutation();
@@ -343,6 +347,7 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
               <Upload className="h-4 w-4" />
               <span className="hidden sm:inline">上传</span>
             </Button>
+            <DownloadDialog currentPath={currentPath} />
           </div>
         </div>
 
@@ -624,6 +629,13 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
         onConfirm={handleRenameConfirm}
         file={renameFile}
         isRenaming={renameFileMutation.isPending}
+      />
+
+      {/* 下载指示器和抽屉 */}
+      <DownloadIndicator onOpenDrawer={() => setIsDownloadDrawerOpen(true)} />
+      <DownloadDrawer
+        isOpen={isDownloadDrawerOpen}
+        onClose={() => setIsDownloadDrawerOpen(false)}
       />
     </main>
   );
