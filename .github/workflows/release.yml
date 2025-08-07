@@ -143,11 +143,16 @@ jobs:
       id: changelog
       run: |
         # Get commits since last tag (excluding the current commit that triggers the release)
-        LAST_TAG=$(git tag -l | sort -V | tail -n 1)
-        if [ -z "$LAST_TAG" ]; then
+        # Get the previous tag (not the current one being released)
+        PREV_TAG=$(git tag -l | sort -V | tail -n 2 | head -n 1)
+        CURRENT_VERSION="v${{ needs.check-version.outputs.version }}"
+        
+        if [ -z "$PREV_TAG" ] || [ "$PREV_TAG" = "$CURRENT_VERSION" ]; then
+          # No previous tag or only current tag exists
           COMMITS=$(git log --pretty=format:"- %s" --reverse --skip=1)
         else
-          COMMITS=$(git log --pretty=format:"- %s" --reverse $LAST_TAG..HEAD^)
+          # Get commits from previous tag to current commit (excluding current commit)
+          COMMITS=$(git log --pretty=format:"- %s" --reverse $PREV_TAG..HEAD^)
         fi
         
         # Create changelog
