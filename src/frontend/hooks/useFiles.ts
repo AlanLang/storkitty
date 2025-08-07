@@ -185,11 +185,11 @@ export function useCreateFileMutation() {
 
   return useMutation({
     mutationFn: ({
-      filename,
       directoryId,
+      filePath,
       content,
-    }: { filename: string; directoryId: string; content?: string }) => {
-      return filesApi.createFileWithDirectory(directoryId, filename, content);
+    }: { directoryId: string; filePath: string; content?: string }) => {
+      return filesApi.createFileWithDirectory(directoryId, filePath, content);
     },
     retry: 0,
     onSuccess: (_, { directoryId }) => {

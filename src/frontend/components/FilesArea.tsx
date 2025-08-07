@@ -252,14 +252,14 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
   };
 
   const handleCreateFileConfirm = async (filename: string) => {
-    // 构建完整的文件路径
+    // 学习 mkdir 的做法，在前端拼接完整路径
     const filePath = currentPath
       ? `${currentPath}/${filename}`
       : filename;
 
     await createFileMutation.mutateAsync({
-      filename: filePath,
       directoryId: selectedDirectoryId,
+      filePath,
       content: "", // 创建空文件
     });
   };

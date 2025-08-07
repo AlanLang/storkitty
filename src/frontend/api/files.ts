@@ -215,14 +215,17 @@ export const filesApi = {
     return response;
   },
 
-  // 在指定目录中创建文件（需要认证）
+  // 在指定目录和路径下创建文件（需要认证）
   async createFileWithDirectory(
     directoryId: string,
-    filename: string,
+    filePath: string,
     content?: string,
   ): Promise<CreateFileResponse> {
+    // 从 filePath 中提取文件名
+    const filename = filePath.split('/').pop() || filePath;
+    
     const response = await apiRequest<CreateFileResponse>(
-      `/files/${encodeURIComponent(directoryId)}/create`,
+      `/files/${encodeURIComponent(directoryId)}/create/${encodeURIComponent(filePath)}`,
       {
         method: "POST",
         body: JSON.stringify({ filename, content }),

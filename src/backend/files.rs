@@ -9,7 +9,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use std::{
     fs,
-    path::PathBuf,
+    path::{Path as StdPath, PathBuf},
     sync::Arc,
     time::SystemTime,
 };
@@ -661,11 +661,13 @@ impl FileService {
         }
     }
 
-    // 创建新文件（需要认证）
-    pub async fn create_file_with_directory(
+
+    // 在指定目录的路径下创建新文件（需要认证）
+    pub async fn create_file_with_directory_path(
         &self, 
         headers: &HeaderMap, 
         directory_id: &str, 
+        file_path: String,
         request: CreateFileRequest
     ) -> Result<Json<CreateFileResponse>, StatusCode> {
         // 验证用户身份
@@ -678,7 +680,17 @@ impl FileService {
             .ok_or(StatusCode::NOT_FOUND)?;
 
         let directory_path = PathBuf::from(directory_config.path.as_ref().unwrap());
-        let target_path = directory_path.join(&request.filename);
+        
+        // 构建完整的文件路径：file_path 已经包含完整路径（包括文件名）
+        let target_path = directory_path.join(&file_path);
+
+        // 验证路径安全性，防止路径遍历攻击
+        if file_path.contains("..") || file_path.starts_with('/') {
+            return Ok(Json(CreateFileResponse {
+                success: false,
+                message: "路径包含非法字符".to_string(),
+            }));
+        }
 
         // 验证文件名
         if request.filename.is_empty() {
@@ -718,54 +730,20 @@ impl FileService {
             }));
         }
 
-        // 检查文件扩展名是否为支持的文本文件格式
-        let extension = target_path.extension()
-            .and_then(|ext| ext.to_str())
-            .unwrap_or("")
-            .to_lowercase();
-
-        // 支持的文本文件扩展名
-        let supported_extensions = [
-            "md", "txt", "js", "jsx", "ts", "tsx", "py", "rs", "go", "java", "kt",
-            "c", "cpp", "h", "hpp", "php", "rb", "swift", "sh", "bash", "html", 
-            "htm", "css", "scss", "sass", "less", "json", "xml", "yaml", "yml", 
-            "toml", "ini", "conf", "config", "sql", "log", "gitignore", "dockerfile"
-        ];
-
-        if !supported_extensions.contains(&extension.as_str()) {
-            return Ok(Json(CreateFileResponse {
-                success: false,
-                message: "只能创建支持的文本文件类型".to_string(),
-            }));
-        }
-
-        // 安全检查：确保目标路径在指定目录内
-        let canonical_dir = fs::canonicalize(&directory_path)
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-        
-        // 检查父目录是否在安全范围内
-        if let Some(parent) = target_path.parent() {
-            let canonical_parent = fs::canonicalize(parent)
-                .map_err(|_| StatusCode::BAD_REQUEST)?;
-            if !canonical_parent.starts_with(&canonical_dir) {
-                return Err(StatusCode::FORBIDDEN);
-            }
-        }
-
         // 确保父目录存在
         if let Some(parent) = target_path.parent() {
             if let Err(e) = fs::create_dir_all(parent) {
-                log::error!("Failed to create parent directory {:?}: {}", parent, e);
+                log::error!("Failed to create directory: {:?}", e);
                 return Ok(Json(CreateFileResponse {
                     success: false,
-                    message: "无法创建父目录".to_string(),
+                    message: "创建目录失败".to_string(),
                 }));
             }
         }
 
         // 创建文件
-        let file_content = request.content.unwrap_or_default();
-        match fs::write(&target_path, &file_content) {
+        let content = request.content.unwrap_or_default();
+        match fs::write(&target_path, &content) {
             Ok(_) => {
                 log::info!("File created successfully: {:?}", target_path);
                 Ok(Json(CreateFileResponse {
@@ -858,13 +836,13 @@ pub async fn save_file_with_directory_handler(
     file_service.save_file_content_with_directory(&headers, &directory_id, file_path, request).await
 }
 
-pub async fn create_file_with_directory_handler(
+pub async fn create_file_with_directory_path_handler(
     State(file_service): State<Arc<FileService>>,
     headers: HeaderMap,
-    Path(directory_id): Path<String>,
+    Path((directory_id, file_path)): Path<(String, String)>,
     ExtractJson(request): ExtractJson<CreateFileRequest>,
 ) -> Result<Json<CreateFileResponse>, StatusCode> {
-    file_service.create_file_with_directory(&headers, &directory_id, request).await
+    file_service.create_file_with_directory_path(&headers, &directory_id, file_path, request).await
 }
 
 // Router
@@ -879,6 +857,6 @@ pub fn files_router(file_service: Arc<FileService>) -> Router {
         .route("/{directory_id}/download/{*file_path}", get(download_file_with_directory_handler))
         .route("/{directory_id}/show/{*file_path}", get(show_file_with_directory_handler))
         .route("/{directory_id}/save/{*file_path}", put(save_file_with_directory_handler))
-        .route("/{directory_id}/create", post(create_file_with_directory_handler))
+        .route("/{directory_id}/create/{*file_path}", post(create_file_with_directory_path_handler))
         .with_state(file_service)
 }
