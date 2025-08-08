@@ -35,13 +35,9 @@ test("新建文件完整工作流测试", async ({ page }) => {
     // 等待对话框打开
     await page.waitForSelector('[role="dialog"]', { timeout: 5000 });
     
-    // 输入文件名（不包含扩展名）
+    // 输入完整文件名（包含扩展名）
     const filenameInput = page.locator('input[id="filename"]');
-    await filenameInput.fill(baseFileName);
-    
-    // 选择 Markdown 类型
-    const markdownTypeButton = page.locator('button:has-text(".md")');
-    await markdownTypeButton.click();
+    await filenameInput.fill(fileName);
     
     // 创建文件
     const createButton = page.locator('button:has-text("创建文件")');
