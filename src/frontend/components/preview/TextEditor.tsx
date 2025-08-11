@@ -14,7 +14,6 @@ import { Button } from "../ui/button";
 interface TextEditorProps {
   directoryId: string;
   filePath: string;
-  fileName: string;
   fileExtension: string;
   onExitEdit?: () => void;
 }
@@ -22,7 +21,6 @@ interface TextEditorProps {
 export function TextEditor({
   directoryId,
   filePath,
-  fileName,
   fileExtension,
   onExitEdit,
 }: TextEditorProps) {
@@ -224,14 +222,18 @@ export function TextEditor({
       <div className="bg-background/95 backdrop-blur-sm border rounded-lg p-4 mb-4 sticky top-20 z-10">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
-            <div>
-              <h3 className="font-medium text-sm">编辑模式: {fileName}</h3>
-              <p className="text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="font-medium text-primary">编辑模式</span>
+              <span className="text-muted-foreground">•</span>
+              <span className="text-muted-foreground">
                 {languageDisplayName}
-                {hasUnsavedChanges && (
-                  <span className="ml-2 text-orange-600">• 未保存</span>
-                )}
-              </p>
+              </span>
+              {hasUnsavedChanges && (
+                <>
+                  <span className="text-muted-foreground">•</span>
+                  <span className="text-orange-600 font-medium">未保存</span>
+                </>
+              )}
             </div>
           </div>
 

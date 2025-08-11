@@ -222,8 +222,8 @@ export const filesApi = {
     content?: string,
   ): Promise<CreateFileResponse> {
     // 从 filePath 中提取文件名
-    const filename = filePath.split('/').pop() || filePath;
-    
+    const filename = filePath.split("/").pop() || filePath;
+
     const response = await apiRequest<CreateFileResponse>(
       `/files/${encodeURIComponent(directoryId)}/create/${encodeURIComponent(filePath)}`,
       {

@@ -46,7 +46,6 @@ export function ImagePreview({
         </div>
 
         <div className="text-sm text-muted-foreground">
-          <p className="font-medium">{fileName}</p>
           <p>格式：{fileExtension.toUpperCase()}</p>
         </div>
       </div>

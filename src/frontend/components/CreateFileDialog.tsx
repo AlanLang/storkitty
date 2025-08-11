@@ -13,8 +13,6 @@ interface CreateFileDialogProps {
   currentPath?: string;
 }
 
-
-
 // 验证文件名
 function validateFilename(filename: string): string | null {
   if (!filename.trim()) {

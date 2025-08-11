@@ -290,7 +290,6 @@ export function FilePreview({
           <CodePreview
             directoryId={directoryId}
             filePath={filePath}
-            fileName={fileInfo.name}
             fileExtension={fileInfo.extension}
           />
         ) : fileInfo.isPDF ? (

@@ -253,9 +253,7 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
 
   const handleCreateFileConfirm = async (filename: string) => {
     // 学习 mkdir 的做法，在前端拼接完整路径
-    const filePath = currentPath
-      ? `${currentPath}/${filename}`
-      : filename;
+    const filePath = currentPath ? `${currentPath}/${filename}` : filename;
 
     await createFileMutation.mutateAsync({
       directoryId: selectedDirectoryId,

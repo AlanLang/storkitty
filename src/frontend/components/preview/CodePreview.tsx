@@ -6,7 +6,6 @@ import { Button } from "../ui/button";
 interface CodePreviewProps {
   directoryId: string;
   filePath: string;
-  fileName: string;
   fileExtension: string;
 }
 
@@ -126,7 +125,6 @@ const getLanguageDisplayName = (language: string): string => {
 export function CodePreview({
   directoryId,
   filePath,
-  fileName,
   fileExtension,
 }: CodePreviewProps) {
   const [content, setContent] = useState<string>("");
@@ -299,29 +297,26 @@ export function CodePreview({
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="flex flex-row justify-between items-center py-2">
-        <div className="flex items-center gap-3">
-          <FileText className="h-5 w-5 text-primary" />
-          <div>
-            <h3 className="font-medium">{fileName}</h3>
-            <p className="text-sm text-muted-foreground">
-              {languageDisplayName} • {content.split("\n").length} 行
-            </p>
-          </div>
+      <div className="flex flex-row justify-between items-center px-3 py-1.5 bg-muted/50 rounded-t-lg border-b">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <FileText className="h-3.5 w-3.5" />
+          <span>{languageDisplayName}</span>
+          <span>•</span>
+          <span>{content.split("\n").length} 行</span>
         </div>
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
           onClick={handleCopyCode}
-          className="gap-2"
+          className="h-6 w-6 p-0 hover:bg-background/80"
+          title="复制代码"
         >
-          <Copy className="h-4 w-4" />
-          复制代码
+          <Copy className="h-3.5 w-3.5" />
         </Button>
       </div>
-      <div className="border-t border-border overflow-hidden">
+      <div className="overflow-hidden rounded-b-lg border border-t-0">
         <div className="overflow-x-auto">
-          <pre className="line-numbers m-0 p-4 text-sm bg-muted/30">
+          <pre className="line-numbers m-0 p-4 text-sm bg-muted/30 mt-0!">
             <code ref={codeRef} className={`language-${language}`}>
               {content}
             </code>
