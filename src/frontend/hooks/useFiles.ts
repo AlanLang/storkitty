@@ -164,8 +164,14 @@ export function useSaveFileMutation(directoryId: string) {
     mutationFn: ({
       filePath,
       content,
-    }: { filePath: string; content: string }) =>
-      filesApi.saveFileContentWithDirectory(directoryId, filePath, content),
+      forceEdit = false,
+    }: { filePath: string; content: string; forceEdit?: boolean }) =>
+      filesApi.saveFileContentWithDirectory(
+        directoryId,
+        filePath,
+        content,
+        forceEdit,
+      ),
     retry: 0,
     onSuccess: (_, { filePath }) => {
       // 保存成功后，刷新相关缓存

@@ -9,7 +9,8 @@
       "uploads1/**",
       "e2e/**",
       "playwright.config.ts"
-    ]
+    ],
+    "ignoreUnknown": true
   },
   "vcs": {
     "enabled": true,

@@ -69,7 +69,6 @@ export async function cancelDownloadTask(
   return response.json();
 }
 
-
 // 格式化文件大小
 export function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";

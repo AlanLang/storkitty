@@ -198,9 +198,11 @@ export const filesApi = {
     directoryId: string,
     filePath: string,
     content: string,
+    forceEdit = false,
   ): Promise<{ success: boolean; message: string }> {
+    const url = `/files/${encodeURIComponent(directoryId)}/save/${encodeURIComponent(filePath)}${forceEdit ? "?force=true" : ""}`;
     const response = await apiRequest<{ success: boolean; message: string }>(
-      `/files/${encodeURIComponent(directoryId)}/save/${encodeURIComponent(filePath)}`,
+      url,
       {
         method: "PUT",
         body: JSON.stringify({ content }),

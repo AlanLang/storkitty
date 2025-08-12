@@ -1,6 +1,6 @@
 use axum::{
     body::Body,
-    extract::{Path, State, Json as ExtractJson},
+    extract::{Path, State, Query, Json as ExtractJson},
     http::{HeaderMap, StatusCode, header::CONTENT_DISPOSITION},
     response::{Json, Response},
     routing::{delete, get, post, put},
@@ -90,6 +90,11 @@ pub struct SaveFileResponse {
 #[derive(Debug, Deserialize)]
 pub struct SaveFileRequest {
     pub content: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SaveFileQuery {
+    pub force: Option<bool>,
 }
 
 #[derive(Debug, Serialize)]
@@ -570,7 +575,8 @@ impl FileService {
         headers: &HeaderMap, 
         directory_id: &str, 
         file_path: String, 
-        request: SaveFileRequest
+        request: SaveFileRequest,
+        force_edit: bool
     ) -> Result<Json<SaveFileResponse>, StatusCode> {
         // 验证用户身份
         if let Err(_) = self.verify_auth(headers).await {
@@ -606,29 +612,31 @@ impl FileService {
             }
         }
 
-        // 检查文件类型是否可编辑（文本文件）
-        let _file_name = target_path.file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("");
-        
-        let extension = target_path.extension()
-            .and_then(|ext| ext.to_str())
-            .unwrap_or("")
-            .to_lowercase();
+        // 检查文件类型是否可编辑（文本文件）- 强制编辑模式下跳过检查
+        if !force_edit {
+            let _file_name = target_path.file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("");
+            
+            let extension = target_path.extension()
+                .and_then(|ext| ext.to_str())
+                .unwrap_or("")
+                .to_lowercase();
 
-        // 支持的可编辑文件扩展名
-        let editable_extensions = [
-            "md", "txt", "js", "jsx", "ts", "tsx", "py", "rs", "go", "java", "kt",
-            "c", "cpp", "h", "hpp", "php", "rb", "swift", "sh", "bash", "html", 
-            "htm", "css", "scss", "sass", "less", "json", "xml", "yaml", "yml", 
-            "toml", "ini", "conf", "config", "sql", "log", "gitignore", "dockerfile"
-        ];
+            // 支持的可编辑文件扩展名
+            let editable_extensions = [
+                "md", "txt", "js", "jsx", "ts", "tsx", "py", "rs", "go", "java", "kt",
+                "c", "cpp", "h", "hpp", "php", "rb", "swift", "sh", "bash", "html", 
+                "htm", "css", "scss", "sass", "less", "json", "xml", "yaml", "yml", 
+                "toml", "ini", "conf", "config", "sql", "log", "gitignore", "dockerfile"
+            ];
 
-        if !editable_extensions.contains(&extension.as_str()) {
-            return Ok(Json(SaveFileResponse {
-                success: false,
-                message: "不支持编辑此类型的文件".to_string(),
-            }));
+            if !editable_extensions.contains(&extension.as_str()) {
+                return Ok(Json(SaveFileResponse {
+                    success: false,
+                    message: "不支持编辑此类型的文件".to_string(),
+                }));
+            }
         }
 
         // 确保父目录存在
@@ -831,9 +839,10 @@ pub async fn save_file_with_directory_handler(
     State(file_service): State<Arc<FileService>>,
     headers: HeaderMap,
     Path((directory_id, file_path)): Path<(String, String)>,
+    Query(query): Query<SaveFileQuery>,
     ExtractJson(request): ExtractJson<SaveFileRequest>,
 ) -> Result<Json<SaveFileResponse>, StatusCode> {
-    file_service.save_file_content_with_directory(&headers, &directory_id, file_path, request).await
+    file_service.save_file_content_with_directory(&headers, &directory_id, file_path, request, query.force.unwrap_or(false)).await
 }
 
 pub async fn create_file_with_directory_path_handler(

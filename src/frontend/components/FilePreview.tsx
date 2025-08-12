@@ -273,7 +273,6 @@ export function FilePreview({
           <TextEditor
             directoryId={directoryId}
             filePath={filePath}
-            fileName={fileInfo.name}
             fileExtension={fileInfo.extension}
             onExitEdit={handleExitEdit}
           />
