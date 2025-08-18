@@ -3,6 +3,7 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { Toaster } from "sonner";
 import { AuthProvider } from "../contexts/AuthContext";
+import { ClipboardProvider } from "../contexts/ClipboardContext";
 import "../styles/globals.css";
 
 // 创建 Query Client 实例
@@ -23,13 +24,15 @@ export const Route = createRootRoute({
   component: () => (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <div className="min-h-screen bg-background">
-          <Outlet />
-          <ReactQueryDevtools initialIsOpen={false} />
+        <ClipboardProvider>
+          <div className="min-h-screen bg-background">
+            <Outlet />
+            <ReactQueryDevtools initialIsOpen={false} />
 
-          {/* Toast notifications */}
-          <Toaster richColors position="top-right" />
-        </div>
+            {/* Toast notifications */}
+            <Toaster richColors position="top-right" />
+          </div>
+        </ClipboardProvider>
       </AuthProvider>
     </QueryClientProvider>
   ),

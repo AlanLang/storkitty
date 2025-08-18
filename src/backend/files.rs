@@ -109,6 +109,30 @@ pub struct CreateFileRequest {
     pub content: Option<String>,
 }
 
+#[derive(Debug, Serialize)]
+pub struct MoveResponse {
+    pub success: bool,
+    pub message: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct MoveRequest {
+    pub source_path: String,
+    pub target_path: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CopyResponse {
+    pub success: bool,
+    pub message: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CopyRequest {
+    pub source_path: String,
+    pub target_path: String,
+}
+
 pub struct FileService {
     config: Arc<RwLock<Config>>,
     auth_service: Arc<AuthService>,
@@ -768,6 +792,185 @@ impl FileService {
             }
         }
     }
+
+    // 移动文件或文件夹到新位置（在同一目录内）
+    pub async fn move_file_with_directory(
+        &self, 
+        headers: &HeaderMap, 
+        directory_id: &str, 
+        request: MoveRequest
+    ) -> Result<Json<MoveResponse>, StatusCode> {
+        // 验证用户身份
+        if let Err(_) = self.verify_auth(headers).await {
+            return Err(StatusCode::UNAUTHORIZED);
+        }
+
+        let config = self.config.read().await;
+        let directory_config = config.get_directory_by_id(directory_id)
+            .ok_or(StatusCode::NOT_FOUND)?;
+
+        let directory_path = PathBuf::from(directory_config.path.as_ref().unwrap());
+        let source_path = directory_path.join(&request.source_path);
+        let target_path = directory_path.join(&request.target_path);
+
+        // 路径安全检查
+        if request.source_path.contains("..") || request.target_path.contains("..") ||
+           request.source_path.starts_with('/') || request.target_path.starts_with('/') {
+            return Ok(Json(MoveResponse {
+                success: false,
+                message: "路径包含非法字符".to_string(),
+            }));
+        }
+
+        // 检查源文件是否存在
+        if !source_path.exists() {
+            return Ok(Json(MoveResponse {
+                success: false,
+                message: "源文件不存在".to_string(),
+            }));
+        }
+
+        // 检查目标路径是否已存在
+        if target_path.exists() {
+            return Ok(Json(MoveResponse {
+                success: false,
+                message: "目标路径已存在".to_string(),
+            }));
+        }
+
+        // 确保目标目录存在
+        if let Some(parent) = target_path.parent() {
+            if let Err(e) = fs::create_dir_all(parent) {
+                log::error!("Failed to create target directory {:?}: {}", parent, e);
+                return Ok(Json(MoveResponse {
+                    success: false,
+                    message: "无法创建目标目录".to_string(),
+                }));
+            }
+        }
+
+        // 执行移动操作
+        match fs::rename(&source_path, &target_path) {
+            Ok(_) => {
+                log::info!("File moved successfully from {:?} to {:?}", source_path, target_path);
+                Ok(Json(MoveResponse {
+                    success: true,
+                    message: "移动成功".to_string(),
+                }))
+            }
+            Err(e) => {
+                log::error!("Failed to move file from {:?} to {:?}: {}", source_path, target_path, e);
+                Ok(Json(MoveResponse {
+                    success: false,
+                    message: "移动失败".to_string(),
+                }))
+            }
+        }
+    }
+
+    // 复制文件或文件夹到新位置（在同一目录内）
+    pub async fn copy_file_with_directory(
+        &self, 
+        headers: &HeaderMap, 
+        directory_id: &str, 
+        request: CopyRequest
+    ) -> Result<Json<CopyResponse>, StatusCode> {
+        // 验证用户身份
+        if let Err(_) = self.verify_auth(headers).await {
+            return Err(StatusCode::UNAUTHORIZED);
+        }
+
+        let config = self.config.read().await;
+        let directory_config = config.get_directory_by_id(directory_id)
+            .ok_or(StatusCode::NOT_FOUND)?;
+
+        let directory_path = PathBuf::from(directory_config.path.as_ref().unwrap());
+        let source_path = directory_path.join(&request.source_path);
+        let target_path = directory_path.join(&request.target_path);
+
+        // 路径安全检查
+        if request.source_path.contains("..") || request.target_path.contains("..") ||
+           request.source_path.starts_with('/') || request.target_path.starts_with('/') {
+            return Ok(Json(CopyResponse {
+                success: false,
+                message: "路径包含非法字符".to_string(),
+            }));
+        }
+
+        // 检查源文件是否存在
+        if !source_path.exists() {
+            return Ok(Json(CopyResponse {
+                success: false,
+                message: "源文件不存在".to_string(),
+            }));
+        }
+
+        // 检查目标路径是否已存在
+        if target_path.exists() {
+            return Ok(Json(CopyResponse {
+                success: false,
+                message: "目标路径已存在".to_string(),
+            }));
+        }
+
+        // 检查是否尝试复制到自己内部（避免无限递归）
+        if target_path.starts_with(&source_path) {
+            return Ok(Json(CopyResponse {
+                success: false,
+                message: "不能将文件夹复制到自己内部".to_string(),
+            }));
+        }
+
+        // 确保目标目录存在
+        if let Some(parent) = target_path.parent() {
+            if let Err(e) = fs::create_dir_all(parent) {
+                log::error!("Failed to create target directory {:?}: {}", parent, e);
+                return Ok(Json(CopyResponse {
+                    success: false,
+                    message: "无法创建目标目录".to_string(),
+                }));
+            }
+        }
+
+        // 执行复制操作
+        match Self::recursive_copy(&source_path, &target_path) {
+            Ok(_) => {
+                log::info!("File copied successfully from {:?} to {:?}", source_path, target_path);
+                Ok(Json(CopyResponse {
+                    success: true,
+                    message: "复制成功".to_string(),
+                }))
+            }
+            Err(e) => {
+                log::error!("Failed to copy file from {:?} to {:?}: {}", source_path, target_path, e);
+                Ok(Json(CopyResponse {
+                    success: false,
+                    message: "复制失败".to_string(),
+                }))
+            }
+        }
+    }
+
+    // 递归复制文件或文件夹
+    fn recursive_copy(source: &PathBuf, target: &PathBuf) -> std::io::Result<()> {
+        if source.is_dir() {
+            // 创建目标目录
+            fs::create_dir_all(target)?;
+            
+            // 递归复制所有内容
+            for entry in fs::read_dir(source)? {
+                let entry = entry?;
+                let source_path = entry.path();
+                let target_path = target.join(entry.file_name());
+                
+                Self::recursive_copy(&source_path, &target_path)?;
+            }
+        } else {
+            // 复制文件
+            fs::copy(source, target)?;
+        }
+        Ok(())
+    }
 }
 
 // Handler functions
@@ -854,6 +1057,24 @@ pub async fn create_file_with_directory_path_handler(
     file_service.create_file_with_directory_path(&headers, &directory_id, file_path, request).await
 }
 
+pub async fn move_file_with_directory_handler(
+    State(file_service): State<Arc<FileService>>,
+    headers: HeaderMap,
+    Path(directory_id): Path<String>,
+    ExtractJson(request): ExtractJson<MoveRequest>,
+) -> Result<Json<MoveResponse>, StatusCode> {
+    file_service.move_file_with_directory(&headers, &directory_id, request).await
+}
+
+pub async fn copy_file_with_directory_handler(
+    State(file_service): State<Arc<FileService>>,
+    headers: HeaderMap,
+    Path(directory_id): Path<String>,
+    ExtractJson(request): ExtractJson<CopyRequest>,
+) -> Result<Json<CopyResponse>, StatusCode> {
+    file_service.copy_file_with_directory(&headers, &directory_id, request).await
+}
+
 // Router
 pub fn files_router(file_service: Arc<FileService>) -> Router {
     Router::new()
@@ -867,5 +1088,7 @@ pub fn files_router(file_service: Arc<FileService>) -> Router {
         .route("/{directory_id}/show/{*file_path}", get(show_file_with_directory_handler))
         .route("/{directory_id}/save/{*file_path}", put(save_file_with_directory_handler))
         .route("/{directory_id}/create/{*file_path}", post(create_file_with_directory_path_handler))
+        .route("/{directory_id}/move", post(move_file_with_directory_handler))
+        .route("/{directory_id}/copy", post(copy_file_with_directory_handler))
         .with_state(file_service)
 }

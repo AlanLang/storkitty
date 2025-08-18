@@ -1,8 +1,12 @@
 import type {
+  CopyRequest,
+  CopyResponse,
   CreateDirectoryResponse,
   CreateFileResponse,
   DeleteResponse,
   FilesResponse,
+  MoveRequest,
+  MoveResponse,
   ReadmeResponse,
   RenameResponse,
   StorageResponse,
@@ -231,6 +235,60 @@ export const filesApi = {
       {
         method: "POST",
         body: JSON.stringify({ filename, content }),
+      },
+    );
+
+    // 检查操作是否成功，如果失败则抛出错误
+    if (!response.success) {
+      throw new ApiError(response.message, 400, response);
+    }
+
+    return response;
+  },
+
+  // 移动文件或文件夹到新位置（在同一目录内）
+  async moveFileWithDirectory(
+    directoryId: string,
+    sourceFilePath: string,
+    targetFilePath: string,
+  ): Promise<MoveResponse> {
+    const request: MoveRequest = {
+      source_path: sourceFilePath,
+      target_path: targetFilePath,
+    };
+
+    const response = await apiRequest<MoveResponse>(
+      `/files/${encodeURIComponent(directoryId)}/move`,
+      {
+        method: "POST",
+        body: JSON.stringify(request),
+      },
+    );
+
+    // 检查操作是否成功，如果失败则抛出错误
+    if (!response.success) {
+      throw new ApiError(response.message, 400, response);
+    }
+
+    return response;
+  },
+
+  // 复制文件或文件夹到新位置（在同一目录内）
+  async copyFileWithDirectory(
+    directoryId: string,
+    sourceFilePath: string,
+    targetFilePath: string,
+  ): Promise<CopyResponse> {
+    const request: CopyRequest = {
+      source_path: sourceFilePath,
+      target_path: targetFilePath,
+    };
+
+    const response = await apiRequest<CopyResponse>(
+      `/files/${encodeURIComponent(directoryId)}/copy`,
+      {
+        method: "POST",
+        body: JSON.stringify(request),
       },
     );
 

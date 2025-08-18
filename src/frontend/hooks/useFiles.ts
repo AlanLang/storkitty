@@ -209,5 +209,69 @@ export function useCreateFileMutation() {
   });
 }
 
+// 移动文件 mutation（支持目录选择）
+export function useMoveFileMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      directoryId,
+      sourceFilePath,
+      targetFilePath,
+    }: {
+      directoryId: string;
+      sourceFilePath: string;
+      targetFilePath: string;
+    }) => {
+      return filesApi.moveFileWithDirectory(
+        directoryId,
+        sourceFilePath,
+        targetFilePath,
+      );
+    },
+    retry: 0,
+    onSuccess: (_, { directoryId }) => {
+      // 刷新所有文件列表查询
+      queryClient.invalidateQueries({ queryKey: filesKeys.lists() });
+      // 刷新相应的存储空间信息
+      queryClient.invalidateQueries({
+        queryKey: filesKeys.storage(directoryId),
+      });
+    },
+  });
+}
+
+// 复制文件 mutation（支持目录选择）
+export function useCopyFileMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      directoryId,
+      sourceFilePath,
+      targetFilePath,
+    }: {
+      directoryId: string;
+      sourceFilePath: string;
+      targetFilePath: string;
+    }) => {
+      return filesApi.copyFileWithDirectory(
+        directoryId,
+        sourceFilePath,
+        targetFilePath,
+      );
+    },
+    retry: 0,
+    onSuccess: (_, { directoryId }) => {
+      // 刷新所有文件列表查询
+      queryClient.invalidateQueries({ queryKey: filesKeys.lists() });
+      // 刷新相应的存储空间信息
+      queryClient.invalidateQueries({
+        queryKey: filesKeys.storage(directoryId),
+      });
+    },
+  });
+}
+
 // Note: File config is now included in auth/verify response
 // useFileConfigQuery removed - use useAuth().fileConfig instead

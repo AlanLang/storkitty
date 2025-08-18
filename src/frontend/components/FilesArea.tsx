@@ -11,6 +11,7 @@ import {
   Home,
   Loader2,
   MoreVertical,
+  Move,
   PencilLine,
   Search,
   Trash2,
@@ -19,6 +20,7 @@ import {
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "../hooks/useAuth";
+import { useClipboardOperations } from "../hooks/useClipboardOperations";
 import { useDirectory } from "../hooks/useDirectory";
 import {
   useCreateDirectoryMutation,
@@ -65,6 +67,8 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
   const { selectedDirectoryId } = useDirectory();
   const { isAuthenticated } = useAuth();
   const { setIsDrawerOpen } = useUpload();
+  const { handleMoveClick, handleCopyClick } =
+    useClipboardOperations(currentPath);
   const [searchQuery, setSearchQuery] = useState("");
 
   // 获取面包屑路径
@@ -518,6 +522,27 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
                             <DropdownMenuSeparator />
                           </>
                         )}
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMoveClick(file);
+                          }}
+                          className="cursor-pointer focus-visible:outline-none"
+                        >
+                          <Move className="mr-2 h-4 w-4" />
+                          移动
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCopyClick(file);
+                          }}
+                          className="cursor-pointer focus-visible:outline-none"
+                        >
+                          <Copy className="mr-2 h-4 w-4" />
+                          复制
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={(e) => {
                             e.stopPropagation();
