@@ -60,4 +60,36 @@ export interface CreateFileResponse {
   message: string;
 }
 
+export interface MoveResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface MoveRequest {
+  source_path: string;
+  target_path: string;
+}
+
+export interface CopyResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface CopyRequest {
+  source_path: string;
+  target_path: string;
+}
+
+// 剪贴板状态管理相关类型
+export interface ClipboardItem {
+  file: FileInfo;
+  operation: "move" | "copy";
+  directoryId: string;
+  sourcePath: string; // 完整的文件路径（相对于目录根）
+}
+
+export interface ClipboardState {
+  item: ClipboardItem | null;
+}
+
 // Note: File config is now included in auth/verify response (types/auth.ts)

@@ -2,6 +2,7 @@ import { Navigate } from "@tanstack/react-router";
 import { DirectoryProvider } from "../contexts/DirectoryContext";
 import { UploadProvider } from "../contexts/UploadContext";
 import { useAuth } from "../hooks/useAuth";
+import { ClipboardManager } from "./ClipboardManager";
 import { FilesArea } from "./FilesArea";
 import { FilesHeader } from "./FilesHeader";
 import { FilesSidebar } from "./FilesSidebar";
@@ -68,6 +69,9 @@ function FilesPageContent({
           {/* Upload components */}
           <UploadDrawer />
           <UploadIndicator />
+
+          {/* Clipboard indicator - 在这里显示避免路由切换时重新挂载 */}
+          <ClipboardManager currentPath={currentPath} />
         </div>
       </UploadProvider>
     </DirectoryProvider>

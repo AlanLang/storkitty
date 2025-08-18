@@ -120,6 +120,8 @@ The application features an automatic setup wizard for first-time use:
 - `DELETE /api/files/{directory_id}/delete/{path}` - Delete file or directory (requires allow_delete permission)
 - `POST /api/files/{directory_id}/mkdir/{path}` - Create new directory (requires allow_mkdir permission)
 - `PUT /api/files/{directory_id}/rename/{path}` - Rename file or directory (with conflict detection and validation)
+- `POST /api/files/{directory_id}/move` - Move file or directory within same directory (with cross-directory restrictions)
+- `POST /api/files/{directory_id}/copy` - Copy file or directory within same directory (with cross-directory restrictions)
 - `GET /api/files/{directory_id}/download/{path}` - Download file with streaming support (no authentication required)
 - `GET /api/files/{directory_id}/show/{path}` - Get file content for preview (supports 30+ text file formats, no authentication required)
 - `PUT /api/files/{directory_id}/save/{path}` - Save file content (requires authentication, supports online editing)
@@ -175,11 +177,15 @@ The application features an automatic setup wizard for first-time use:
 │       │   └── editor.ts       # Monaco Editor dynamic loading and management utilities
 │       ├── contexts/
 │       │   ├── AuthContext.tsx # Authentication state management
+│       │   ├── ClipboardContext.tsx # Clipboard state provider for move/copy operations
+│       │   ├── ClipboardContextDefinition.ts # Clipboard context types and definitions
 │       │   ├── UploadContext.tsx # Upload state management and operations
 │       │   └── UploadContextDefinition.ts # Upload context types and definitions
 │       ├── hooks/
 │       │   ├── useAuth.ts      # Authentication hook
 │       │   ├── useAuthQueries.ts # TanStack Query hooks for auth
+│       │   ├── useClipboard.ts # Clipboard context hook for move/copy operations
+│       │   ├── useClipboardOperations.ts # Business logic hook for clipboard operations
 │       │   ├── useDownload.ts  # TanStack Query hooks for download management with smart polling
 │       │   ├── useFiles.ts     # TanStack Query hooks for file management
 │       │   └── useUploadContext.ts # Upload context hook
@@ -204,6 +210,8 @@ The application features an automatic setup wizard for first-time use:
 │       │   ├── RenameDialog.tsx # File/folder rename dialog with validation and conflict detection
 │       │   ├── UploadDrawer.tsx # Upload drawer component with progress tracking
 │       │   ├── UploadIndicator.tsx # Floating upload indicator button
+│       │   ├── ClipboardIndicator.tsx # Pure clipboard UI component with visual feedback
+│       │   ├── ClipboardManager.tsx # Clipboard state management and business logic wrapper
 │       │   ├── DownloadDialog.tsx # Remote download URL input dialog
 │       │   ├── DownloadDrawer.tsx # Download task management drawer with progress tracking
 │       │   ├── DownloadIndicator.tsx # Floating download status indicator with smart polling
@@ -272,6 +280,35 @@ The application features an automatic setup wizard for first-time use:
 - **Directory creation**: Create new folders with validation and security checks
 - **File renaming**: Rename files and folders with real-time validation and conflict detection
 - **Name validation**: Automatic validation of file/directory names against illegal characters and system reserved names
+- **File move/copy operations**: Modern clipboard-style move and copy functionality with floating indicator
+- **Cross-directory restrictions**: Move and copy operations are restricted to the same directory for security
+- **Visual feedback**: Floating clipboard indicator shows current operation and paste options
+- **Clipboard state management**: Centralized state management for move/copy operations with automatic cleanup
+
+### File Move/Copy System
+- **Clipboard-style Operations**: Modern clipboard-style interface for move and copy operations
+- **Floating Indicator**: Elegant floating indicator in bottom-right corner showing current clipboard state
+- **Same-Directory Restriction**: Security-first approach limiting operations to same directory only
+- **Visual Feedback**: Real-time visual feedback for operations with progress indicators
+- **State Management**: Centralized clipboard state with automatic cleanup after successful operations
+- **Context Menu Integration**: Move and copy options integrated into file context menus
+- **Toast Notifications**: User feedback for all clipboard operations with success/error messages
+- **Animation Support**: Smooth animations for clipboard indicator appearance (configurable)
+
+#### Technical Implementation
+- **ClipboardContext**: React context for global clipboard state management
+- **ClipboardIndicator**: Pure presentation component with minimal props for UI rendering
+- **ClipboardManager**: Business logic wrapper handling state and operations
+- **useClipboardOperations**: Custom hook encapsulating move/copy business logic
+- **API Integration**: Backend endpoints for secure move/copy operations with path validation
+- **Type Safety**: Full TypeScript support with comprehensive type definitions
+
+#### User Experience
+- **Intuitive Workflow**: Select file → Click move/copy → Navigate if needed → Click paste
+- **Smart Restrictions**: Clear messaging when cross-directory operations are blocked
+- **Automatic Cleanup**: Clipboard state automatically cleared after successful operations
+- **Progress Feedback**: Visual indicators during file operations with loading states
+- **Error Handling**: Comprehensive error handling with user-friendly error messages
 
 ### File Preview System
 - **Multi-format support**: Comprehensive preview system for Markdown, images, code files, and PDF documents

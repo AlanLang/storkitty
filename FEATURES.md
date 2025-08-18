@@ -298,13 +298,58 @@ Content-Type: application/octet-stream
 - **数据文件**: .csv, .xml, .sql
 - **自定义**: 支持任意文本扩展名
 
+#### 6.5 文件移动和复制 ✅ (已实现)
+**功能描述**: 提供现代化的文件移动和复制功能，采用剪贴板式操作界面，支持安全的同目录文件操作
+
+**实现方案**:
+- **后端**:
+  - ✅ 使用 `std::fs::rename` 进行文件移动操作
+  - ✅ 使用 `std::fs::copy` + 递归处理进行文件/文件夹复制
+  - ✅ 跨目录操作限制：严格限制只能在同一存储目录内进行移动和复制
+  - ✅ 路径安全验证：防止路径遍历攻击和非法操作
+  - ✅ 递归复制支持：完整支持文件夹及其所有子内容的复制
+- **前端**:
+  - ✅ 剪贴板状态管理（ClipboardContext）：全局状态管理移动/复制操作
+  - ✅ 浮动状态指示器（ClipboardIndicator）：右下角优雅的状态显示
+  - ✅ 上下文菜单集成：文件操作菜单中的移动和复制选项
+  - ✅ 组件架构优化：分离关注点，清晰的 Props 设计
+- **安全特性**:
+  - ✅ 同目录限制：防止跨存储目录的文件移动，确保数据安全
+  - ✅ 权限验证：操作前验证用户权限和目录访问权限
+  - ✅ 冲突检测：目标位置文件名冲突检查和用户提示
+- **用户体验**:
+  - ✅ 直观操作流程：选择文件 → 点击移动/复制 → 导航到目标位置 → 点击粘贴
+  - ✅ 实时状态反馈：操作状态和进度的实时视觉反馈
+  - ✅ 智能提示系统：跨目录操作时显示清晰的限制说明
+  - ✅ 自动状态清理：操作完成后自动清空剪贴板状态
+
+**技术实现特色**:
+- ✅ **组件化架构**: 
+  - `ClipboardIndicator.tsx` - 纯 UI 展示组件，最小化 Props 设计
+  - `ClipboardManager.tsx` - 业务逻辑包装器，处理状态和操作
+  - `useClipboardOperations.ts` - 自定义 Hook 封装剪贴板业务逻辑
+  - `ClipboardContext.tsx` - React Context 状态提供者
+  - `ClipboardContextDefinition.ts` - 类型定义和 Context 创建
+- ✅ **代码质量优化**: 符合 Biome 代码规范，TypeScript 类型安全
+- ✅ **性能优化**: TanStack Query 集成，智能缓存失效和状态同步
+
 **API 接口** (目录化统一 API):
 ```
 DELETE /api/files/dir/{directory_id}/delete/{path}    # 删除指定目录中的文件或文件夹
 POST /api/files/dir/{directory_id}/mkdir/{path}       # 在指定目录中创建新文件夹
 POST /api/files/{directory_id}/create                 # 在指定目录中创建新文件
 PUT /api/files/dir/{directory_id}/rename/{path}       # 重命名指定目录中的文件或文件夹
+POST /api/files/{directory_id}/move                   # 移动指定目录中的文件或文件夹
+POST /api/files/{directory_id}/copy                   # 复制指定目录中的文件或文件夹
+
+# 重命名请求体:
 Body: { "new_name": "新文件名" }
+
+# 移动/复制请求体:
+Body: { 
+  "source_file_path": "source/file.txt",
+  "target_file_path": "target/file.txt"
+}
 
 Response: {
   "success": true,
@@ -543,6 +588,8 @@ src/frontend/
 ├── hooks/                 # React Hooks
 │   ├── useAuth.ts         ✅ (认证 Hook)
 │   ├── useAuthQueries.ts  ✅ (认证 TanStack Query Hooks)
+│   ├── useClipboard.ts    ✅ (剪贴板上下文 Hook)
+│   ├── useClipboardOperations.ts ✅ (剪贴板操作业务逻辑 Hook)
 │   └── useFiles.ts        ✅ (文件管理 TanStack Query Hooks)
 ├── components/
 │   ├── ui/                    # shadcn/ui 组件库
@@ -554,6 +601,8 @@ src/frontend/
 │   ├── FilesArea.tsx             ✅ (文件管理主组件)
 │   ├── UploadDrawer.tsx       ✅ (上传抽屉组件)
 │   ├── UploadIndicator.tsx    ✅ (上传指示器)
+│   ├── ClipboardIndicator.tsx    ✅ (剪贴板状态指示器)
+│   ├── ClipboardManager.tsx      ✅ (剪贴板业务逻辑管理器)
 │   ├── CreateDirectoryDialog.tsx ✅ (创建文件夹对话框)
 │   ├── CreateFileDialog.tsx      ✅ (创建文件对话框)
 │   ├── DeleteConfirmDialog.tsx   ✅ (删除确认对话框)
@@ -688,7 +737,15 @@ path = "./media"
 6. ✅ **TanStack Query 集成**: 智能轮询机制，只在有活跃任务时轮询，优化网络资源
 7. ✅ **现代化 UI**: 浮动状态指示器、抽屉式管理界面、优化的用户体验
 
-### 第八阶段 (未来功能)
+### 第八阶段 ✅ 已完成 (文件移动和复制系统)
+1. ✅ **剪贴板式操作**: 现代化的文件移动和复制功能，采用类似操作系统的剪贴板交互模式
+2. ✅ **浮动状态指示器**: 优雅的悬浮界面显示当前剪贴板状态和可用操作
+3. ✅ **安全限制**: 同目录操作限制，防止跨目录文件移动带来的安全风险
+4. ✅ **上下文菜单集成**: 文件右键菜单中集成移动和复制选项
+5. ✅ **状态管理优化**: React Context + 自定义 Hook 的清晰架构设计
+6. ✅ **代码重构**: 分离关注点，组件职责清晰，符合最佳实践
+
+### 第九阶段 (未来功能)
 1. 🔮 文件搜索
 2. 🔮 访问日志记录
 3. 🔮 多用户权限管理
