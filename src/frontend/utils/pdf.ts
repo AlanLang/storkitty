@@ -122,10 +122,6 @@ export async function renderPDFPage(
       throw new Error("Invalid PDF data: empty or null");
     }
 
-    if (pdfData.buffer.detached) {
-      throw new Error("Invalid PDF data: ArrayBuffer is detached");
-    }
-
     const pdfLib = await loadPDFjs();
     const loadingTask = pdfLib.getDocument(pdfData);
     const pdf = await loadingTask.promise;
@@ -161,10 +157,6 @@ export async function getPDFPageCount(pdfData: Uint8Array): Promise<number> {
     // Validate input data
     if (!pdfData || pdfData.length === 0) {
       throw new Error("Invalid PDF data: empty or null");
-    }
-
-    if (pdfData.buffer.detached) {
-      throw new Error("Invalid PDF data: ArrayBuffer is detached");
     }
 
     const pdfLib = await loadPDFjs();

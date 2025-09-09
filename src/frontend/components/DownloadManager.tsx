@@ -6,7 +6,7 @@ import {
   RotateCcw,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   cancelDownloadTask,
@@ -288,7 +288,7 @@ interface TaskItemProps {
   task: DownloadTask;
   onCancel: (taskId: string) => void;
   getProgressPercent: (task: DownloadTask) => number;
-  getStatusIcon: (status: DownloadStatus) => JSX.Element;
+  getStatusIcon: (status: DownloadStatus) => ReactNode;
   getStatusText: (status: DownloadStatus) => string;
   getETA: (task: DownloadTask) => string;
 }

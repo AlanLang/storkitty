@@ -1,0 +1,31 @@
+#!/bin/bash
+
+set -e
+
+echo "🔍 Running pre-commit checks..."
+
+# 检查是否有要提交的文件
+if git diff --cached --quiet; then
+  echo "❌ No staged changes to commit"
+  exit 1
+fi
+
+echo "📝 Checking frontend code with Biome..."
+if ! bun run check; then
+  echo "❌ Biome check failed. Please fix the issues before committing."
+  exit 1
+fi
+
+echo "🔧 Checking TypeScript compilation..."
+if ! bunx tsc --noEmit; then
+  echo "❌ TypeScript check failed. Please fix the issues before committing."
+  exit 1
+fi
+
+echo "🦀 Checking Rust code..."
+if ! cargo check; then
+  echo "❌ Cargo check failed. Please fix the issues before committing."
+  exit 1
+fi
+
+echo "✅ All checks passed! Proceeding with commit..."

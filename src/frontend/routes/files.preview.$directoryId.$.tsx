@@ -16,7 +16,7 @@ function FilePreviewPage() {
   return (
     <FilePreview
       directoryId={directoryId}
-      filePath={_splat}
+      filePath={_splat ?? ""}
       startInEditMode={startInEditMode}
     />
   );

@@ -7,7 +7,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { formatBytes, formatSpeed, formatTime } from "../api/download";
 import { useAuth } from "../hooks/useAuth";
 import { useDirectoryContext } from "../hooks/useDirectoryContext";
@@ -313,7 +313,7 @@ interface TaskItemProps {
   task: DownloadTask;
   onCancel: (taskId: string) => void;
   getProgressPercent: (task: DownloadTask) => number;
-  getStatusIcon: (status: DownloadStatus) => JSX.Element;
+  getStatusIcon: (status: DownloadStatus) => ReactNode;
   getStatusText: (status: DownloadStatus) => string;
   getETA: (task: DownloadTask) => string;
 }

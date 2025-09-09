@@ -38,7 +38,7 @@ export async function loadMarkdownIt(): Promise<MarkdownIt> {
       const globalMarkdownIt = (window as unknown as Record<string, unknown>)
         .markdownit;
       if (globalMarkdownIt) {
-        const instance = (globalMarkdownIt as MarkdownItConstructor)({
+        const instance = new (globalMarkdownIt as MarkdownItConstructor)({
           html: true,
           breaks: true,
           linkify: true,
