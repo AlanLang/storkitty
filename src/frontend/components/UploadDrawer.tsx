@@ -71,7 +71,7 @@ export function UploadDrawer({ targetPath }: UploadDrawerProps = {}) {
     const location = router.state.location;
     if (location.pathname.startsWith("/files/")) {
       const pathSegment = location.pathname.replace("/files/", "");
-      return pathSegment || undefined;
+      return pathSegment ? decodeURIComponent(pathSegment) : undefined;
     }
     return undefined;
   };
