@@ -76,7 +76,7 @@ export function DeleteConfirmDialog({
           </div>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 overflow-x-hidden">
           <div className="rounded-lg bg-muted/50 p-4">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded bg-muted">
