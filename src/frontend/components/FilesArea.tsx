@@ -311,9 +311,9 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
     <main className="flex-1 flex flex-col overflow-hidden">
       <div className="flex-shrink-0 p-4 md:p-6 md:pb-2 pb-2">
         {/* 工具栏 */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <div className="relative w-full max-w-sm">
+        <div className="flex flex-col space-y-3 md:flex-row md:items-center md:justify-between md:space-y-0 mb-6">
+          <div className="flex items-center space-x-4 w-full md:w-auto">
+            <div className="relative w-full md:max-w-sm">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="搜索文件和文件夹..."
@@ -324,7 +324,7 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center flex-wrap gap-2 w-full md:w-auto">
             <Button
               variant="outline"
               size="sm"
