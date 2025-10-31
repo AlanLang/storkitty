@@ -7,6 +7,7 @@ import {
   File,
   FileText,
   Image,
+  Link,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -185,22 +186,22 @@ export function FilePreview({
       {/* 顶部工具栏 */}
       <div className="border-b bg-background/95 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col space-y-3 md:flex-row md:items-center md:justify-between md:space-y-0">
+            <div className="flex items-center gap-4 min-w-0 flex-1">
               {isAuthenticated && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleGoBack}
-                  className="gap-2"
+                  className="gap-2 shrink-0"
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  返回
+                  <span className="hidden sm:inline">返回</span>
                 </Button>
               )}
 
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center rounded bg-muted">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="w-8 h-8 flex items-center justify-center rounded bg-muted shrink-0">
                   {fileInfo.isMarkdown ? (
                     <FileText className="h-4 w-4 text-primary" />
                   ) : fileInfo.isImage ? (
@@ -213,13 +214,20 @@ export function FilePreview({
                     <File className="h-4 w-4 text-muted-foreground" />
                   )}
                 </div>
-                <div>
-                  <h1 className="text-lg font-semibold">{fileInfo.name}</h1>
-                  <p className="text-sm text-muted-foreground">
-                    {directoryInfo?.name || directoryId}
-                    {fileInfo.parentPath && ` / ${fileInfo.parentPath}`}
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-lg font-semibold truncate">
+                    {fileInfo.name}
+                  </h1>
+                  <p className="text-sm text-muted-foreground truncate">
+                    <span className="hidden md:inline">
+                      {directoryInfo?.name || directoryId}
+                      {fileInfo.parentPath && ` / ${fileInfo.parentPath}`}
+                    </span>
+                    <span className="md:hidden">
+                      {directoryInfo?.name || directoryId}
+                    </span>
                     {!isAuthenticated && (
-                      <span className="ml-2 px-2 py-1 text-xs bg-muted rounded">
+                      <span className="ml-2 px-2 py-1 text-xs bg-muted rounded shrink-0">
                         公开预览
                       </span>
                     )}
@@ -228,7 +236,7 @@ export function FilePreview({
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <Button
                 variant="outline"
                 size="sm"
@@ -236,7 +244,7 @@ export function FilePreview({
                 className="gap-2"
               >
                 <Download className="h-4 w-4" />
-                下载
+                <span className="hidden sm:inline">下载</span>
               </Button>
 
               {canCopyToClipboard() && (
@@ -246,7 +254,8 @@ export function FilePreview({
                   onClick={handleCopyDownloadLink}
                   className="gap-2"
                 >
-                  复制链接
+                  <Link className="h-4 w-4" />
+                  <span className="hidden sm:inline">复制链接</span>
                 </Button>
               )}
 
@@ -259,7 +268,9 @@ export function FilePreview({
                   className="gap-2"
                 >
                   <Edit className="h-4 w-4" />
-                  {isEditMode ? "退出编辑" : "编辑"}
+                  <span className="hidden sm:inline">
+                    {isEditMode ? "退出编辑" : "编辑"}
+                  </span>
                 </Button>
               )}
             </div>
