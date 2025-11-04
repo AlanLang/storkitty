@@ -21,6 +21,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": "http://localhost:3330",
+      "/download": "http://localhost:3330",
     },
   },
 });

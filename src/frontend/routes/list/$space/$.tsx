@@ -2,7 +2,7 @@ import { FilesPageComponent } from "@/components/FilesPageComponent";
 import { useAuth } from "@/hooks/useAuth";
 import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/$space/files/$")({
+export const Route = createFileRoute("/list/$space/$")({
   component: RouteComponent,
 });
 

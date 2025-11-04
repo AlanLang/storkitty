@@ -11,7 +11,7 @@ export function generateDownloadUrl(
     .split("/")
     .map((segment) => encodeURIComponent(segment))
     .join("/");
-  return `${baseUrl}/api/files/${directoryId}/download/${encodedPath}`;
+  return `${baseUrl}/download/${directoryId}/${encodedPath}`;
 }
 
 /**

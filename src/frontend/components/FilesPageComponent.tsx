@@ -1,5 +1,4 @@
 import { Navigate } from "@tanstack/react-router";
-import { DirectoryProvider } from "../contexts/DirectoryContext";
 import { UploadProvider } from "../contexts/UploadContext";
 import { useAuth } from "../hooks/useAuth";
 import { ClipboardManager } from "./ClipboardManager";
@@ -49,29 +48,27 @@ function FilesPageContent({ currentPath, space }: FilesPageComponentProps) {
   }
 
   return (
-    <DirectoryProvider initialDirectoryId={firstDirectoryId}>
-      <UploadProvider>
-        <div className="h-screen bg-background flex flex-col">
-          {/* 顶部导航栏 */}
-          <FilesHeader />
+    <UploadProvider>
+      <div className="h-screen bg-background flex flex-col">
+        {/* 顶部导航栏 */}
+        <FilesHeader />
 
-          <div className="flex flex-1 overflow-hidden">
-            {/* 侧边栏 */}
-            <FilesSidebar />
+        <div className="flex flex-1 overflow-hidden">
+          {/* 侧边栏 */}
+          <FilesSidebar space={space} />
 
-            {/* 主内容区 */}
-            <FilesArea currentPath={currentPath} space={space} />
-          </div>
-
-          {/* Upload components */}
-          <UploadDrawer />
-          <UploadIndicator />
-
-          {/* Clipboard indicator - 在这里显示避免路由切换时重新挂载 */}
-          <ClipboardManager currentPath={currentPath} />
+          {/* 主内容区 */}
+          <FilesArea currentPath={currentPath} space={space} />
         </div>
-      </UploadProvider>
-    </DirectoryProvider>
+
+        {/* Upload components */}
+        <UploadDrawer currentPath={currentPath ?? ""} space={space} />
+        <UploadIndicator />
+
+        {/* Clipboard indicator - 在这里显示避免路由切换时重新挂载 */}
+        <ClipboardManager currentPath={currentPath} space={space} />
+      </div>
+    </UploadProvider>
   );
 }
 

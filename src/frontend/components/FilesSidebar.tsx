@@ -1,23 +1,20 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
-import { useDirectory } from "../hooks/useDirectory";
 import { useStorageInfoWithDirectoryQuery } from "../hooks/useFiles";
 import { formatStorageSpace, getDirectoryIcon } from "../utils/fileUtils";
 import { Button } from "./ui/button";
 
-export function FilesSidebar() {
+export function FilesSidebar({ space }: { space: string }) {
   const navigate = useNavigate();
-  const { selectedDirectoryId, setSelectedDirectoryId } = useDirectory();
   const { directories, isAuthenticated } = useAuth();
 
   // 处理目录选择
   const handleDirectorySelect = (directoryId: string) => {
-    setSelectedDirectoryId(directoryId);
     // 重置当前路径，因为切换目录了
-    if (directoryId !== selectedDirectoryId) {
+    if (directoryId !== space) {
       navigate({
-        to: "/$space/files/$",
+        to: "/list/$space/$",
         params: { space: directoryId, _splat: "" },
       });
     }
@@ -28,7 +25,7 @@ export function FilesSidebar() {
 
   // 获取存储空间信息
   const { data: storageData, isLoading: storageLoading } =
-    useStorageInfoWithDirectoryQuery(selectedDirectoryId, isAuthenticated);
+    useStorageInfoWithDirectoryQuery(space, isAuthenticated);
 
   return (
     <aside className="hidden md:flex w-64 border-r bg-card/30 flex-col">
@@ -48,7 +45,7 @@ export function FilesSidebar() {
           ) : directories?.length ? (
             directories.map((directory) => {
               const IconComponent = getDirectoryIcon(directory.icon);
-              const isSelected = selectedDirectoryId === directory.id;
+              const isSelected = space === directory.id;
 
               return (
                 <Button

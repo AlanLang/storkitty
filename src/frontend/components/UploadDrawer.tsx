@@ -1,4 +1,3 @@
-import { useRouter } from "@tanstack/react-router";
 import {
   AlertCircle,
   CheckCircle,
@@ -21,11 +20,11 @@ import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 
 interface UploadDrawerProps {
-  targetPath?: string;
+  currentPath: string;
+  space: string;
 }
 
-export function UploadDrawer({ targetPath }: UploadDrawerProps = {}) {
-  const router = useRouter();
+export function UploadDrawer({ currentPath, space }: UploadDrawerProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -64,20 +63,6 @@ export function UploadDrawer({ targetPath }: UploadDrawerProps = {}) {
     }
   }, [isDrawerOpen, isVisible]);
 
-  // Detect current path from router if targetPath is not provided
-  const getCurrentPath = () => {
-    if (targetPath) return targetPath;
-
-    const location = router.state.location;
-    if (location.pathname.startsWith("/files/")) {
-      const pathSegment = location.pathname.replace("/files/", "");
-      return pathSegment ? decodeURIComponent(pathSegment) : undefined;
-    }
-    return undefined;
-  };
-
-  const currentPath = getCurrentPath();
-
   // Handle drawer close
   const handleCloseDrawer = useCallback(() => {
     setIsDrawerOpen(false);
@@ -99,7 +84,7 @@ export function UploadDrawer({ targetPath }: UploadDrawerProps = {}) {
   });
 
   const handleStartUpload = () => {
-    startUpload(currentPath, currentPath);
+    startUpload(space, currentPath);
   };
 
   const stats = getUploadStats();
@@ -134,22 +119,11 @@ export function UploadDrawer({ targetPath }: UploadDrawerProps = {}) {
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur-sm">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <Upload className="h-5 w-5" />
             <div className="flex flex-col">
               <h2 className="text-lg font-semibold">上传文件</h2>
-              {currentPath && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Folder className="h-3 w-3" />
-                  <span>目标: /{currentPath}</span>
-                </div>
-              )}
             </div>
-            {stats.total > 0 && (
-              <span className="text-sm text-muted-foreground">
-                ({stats.total})
-              </span>
-            )}
           </div>
           <Button
             variant="ghost"
@@ -168,6 +142,13 @@ export function UploadDrawer({ targetPath }: UploadDrawerProps = {}) {
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{globalError}</AlertDescription>
             </Alert>
+          </div>
+        )}
+
+        {currentPath && (
+          <div className="pt-2 pl-4 flex items-center gap-1 text-xs text-muted-foreground">
+            <Folder className="h-3 w-3" />
+            <span>目标: /{currentPath}</span>
           </div>
         )}
 

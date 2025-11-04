@@ -21,7 +21,6 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "../hooks/useAuth";
 import { useClipboardOperations } from "../hooks/useClipboardOperations";
-import { useDirectory } from "../hooks/useDirectory";
 import {
   useCreateDirectoryMutation,
   useCreateFileMutation,
@@ -65,11 +64,12 @@ interface FilesAreaProps {
 
 export function FilesArea({ currentPath, space }: FilesAreaProps) {
   const navigate = useNavigate();
-  const { selectedDirectoryId } = useDirectory();
   const { isAuthenticated } = useAuth();
   const { setIsDrawerOpen } = useUpload();
-  const { handleMoveClick, handleCopyClick } =
-    useClipboardOperations(currentPath);
+  const { handleMoveClick, handleCopyClick } = useClipboardOperations(
+    space,
+    currentPath,
+  );
   const [searchQuery, setSearchQuery] = useState("");
 
   // 获取面包屑路径
@@ -82,7 +82,7 @@ export function FilesArea({ currentPath, space }: FilesAreaProps) {
   const handleFolderClick = (folderName: string) => {
     const newPath = currentPath ? `${currentPath}/${folderName}` : folderName;
     navigate({
-      to: "/$space/files/$",
+      to: "/list/$space/$",
       params: { space, _splat: newPath },
     });
   };
@@ -93,7 +93,7 @@ export function FilesArea({ currentPath, space }: FilesAreaProps) {
     navigate({
       to: "/files/preview/$directoryId/$",
       params: {
-        directoryId: selectedDirectoryId,
+        directoryId: space,
         _splat: filePath,
       },
     });
@@ -105,7 +105,7 @@ export function FilesArea({ currentPath, space }: FilesAreaProps) {
     navigate({
       to: "/files/preview/$directoryId/$",
       params: {
-        directoryId: selectedDirectoryId,
+        directoryId: space,
         _splat: filePath,
       },
       search: { edit: true },
@@ -116,11 +116,11 @@ export function FilesArea({ currentPath, space }: FilesAreaProps) {
   const handleNavigateToPath = (pathIndex: number) => {
     if (pathIndex === -1) {
       // 导航到根目录
-      navigate({ to: "/$space/files/$", params: { space, _splat: "" } });
+      navigate({ to: "/list/$space/$", params: { space, _splat: "" } });
     } else {
       const newPath = breadcrumbPaths.slice(0, pathIndex + 1).join("/");
       navigate({
-        to: "/$space/files/$",
+        to: "/list/$space/$",
         params: { space, _splat: newPath },
       });
     }
@@ -152,11 +152,7 @@ export function FilesArea({ currentPath, space }: FilesAreaProps) {
     data: filesData,
     isLoading: filesLoading,
     error: filesError,
-  } = useFileListWithDirectoryQuery(
-    selectedDirectoryId,
-    currentPath,
-    isAuthenticated,
-  );
+  } = useFileListWithDirectoryQuery(space, currentPath, isAuthenticated);
 
   const files = filesData?.files || [];
 
@@ -178,7 +174,7 @@ export function FilesArea({ currentPath, space }: FilesAreaProps) {
 
   // 查询 README 内容
   const { data: readmeData } = useShowFileQuery(
-    selectedDirectoryId,
+    space,
     readmeFilePath || "",
     isAuthenticated && !filesLoading && !filesError && !!readmeFilePath,
   );
@@ -193,7 +189,7 @@ export function FilesArea({ currentPath, space }: FilesAreaProps) {
       return;
     }
     const filePath = currentPath ? `${currentPath}/${file.name}` : file.name;
-    downloadFile(filePath, file.name, selectedDirectoryId);
+    downloadFile(filePath, file.name, space);
   };
 
   const handleCopyDownloadLink = async (file: FileInfo) => {
@@ -201,7 +197,7 @@ export function FilesArea({ currentPath, space }: FilesAreaProps) {
       return;
     }
     const filePath = currentPath ? `${currentPath}/${file.name}` : file.name;
-    const success = await copyDownloadLink(filePath, selectedDirectoryId);
+    const success = await copyDownloadLink(filePath, space);
 
     if (success) {
       toast.success("下载链接已复制到剪贴板");
@@ -224,7 +220,7 @@ export function FilesArea({ currentPath, space }: FilesAreaProps) {
 
     await deleteFileMutation.mutateAsync({
       filePath,
-      directoryId: selectedDirectoryId,
+      directoryId: space,
     });
   };
 
@@ -244,7 +240,7 @@ export function FilesArea({ currentPath, space }: FilesAreaProps) {
 
     await createDirectoryMutation.mutateAsync({
       directoryPath,
-      directoryId: selectedDirectoryId,
+      directoryId: space,
     });
   };
 
@@ -261,7 +257,7 @@ export function FilesArea({ currentPath, space }: FilesAreaProps) {
     const filePath = currentPath ? `${currentPath}/${filename}` : filename;
 
     await createFileMutation.mutateAsync({
-      directoryId: selectedDirectoryId,
+      directoryId: space,
       filePath,
       content: "", // 创建空文件
     });
@@ -286,7 +282,7 @@ export function FilesArea({ currentPath, space }: FilesAreaProps) {
     await renameFileMutation.mutateAsync({
       filePath,
       newName,
-      directoryId: selectedDirectoryId,
+      directoryId: space,
     });
   };
 
@@ -355,7 +351,7 @@ export function FilesArea({ currentPath, space }: FilesAreaProps) {
               <Upload className="h-4 w-4" />
               <span className="hidden sm:inline">上传</span>
             </Button>
-            <DownloadDialog currentPath={currentPath} />
+            <DownloadDialog currentPath={currentPath ?? ""} space={space} />
           </div>
         </div>
 
@@ -661,10 +657,14 @@ export function FilesArea({ currentPath, space }: FilesAreaProps) {
       />
 
       {/* 下载指示器和抽屉 */}
-      <DownloadIndicator onOpenDrawer={() => setIsDownloadDrawerOpen(true)} />
+      <DownloadIndicator
+        onOpenDrawer={() => setIsDownloadDrawerOpen(true)}
+        space={space}
+      />
       <DownloadDrawer
         isOpen={isDownloadDrawerOpen}
         onClose={() => setIsDownloadDrawerOpen(false)}
+        space={space}
       />
     </main>
   );

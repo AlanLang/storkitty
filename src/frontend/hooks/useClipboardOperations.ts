@@ -2,16 +2,14 @@ import { useCallback } from "react";
 import { toast } from "sonner";
 import type { FileInfo } from "../types/files";
 import { useClipboard } from "./useClipboard";
-import { useDirectory } from "./useDirectory";
 import { useCopyFileMutation, useMoveFileMutation } from "./useFiles";
 
-export function useClipboardOperations(currentPath?: string) {
+export function useClipboardOperations(space: string, currentPath?: string) {
   const {
     setClipboardItem,
     clearClipboard,
     item: clipboardItem,
   } = useClipboard();
-  const { selectedDirectoryId } = useDirectory();
   const moveFileMutation = useMoveFileMutation();
   const copyFileMutation = useCopyFileMutation();
 
@@ -21,10 +19,10 @@ export function useClipboardOperations(currentPath?: string) {
       const sourcePath = currentPath
         ? `${currentPath}/${file.name}`
         : file.name;
-      setClipboardItem(file, "move", selectedDirectoryId, sourcePath);
+      setClipboardItem(file, "move", space, sourcePath);
       toast.success(`已将 "${file.name}" 添加到剪贴板，准备移动`);
     },
-    [currentPath, selectedDirectoryId, setClipboardItem],
+    [currentPath, space, setClipboardItem],
   );
 
   // 处理复制点击
@@ -33,10 +31,10 @@ export function useClipboardOperations(currentPath?: string) {
       const sourcePath = currentPath
         ? `${currentPath}/${file.name}`
         : file.name;
-      setClipboardItem(file, "copy", selectedDirectoryId, sourcePath);
+      setClipboardItem(file, "copy", space, sourcePath);
       toast.success(`已将 "${file.name}" 添加到剪贴板，准备复制`);
     },
-    [currentPath, selectedDirectoryId, setClipboardItem],
+    [currentPath, space, setClipboardItem],
   );
 
   // 处理粘贴操作
@@ -52,14 +50,14 @@ export function useClipboardOperations(currentPath?: string) {
 
       if (clipboardItem.operation === "move") {
         await moveFileMutation.mutateAsync({
-          directoryId: selectedDirectoryId,
+          directoryId: space,
           sourceFilePath: clipboardItem.sourcePath,
           targetFilePath: targetPath,
         });
         toast.success(`"${clipboardItem.file.name}" 移动成功`);
       } else {
         await copyFileMutation.mutateAsync({
-          directoryId: selectedDirectoryId,
+          directoryId: space,
           sourceFilePath: clipboardItem.sourcePath,
           targetFilePath: targetPath,
         });
@@ -82,7 +80,7 @@ export function useClipboardOperations(currentPath?: string) {
     clearClipboard,
     moveFileMutation,
     copyFileMutation,
-    selectedDirectoryId,
+    space,
     currentPath,
   ]);
 

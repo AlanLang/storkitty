@@ -34,7 +34,7 @@ function IndexPage() {
   if (isAuthenticated) {
     return (
       <Navigate
-        to="/$space/files/$"
+        to="/list/$space/$"
         params={{ space: directories?.[0]?.id || "", _splat: "" }}
       />
     );

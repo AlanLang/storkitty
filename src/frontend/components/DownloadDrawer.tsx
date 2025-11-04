@@ -10,7 +10,6 @@ import {
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { formatBytes, formatSpeed, formatTime } from "../api/download";
 import { useAuth } from "../hooks/useAuth";
-import { useDirectoryContext } from "../hooks/useDirectoryContext";
 import {
   useCancelDownloadTaskMutation,
   useClearCompletedTasksMutation,
@@ -20,26 +19,26 @@ import { DownloadStatus, type DownloadTask } from "../types/download";
 import { Button } from "./ui/button";
 
 interface DownloadDrawerProps {
+  space: string;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function DownloadDrawer({ isOpen, onClose }: DownloadDrawerProps) {
+export function DownloadDrawer({
+  isOpen,
+  onClose,
+  space,
+}: DownloadDrawerProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const { token } = useAuth();
-  const { selectedDirectoryId } = useDirectoryContext();
 
   // 使用智能轮询的 React Query hooks
   const {
     data: tasks = [],
     isLoading,
     refetch: refetchTasks,
-  } = useDownloadTasksWithAuthQuery(
-    selectedDirectoryId,
-    token,
-    !!token && !!selectedDirectoryId && isOpen,
-  );
+  } = useDownloadTasksWithAuthQuery(space, token, !!token && !!space && isOpen);
 
   // Mutations
   const cancelTaskMutation = useCancelDownloadTaskMutation();
@@ -68,16 +67,16 @@ export function DownloadDrawer({ isOpen, onClose }: DownloadDrawerProps) {
     cancelTaskMutation.mutate({
       taskId,
       token,
-      directoryId: selectedDirectoryId,
+      directoryId: space,
     });
   };
 
   // 清理已完成的任务
   const handleClearCompleted = async () => {
-    if (!token || !selectedDirectoryId) return;
+    if (!token || !space) return;
 
     clearCompletedMutation.mutate({
-      directoryId: selectedDirectoryId,
+      directoryId: space,
       token,
     });
   };
