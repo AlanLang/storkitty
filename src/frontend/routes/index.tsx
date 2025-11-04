@@ -4,7 +4,7 @@ import { setupApi } from "../api/auth";
 import { useAuth } from "../hooks/useAuth";
 
 function IndexPage() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, directories } = useAuth();
 
   // 检查是否需要初始化设置
   const { data: setupStatus, isLoading: setupLoading } = useQuery({
@@ -32,7 +32,12 @@ function IndexPage() {
 
   // 根据认证状态自动重定向
   if (isAuthenticated) {
-    return <Navigate to="/files" />;
+    return (
+      <Navigate
+        to="/$space/files/$"
+        params={{ space: directories?.[0]?.id || "", _splat: "" }}
+      />
+    );
   }
   return <Navigate to="/login" />;
 }

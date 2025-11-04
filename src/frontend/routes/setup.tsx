@@ -58,7 +58,10 @@ function SetupPage() {
 
         // 延迟跳转到文件管理页面
         setTimeout(() => {
-          navigate({ to: "/files", replace: true });
+          navigate({
+            to: "/",
+            replace: true,
+          });
         }, 2000);
       } else {
         setError(response.message || "初始化失败，请重试");

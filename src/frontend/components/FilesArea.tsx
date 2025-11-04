@@ -60,9 +60,10 @@ import { Input } from "./ui/input";
 
 interface FilesAreaProps {
   currentPath?: string;
+  space: string;
 }
 
-export function FilesArea({ currentPath }: FilesAreaProps) {
+export function FilesArea({ currentPath, space }: FilesAreaProps) {
   const navigate = useNavigate();
   const { selectedDirectoryId } = useDirectory();
   const { isAuthenticated } = useAuth();
@@ -81,8 +82,8 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
   const handleFolderClick = (folderName: string) => {
     const newPath = currentPath ? `${currentPath}/${folderName}` : folderName;
     navigate({
-      to: "/files/$",
-      params: { _splat: newPath },
+      to: "/$space/files/$",
+      params: { space, _splat: newPath },
     });
   };
 
@@ -115,12 +116,12 @@ export function FilesArea({ currentPath }: FilesAreaProps) {
   const handleNavigateToPath = (pathIndex: number) => {
     if (pathIndex === -1) {
       // 导航到根目录
-      navigate({ to: "/files" });
+      navigate({ to: "/$space/files/$", params: { space, _splat: "" } });
     } else {
       const newPath = breadcrumbPaths.slice(0, pathIndex + 1).join("/");
       navigate({
-        to: "/files/$",
-        params: { _splat: newPath },
+        to: "/$space/files/$",
+        params: { space, _splat: newPath },
       });
     }
   };

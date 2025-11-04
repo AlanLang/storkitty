@@ -148,11 +148,14 @@ export function FilePreview({
   const handleGoBack = () => {
     if (fileInfo.parentPath) {
       navigate({
-        to: "/files/$",
-        params: { _splat: fileInfo.parentPath },
+        to: "/$space/files/$",
+        params: { space: directoryId, _splat: fileInfo.parentPath },
       });
     } else {
-      navigate({ to: "/files" });
+      navigate({
+        to: "/$space/files/$",
+        params: { space: directoryId, _splat: "" },
+      });
     }
   };
 
