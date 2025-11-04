@@ -16,7 +16,10 @@ export function FilesSidebar() {
     setSelectedDirectoryId(directoryId);
     // 重置当前路径，因为切换目录了
     if (directoryId !== selectedDirectoryId) {
-      navigate({ to: "/files" });
+      navigate({
+        to: "/$space/files/$",
+        params: { space: directoryId, _splat: "" },
+      });
     }
   };
 

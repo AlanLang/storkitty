@@ -11,13 +11,10 @@ import { UploadIndicator } from "./UploadIndicator";
 
 interface FilesPageComponentProps {
   currentPath?: string;
+  space: string;
 }
 
-function FilesPageContent({
-  currentPath,
-}: {
-  currentPath?: string;
-}) {
+function FilesPageContent({ currentPath, space }: FilesPageComponentProps) {
   const { isAuthenticated, isLoading, directories } = useAuth();
 
   // 如果未登录，重定向到登录页
@@ -63,7 +60,7 @@ function FilesPageContent({
             <FilesSidebar />
 
             {/* 主内容区 */}
-            <FilesArea currentPath={currentPath} />
+            <FilesArea currentPath={currentPath} space={space} />
           </div>
 
           {/* Upload components */}
@@ -78,6 +75,9 @@ function FilesPageContent({
   );
 }
 
-export function FilesPageComponent({ currentPath }: FilesPageComponentProps) {
-  return <FilesPageContent currentPath={currentPath} />;
+export function FilesPageComponent({
+  currentPath,
+  space,
+}: FilesPageComponentProps) {
+  return <FilesPageContent currentPath={currentPath} space={space} />;
 }

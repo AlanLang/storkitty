@@ -5,7 +5,8 @@ import { LoginForm } from "../components/LoginForm";
 import { useAuth } from "../hooks/useAuth";
 
 function LoginPage() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, directories } = useAuth();
+  const firstDirectoryId = directories?.[0]?.id ?? "default";
 
   // 检查是否需要初始化设置
   const { data: setupStatus, isLoading: setupLoading } = useQuery({
@@ -17,7 +18,12 @@ function LoginPage() {
 
   // 如果已经登录，重定向到仪表板
   if (isAuthenticated) {
-    return <Navigate to="/files" />;
+    return (
+      <Navigate
+        to="/$space/files/$"
+        params={{ space: firstDirectoryId, _splat: "" }}
+      />
+    );
   }
 
   if (authLoading || setupLoading) {
