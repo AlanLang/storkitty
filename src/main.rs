@@ -1,5 +1,6 @@
 mod backend;
 
+use axum::extract::Path;
 use axum::{Router, routing::get_service};
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -23,6 +24,7 @@ async fn main() -> anyhow::Result<()> {
   let config = Arc::new(RwLock::new(Config::load()?));
   let auth_service = Arc::new(AuthService::new(config.clone()));
   let file_service = Arc::new(FileService::new(config.clone(), auth_service.clone()));
+  let download_file_service = Arc::new(FileService::new(config.clone(), auth_service.clone()));
   let upload_service = Arc::new(UploadService::new(config.clone(), auth_service.clone()));
   let setup_service = Arc::new(SetupService::new(config.clone(), auth_service.clone()));
   let download_manager = Arc::new(DownloadManager::new(config.clone(), auth_service.clone()));
@@ -40,9 +42,19 @@ async fn main() -> anyhow::Result<()> {
     .nest("/setup", backend::setup::setup_router(setup_service))
     .nest("/download", backend::download::download_router(download_manager));
 
+
+
   // 主应用路由 - 使用 Axum 推荐的 SPA 模式
   let app = Router::new()
     .nest("/api", api_router)
+    .route(
+      "/download/{space}/{*file_path}",
+      axum::routing::get({
+        async move |Path((space, file_path)): Path<(String, String)>| {
+          download_file_service.download_file_with_directory(&space, file_path).await
+        }
+      }),
+    )
     .fallback_service(
       get_service(
         ServeDir::new("./web")

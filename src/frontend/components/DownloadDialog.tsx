@@ -3,7 +3,6 @@ import { type ChangeEvent, type FormEvent, useState } from "react";
 import { toast } from "sonner";
 import { extractFilename, isValidUrl } from "../api/download";
 import { useAuth } from "../hooks/useAuth";
-import { useDirectoryContext } from "../hooks/useDirectoryContext";
 import { useCreateDownloadTasksMutation } from "../hooks/useDownload";
 import { Button } from "./ui/button";
 import {
@@ -16,14 +15,14 @@ import {
 import { Label } from "./ui/label";
 
 interface DownloadDialogProps {
-  currentPath?: string;
+  space: string;
+  currentPath: string;
 }
 
-export function DownloadDialog({ currentPath = "" }: DownloadDialogProps) {
+export function DownloadDialog({ currentPath, space }: DownloadDialogProps) {
   const [open, setOpen] = useState(false);
   const [urls, setUrls] = useState("");
   const { token } = useAuth();
-  const { selectedDirectoryId } = useDirectoryContext();
 
   // 使用 mutation hook
   const createTasksMutation = useCreateDownloadTasksMutation();
@@ -31,7 +30,7 @@ export function DownloadDialog({ currentPath = "" }: DownloadDialogProps) {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!token || !selectedDirectoryId) {
+    if (!token || !space) {
       toast.error("请先登录");
       return;
     }
@@ -58,7 +57,7 @@ export function DownloadDialog({ currentPath = "" }: DownloadDialogProps) {
       {
         request: {
           urls: urlList,
-          directory_id: selectedDirectoryId,
+          directory_id: space,
           target_path: currentPath,
         },
         token,
@@ -164,7 +163,7 @@ export function DownloadDialog({ currentPath = "" }: DownloadDialogProps) {
           <div className="p-3 bg-muted rounded-md text-sm">
             <div className="font-medium mb-1">下载位置</div>
             <div className="text-muted-foreground">
-              目录: {selectedDirectoryId}
+              目录: {space}
               {currentPath && (
                 <>
                   <br />

@@ -31,7 +31,7 @@ export interface UploadContextType {
   addFiles: (files: File[], targetPath?: string, maxSizeMB?: number) => void;
   removeFile: (id: string) => void;
   cancelUpload: (id: string) => void;
-  startUpload: (targetPath?: string, currentPath?: string) => Promise<void>;
+  startUpload: (space: string, targetPath: string) => Promise<void>;
   clearCompleted: () => void;
   clearAll: () => void;
 

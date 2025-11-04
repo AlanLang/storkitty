@@ -8,7 +8,6 @@ import {
 } from "../api/chunkedUpload";
 import type { UploadResponse } from "../api/upload";
 import { uploadFiles, validateFile } from "../api/upload";
-import { useDirectory } from "../hooks/useDirectory";
 import { filesKeys } from "../hooks/useFiles";
 import type { UploadContextType, UploadItem } from "./UploadContextDefinition";
 import { UploadContext } from "./UploadContextDefinition";
@@ -19,7 +18,6 @@ interface UploadProviderProps {
 
 export function UploadProvider({ children }: UploadProviderProps) {
   const queryClient = useQueryClient();
-  const { selectedDirectoryId } = useDirectory();
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
@@ -78,7 +76,7 @@ export function UploadProvider({ children }: UploadProviderProps) {
   }, []);
 
   const startUpload = useCallback(
-    async (targetPath?: string, currentPath?: string) => {
+    async (space: string, targetPath: string) => {
       const validItems = uploadItems.filter(
         (item) => item.status === "pending",
       );
@@ -86,9 +84,6 @@ export function UploadProvider({ children }: UploadProviderProps) {
 
       setIsUploading(true);
       setGlobalError(null);
-
-      // Use the selectedDirectoryId from DirectoryContext
-      const activeDirectoryId = selectedDirectoryId;
 
       try {
         const results: UploadResponse[] = [];
@@ -108,57 +103,49 @@ export function UploadProvider({ children }: UploadProviderProps) {
             let result: UploadResponse;
 
             if (item.isChunked) {
-              // Use chunked upload for large files
-              if (!activeDirectoryId) {
-                throw new Error("Directory ID is required for chunked upload");
-              }
-              const session = createChunkedUploadSession(
-                item.file,
-                activeDirectoryId,
-                {
-                  targetPath,
-                  onProgress: (progress) => {
-                    setUploadItems((prev) =>
-                      prev.map((prevItem) =>
-                        prevItem.id === item.id
-                          ? {
-                              ...prevItem,
-                              progress: progress.progress,
-                              uploadProgress: progress,
-                            }
-                          : prevItem,
-                      ),
-                    );
-                  },
-                  onError: (error) => {
-                    setUploadItems((prev) =>
-                      prev.map((prevItem) =>
-                        prevItem.id === item.id
-                          ? {
-                              ...prevItem,
-                              status: "error" as const,
-                              error: error.message,
-                            }
-                          : prevItem,
-                      ),
-                    );
-                  },
-                  onComplete: (uploadResult) => {
-                    setUploadItems((prev) =>
-                      prev.map((prevItem) =>
-                        prevItem.id === item.id
-                          ? {
-                              ...prevItem,
-                              status: "completed" as const,
-                              progress: 100,
-                              result: uploadResult,
-                            }
-                          : prevItem,
-                      ),
-                    );
-                  },
+              const session = createChunkedUploadSession(item.file, space, {
+                targetPath,
+                onProgress: (progress) => {
+                  setUploadItems((prev) =>
+                    prev.map((prevItem) =>
+                      prevItem.id === item.id
+                        ? {
+                            ...prevItem,
+                            progress: progress.progress,
+                            uploadProgress: progress,
+                          }
+                        : prevItem,
+                    ),
+                  );
                 },
-              );
+                onError: (error) => {
+                  setUploadItems((prev) =>
+                    prev.map((prevItem) =>
+                      prevItem.id === item.id
+                        ? {
+                            ...prevItem,
+                            status: "error" as const,
+                            error: error.message,
+                          }
+                        : prevItem,
+                    ),
+                  );
+                },
+                onComplete: (uploadResult) => {
+                  setUploadItems((prev) =>
+                    prev.map((prevItem) =>
+                      prevItem.id === item.id
+                        ? {
+                            ...prevItem,
+                            status: "completed" as const,
+                            progress: 100,
+                            result: uploadResult,
+                          }
+                        : prevItem,
+                    ),
+                  );
+                },
+              });
 
               // Store the session for potential cancellation
               setUploadItems((prev) =>
@@ -187,14 +174,9 @@ export function UploadProvider({ children }: UploadProviderProps) {
                 startChunkedUpload(session);
               });
             } else {
-              // Use simple upload for small files (unified directory API)
-              if (!activeDirectoryId) {
-                throw new Error("No directory selected for upload");
-              }
-
               const uploadResult = await uploadFiles(
                 [item.file],
-                activeDirectoryId,
+                space,
                 targetPath,
                 (_, progress) => {
                   setUploadItems((prev) =>
@@ -232,15 +214,15 @@ export function UploadProvider({ children }: UploadProviderProps) {
         }
 
         // 内置的文件列表和存储空间刷新
-        if (results.length > 0 && selectedDirectoryId) {
+        if (results.length > 0) {
           // 刷新文件列表
           queryClient.invalidateQueries({
-            queryKey: filesKeys.list(currentPath, selectedDirectoryId),
+            queryKey: filesKeys.list(targetPath, space),
           });
 
           // 刷新存储空间
           queryClient.invalidateQueries({
-            queryKey: filesKeys.storage(selectedDirectoryId),
+            queryKey: filesKeys.storage(space),
           });
         }
 
@@ -252,7 +234,7 @@ export function UploadProvider({ children }: UploadProviderProps) {
         setIsUploading(false);
       }
     },
-    [uploadItems, onUploadComplete, selectedDirectoryId, queryClient],
+    [uploadItems, onUploadComplete, queryClient],
   );
 
   const clearCompleted = useCallback(() => {

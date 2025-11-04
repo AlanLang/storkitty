@@ -1,7 +1,6 @@
 import { AlertCircle, ArrowDown, CheckCircle, Download } from "lucide-react";
 import { useMemo } from "react";
 import { useAuth } from "../hooks/useAuth";
-import { useDirectoryContext } from "../hooks/useDirectoryContext";
 import {
   getDownloadStats,
   useDownloadTasksWithAuthQuery,
@@ -9,18 +8,21 @@ import {
 import { Button } from "./ui/button";
 
 interface DownloadIndicatorProps {
+  space: string;
   onOpenDrawer: () => void;
 }
 
-export function DownloadIndicator({ onOpenDrawer }: DownloadIndicatorProps) {
+export function DownloadIndicator({
+  onOpenDrawer,
+  space,
+}: DownloadIndicatorProps) {
   const { token } = useAuth();
-  const { selectedDirectoryId } = useDirectoryContext();
 
   // 使用智能轮询的 React Query hook
   const { data: tasks = [] } = useDownloadTasksWithAuthQuery(
-    selectedDirectoryId,
+    space,
     token,
-    !!token && !!selectedDirectoryId,
+    !!token && !!space,
   );
 
   // 计算统计信息
