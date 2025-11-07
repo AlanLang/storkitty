@@ -328,12 +328,12 @@ function UploadItemCard({ item, onRemove, onCancel }: UploadItemCardProps) {
 
   return (
     <Card className="p-3">
-      <div className="flex items-start gap-3">
+      <div className="flex items-center gap-3">
         {getStatusIcon()}
 
         <div className="flex-1 min-w-0">
           {/* File info */}
-          <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0">
               <p className="text-sm font-medium truncate">{item.file.name}</p>
             </div>
