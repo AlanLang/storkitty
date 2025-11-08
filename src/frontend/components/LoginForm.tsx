@@ -1,4 +1,12 @@
-import { Eye, EyeOff, Loader2, Lock, LogIn, Shield, User } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  HardDrive,
+  Loader2,
+  Lock,
+  LogIn,
+  User,
+} from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { Alert, AlertDescription } from "./ui/alert";
@@ -39,17 +47,17 @@ export function LoginForm() {
   const displayError = localError || loginError;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-      <div className="w-full max-w-md">
-        <Card>
+    <div className="min-h-screen flex items-center justify-center p-4 glass-bg">
+      <div className="w-full max-w-lg">
+        <Card className="glass-card border-none">
           <CardHeader className="space-y-1 text-center">
             {/* Logo 和标题区域 */}
             <div className="flex justify-center mb-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[hsl(var(--primary))]">
-                <Shield className="h-6 w-6 text-primary-foreground" />
+                <HardDrive className="h-8 w-8 text-primary-foreground" />
               </div>
             </div>
-            <CardTitle className="text-2xl">欢迎回来</CardTitle>
+            <CardTitle className="text-2xl title">欢迎回来</CardTitle>
             <CardDescription>请登录您的 Storkitty 账户</CardDescription>
           </CardHeader>
 
@@ -110,7 +118,11 @@ export function LoginForm() {
               )}
 
               {/* 登录按钮 */}
-              <Button type="submit" disabled={isLoggingIn} className="w-full">
+              <Button
+                type="submit"
+                disabled={isLoggingIn}
+                className="w-full glass-button"
+              >
                 {isLoggingIn ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
