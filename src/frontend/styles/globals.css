@@ -266,7 +266,7 @@
 }
 
 /* 光斑旋转背景 */
-.glass-bg {
+body {
   /* 三个旋转半径 */
   --r1: 35%;
   --r2: 30%;
@@ -302,30 +302,6 @@
   }
 }
 
-/* 覆盖层（柔雾层） */
-.glass-bg::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(40px) saturate(150%);
-  -webkit-backdrop-filter: blur(40px) saturate(150%);
-  mix-blend-mode: soft-light;
-  pointer-events: none;
-}
-
-/* 可选：轻噪声纹理（Vision Pro 粒感） */
-.glass-bg::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: url("https://upload.wikimedia.org/wikipedia/commons/7/7d/White_Noise_Texture.png");
-  opacity: 0.03;
-  mix-blend-mode: overlay;
-  pointer-events: none;
-  z-index: 2;
-}
-
 /* ========== 毛玻璃卡片 ========== */
 .glass-card {
   background: rgba(255, 255, 255, 0.55);
@@ -357,4 +333,18 @@
 
 .glass-card .title {
   text-shadow: 0 1px 3px rgba(255, 255, 255, 0.4);
+}
+
+.sidebar {
+  backdrop-filter: blur(40px) saturate(180%);
+  background: rgba(255, 255, 255, 0.5);
+  border-right: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 4px 20px
+    rgba(0, 0, 0, 0.05);
+  border-radius: 0 20px 20px 0;
+}
+.sidebar button,
+.sidebar a {
+  font-weight: 500;
+  transition: all 0.3s ease;
 }

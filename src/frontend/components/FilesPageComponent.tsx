@@ -3,7 +3,6 @@ import { UploadProvider } from "../contexts/UploadContext";
 import { useAuth } from "../hooks/useAuth";
 import { ClipboardManager } from "./ClipboardManager";
 import { FilesArea } from "./FilesArea";
-import { FilesHeader } from "./FilesHeader";
 import { FilesSidebar } from "./FilesSidebar";
 import { UploadDrawer } from "./UploadDrawer";
 import { UploadIndicator } from "./UploadIndicator";
@@ -49,10 +48,7 @@ function FilesPageContent({ currentPath, space }: FilesPageComponentProps) {
 
   return (
     <UploadProvider>
-      <div className="h-screen bg-background flex flex-col">
-        {/* 顶部导航栏 */}
-        <FilesHeader />
-
+      <div className="h-screen flex flex-col">
         <div className="flex flex-1 overflow-hidden">
           {/* 侧边栏 */}
           <FilesSidebar space={space} />

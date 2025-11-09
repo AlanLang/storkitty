@@ -25,7 +25,7 @@ export const Route = createRootRoute({
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ClipboardProvider>
-          <div className="min-h-screen bg-background">
+          <div className="min-h-screen">
             <Outlet />
             <ReactQueryDevtools initialIsOpen={false} />
 

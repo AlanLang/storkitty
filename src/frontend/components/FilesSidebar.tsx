@@ -28,7 +28,7 @@ export function FilesSidebar({ space }: { space: string }) {
     useStorageInfoWithDirectoryQuery(space, isAuthenticated);
 
   return (
-    <aside className="hidden md:flex w-64 border-r bg-card/30 flex-col">
+    <aside className="hidden md:flex w-64 border-r sidebar flex-col">
       <div className="p-4">
         <nav className="space-y-2">
           <div className="text-xs font-medium text-muted-foreground mb-2 px-2">
@@ -70,7 +70,7 @@ export function FilesSidebar({ space }: { space: string }) {
 
       {/* 存储空间信息 - 固定到底部 */}
       <div className="mt-auto p-4">
-        <div className="p-4 rounded-lg bg-muted/50">
+        <div className="p-4 bg-muted/30 backdrop-blur-[30px] backdrop-saturate-[1.8] rounded-lg shadow-lg">
           <h3 className="text-sm font-medium mb-2">存储空间</h3>
           {storageLoading ? (
             <div className="flex items-center justify-center py-4">

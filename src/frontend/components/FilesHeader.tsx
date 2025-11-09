@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 export function FilesHeader() {
   const { user, version, logout } = useAuth();
   return (
-    <header className="flex-shrink-0 border-b bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">
+    <header className="flex-shrink-0 border-b toolbar backdrop-blur supports-[backdrop-filter]:bg-card/50">
       <div className="flex h-16 items-center px-6">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
