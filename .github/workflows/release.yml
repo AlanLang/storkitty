@@ -1,0 +1,250 @@
+name: Release
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'Cargo.toml' ]
+  workflow_dispatch:
+    inputs:
+      force_release:
+        description: 'Force release even if version exists'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      version_changed: ${{ steps.version.outputs.changed }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Get current version
+      id: version
+      run: |
+        CURRENT_VERSION=$(grep '^version = ' Cargo.toml | head -n 1 | cut -d '"' -f 2)
+        echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+        
+        # Check if this version was already tagged (unless force_release is true)
+        if git tag -l | grep -q "^v$CURRENT_VERSION$" && [ "${{ github.event.inputs.force_release }}" != "true" ]; then
+          echo "changed=false" >> $GITHUB_OUTPUT
+          echo "Version v$CURRENT_VERSION already exists"
+        else
+          echo "changed=true" >> $GITHUB_OUTPUT
+          if [ "${{ github.event.inputs.force_release }}" == "true" ]; then
+            echo "Force release enabled for v$CURRENT_VERSION"
+          else
+            echo "New version v$CURRENT_VERSION detected"
+          fi
+        fi
+
+  build:
+    needs: check-version
+    if: needs.check-version.outputs.version_changed == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: latest
+    
+    - name: Setup Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        target: ${{ matrix.target }}
+        override: true
+    
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+          node_modules/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-bun-${{ hashFiles('**/bun.lockb') }}
+    
+    - name: Install frontend dependencies
+      run: bun install
+    
+    - name: Build frontend
+      run: bun run build
+    
+    - name: Build binary
+      uses: actions-rs/cargo@v1
+      with:
+        command: build
+        args: --release --target ${{ matrix.target }}
+    
+    - name: Create release directory and package
+      run: |
+        echo "=== Creating release directory ==="
+        mkdir -p release
+        
+        echo "=== Copying binary ==="
+        cp target/${{ matrix.target }}/release/storkitty release/
+        chmod +x release/storkitty
+        
+        echo "=== Copying web directory ==="
+        cp -r web release/
+        
+        echo "=== Listing release contents ==="
+        ls -la release/
+        
+        echo "=== Creating tarball ==="
+        cd release
+        tar -czf ../storkitty-v${{ needs.check-version.outputs.version }}-${{ matrix.target }}.tar.gz *
+        cd ..
+        
+        echo "=== Verifying tarball ==="
+        ls -la storkitty-v${{ needs.check-version.outputs.version }}-${{ matrix.target }}.tar.gz
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: storkitty-${{ matrix.target }}
+        path: storkitty-v${{ needs.check-version.outputs.version }}-${{ matrix.target }}.tar.gz
+
+  release:
+    needs: [check-version, build]
+    if: needs.check-version.outputs.version_changed == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+    
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Get commits since last tag (excluding the current commit that triggers the release)
+        CURRENT_VERSION="v${{ needs.check-version.outputs.version }}"
+        
+        # Get all tags sorted by version, then find the previous tag
+        ALL_TAGS=$(git tag -l | sort -V)
+        PREV_TAG=""
+        
+        # Find previous tag by getting all tags except the current one if it exists
+        for tag in $ALL_TAGS; do
+          if [ "$tag" != "$CURRENT_VERSION" ]; then
+            PREV_TAG="$tag"
+          else
+            break
+          fi
+        done
+        
+        echo "Current version: $CURRENT_VERSION"
+        echo "Previous tag: $PREV_TAG"
+        
+        if [ -z "$PREV_TAG" ]; then
+          # No previous tag exists, get all commits except the current one
+          echo "No previous tag found, getting all commits except current"
+          COMMITS=$(git log --pretty=format:"- %s" --reverse HEAD^ 2>/dev/null || echo "")
+        else
+          # Get commits from previous tag to current commit (excluding current commit)
+          echo "Getting commits from $PREV_TAG to HEAD^"
+          COMMITS=$(git log --pretty=format:"- %s" --reverse $PREV_TAG..HEAD^ 2>/dev/null || echo "")
+        fi
+        
+        echo "Generated commits:"
+        echo "$COMMITS"
+        
+        # Create changelog
+        cat > CHANGELOG.md << EOF
+        ## What's Changed
+        
+        $COMMITS
+        
+        ## Installation
+        
+        1. Download the appropriate tarball for your system
+        2. Extract: \`tar -xzf storkitty-v${{ needs.check-version.outputs.version }}-x86_64-unknown-linux-gnu.tar.gz\`
+        3. Run: \`./storkitty\`
+        4. Access the web interface at \`http://localhost:3330\`
+        5. **First-time setup**: The system will automatically guide you through creating an admin account
+        
+        ## Security
+        - **No default credentials**: System is secure by default
+        - **Interactive setup**: First visit automatically redirects to setup wizard
+        - **Immediate access**: Setup wizard creates your admin account and logs you in automatically
+        
+        **Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREV_TAG:-HEAD}...v${{ needs.check-version.outputs.version }}
+        EOF
+    
+    - name: Delete existing release if force_release is true
+      if: github.event.inputs.force_release == 'true'
+      run: |
+        # Delete existing release and tag if they exist
+        TAG_NAME="v${{ needs.check-version.outputs.version }}"
+        if gh release view $TAG_NAME >/dev/null 2>&1; then
+          echo "Deleting existing release $TAG_NAME"
+          gh release delete $TAG_NAME --yes || true
+        fi
+        if git tag -l | grep -q "^$TAG_NAME$"; then
+          echo "Deleting existing tag $TAG_NAME"
+          git tag -d $TAG_NAME || true
+          git push origin --delete $TAG_NAME || true
+        fi
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ needs.check-version.outputs.version }}
+        release_name: Release v${{ needs.check-version.outputs.version }}
+        body_path: CHANGELOG.md
+        draft: false
+        prerelease: false
+    
+    - name: List and upload release assets
+      run: |
+        echo "=== Listing all files in current directory ==="
+        ls -la
+        
+        echo "=== Listing artifact directories ==="
+        ls -la storkitty-* || echo "No storkitty-* directories found"
+        
+        echo "=== Looking for tar.gz files ==="
+        find . -name "*.tar.gz" -type f
+        
+        echo "=== Uploading release assets ==="
+        TAG_NAME="v${{ needs.check-version.outputs.version }}"
+        
+        # Upload all tar.gz files found
+        for file in $(find . -name "storkitty-v${{ needs.check-version.outputs.version }}-*.tar.gz" -type f); do
+          if [ -f "$file" ]; then
+            echo "Found and uploading: $file"
+            gh release upload $TAG_NAME "$file" --clobber
+          fi
+        done
+        
+        # Double check what was uploaded
+        echo "=== Release assets after upload ==="
+        gh release view $TAG_NAME
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

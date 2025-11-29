@@ -1,0 +1,28 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.6/schema.json",
+  "files": {
+    "includes": [
+      "src/frontend/**",
+      "!!dist",
+      "!!src/frontend/components/**/*.{ts,tsx}",
+      "!!src/frontend/index.css",
+      "!!src/frontend/routes/routeTree.gen.ts"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "formatWithErrors": true
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "correctness": {
+        "noUnusedImports": "error"
+      }
+    }
+  },
+  "assist": {
+    "enabled": false
+  }
+}
