@@ -20,6 +20,7 @@ export function downloadFile(path: string, fileName: string) {
 
 export function createDownloadUrl(path: string, fileName: string) {
   const baseUrl = window.location.origin;
-  const url = `${baseUrl}/download/${path}${fileName}`;
+  const urlPath = path.endsWith("/") ? path : `${path}/`;
+  const url = `${baseUrl}/download/${urlPath}${fileName}`;
   return url;
 }
