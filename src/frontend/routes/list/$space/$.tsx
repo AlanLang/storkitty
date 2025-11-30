@@ -280,7 +280,7 @@ function FileList({
   const { space, _splat } = Route.useParams();
   const navigate = useNavigate();
   const path = urlJoin(space, _splat ?? "");
-  const { data, isLoading, error } = useFileList({ space, splat: _splat });
+  const { data, isLoading, error } = useFileList({ path });
 
   const handleClick = (file: FileInfo) => {
     if (file.fileType === "folder") {

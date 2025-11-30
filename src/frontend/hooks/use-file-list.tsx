@@ -3,14 +3,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 export const QUERY_KEY = "fileList";
 
-export function useFileList({
-  space,
-  splat,
-}: {
-  space: string;
-  splat: string | undefined;
-}) {
-  const path = `${space}/${splat}`;
+export function useFileList({ path }: { path: string }) {
   return useQuery({
     queryKey: [QUERY_KEY, path],
     queryFn: () => listFiles(path),

@@ -97,6 +97,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (
       previousRemoteDownloads &&
+      remoteDownloads.filter((r) => r.status === "completed").length > 0 &&
       previousRemoteDownloads.filter((r) => r.status === "completed").length <
         remoteDownloads.filter((r) => r.status === "completed").length
     ) {
