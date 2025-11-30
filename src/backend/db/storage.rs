@@ -9,6 +9,8 @@ pub struct StorageDatabase {
   pub name: String,
   pub path: String,
   pub local_path: String,
+  pub icon: String,
+  pub kind: String,
   pub max_file_size: u64,
   pub allow_extensions: String,
   pub block_extensions: String,
@@ -24,6 +26,8 @@ pub struct CreateStorageDto {
   pub name: String,
   pub path: String,
   pub local_path: String,
+  pub icon: String,
+  pub kind: String,
   pub max_file_size: u64,
   pub allow_extensions: String,
   pub block_extensions: String,
@@ -38,6 +42,8 @@ pub fn create_storage_database(conn: &Connection) -> anyhow::Result<()> {
       name TEXT NOT NULL,
       path TEXT NOT NULL UNIQUE,
       local_path TEXT NOT NULL,
+      icon TEXT DEFAULT '',
+      kind TEXT DEFAULT 'local',
       max_file_size INTEGER DEFAULT 0,
       allow_extensions TEXT DEFAULT '',
       block_extensions TEXT DEFAULT '',
@@ -62,8 +68,8 @@ pub fn create_storage(conn: &Connection, storage: CreateStorageDto) -> anyhow::R
   }
 
   conn.execute(
-    "INSERT INTO storage (name, path, local_path, max_file_size, allow_extensions, block_extensions, sort_index) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    (storage.name, storage.path, storage.local_path, storage.max_file_size, storage.allow_extensions, storage.block_extensions, storage.sort_index),
+    "INSERT INTO storage (name, path, local_path, icon, kind, max_file_size, allow_extensions, block_extensions, sort_index) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    (storage.name, storage.path, storage.local_path, storage.icon, storage.kind, storage.max_file_size, storage.allow_extensions, storage.block_extensions, storage.sort_index),
   )?;
   Ok(())
 }
@@ -80,6 +86,8 @@ pub fn get_all_enabled_storage(conn: &Connection) -> anyhow::Result<Vec<StorageD
         name: row.get("name")?,
         path: row.get("path")?,
         local_path: row.get("local_path")?,
+        icon: row.get("icon")?,
+        kind: row.get("kind")?,
         max_file_size: row.get("max_file_size")?,
         allow_extensions: row.get("allow_extensions")?,
         block_extensions: row.get("block_extensions")?,
@@ -104,6 +112,8 @@ pub fn get_storage_by_path(conn: &Connection, path: &str) -> anyhow::Result<Stor
       name: row.get("name")?,
       path: row.get("path")?,
       local_path: row.get("local_path")?,
+      icon: row.get("icon")?,
+      kind: row.get("kind")?,
       max_file_size: row.get("max_file_size")?,
       allow_extensions: row.get("allow_extensions")?,
       block_extensions: row.get("block_extensions")?,

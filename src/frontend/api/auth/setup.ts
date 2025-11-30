@@ -45,6 +45,8 @@ export function setup(value: { user: SetupUserDto; storage: SetupStorageDto }) {
           allowExtensions: "",
           blockExtensions: "",
           sortIndex: 0,
+          icon: "",
+          kind: "local",
         },
       },
     })
