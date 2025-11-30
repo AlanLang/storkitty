@@ -20,6 +20,7 @@ import { QUERY_KEY, useFileList } from "@/hooks/use-file-list";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TaskProvider, useFileUploadDialog } from "@/hooks/use-task";
 import { formatFileSize } from "@/lib/file";
+import { urlJoin } from "@/lib/urlJoin";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
 import {
@@ -79,7 +80,7 @@ function FilePage() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState<ListDialogProps["open"]>(null);
   const { space, _splat } = Route.useParams();
-  const path = `${space}/${_splat}`;
+  const path = urlJoin(space, _splat ?? "");
   const { openFileDialog } = useFileUploadDialog();
   const isMobile = useIsMobile();
 
@@ -278,7 +279,7 @@ function FileList({
 }) {
   const { space, _splat } = Route.useParams();
   const navigate = useNavigate();
-  const path = `${space}/${_splat}`;
+  const path = urlJoin(space, _splat ?? "");
   const { data, isLoading, error } = useFileList({ space, splat: _splat });
 
   const handleClick = (file: FileInfo) => {

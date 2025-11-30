@@ -31,6 +31,7 @@ import {
 } from "@/api/remote-download";
 import { QUERY_KEY } from "@/hooks/use-file-list";
 import { formatFileSize } from "@/lib/file";
+import { urlJoin } from "@/lib/urlJoin";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import { usePrevious } from "node_modules/@tanstack/react-router/dist/esm/utils";
@@ -48,7 +49,7 @@ export function useFileUploadDialog() {
 
 export function TaskProvider({ children }: { children: React.ReactNode }) {
   const { space, _splat } = useParams({ from: "/list/$space/$" });
-  const path = `${space}/${_splat}`;
+  const path = urlJoin(space, _splat ?? "");
   const [mini, setMini] = useState(false);
   const [open, setOpen] = useState<DrawerType | null>(null);
   const isMobile = useIsMobile();
