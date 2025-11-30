@@ -17,6 +17,7 @@ interface ListContextMenuProps {
   onUpload: () => void;
   onCreateFolder: () => void;
   onCreateFile: (defaultName?: string) => void;
+  onRemoteDownload: () => void;
   disabled: boolean;
 }
 export function ListContextMenu({
@@ -62,7 +63,7 @@ export function ListContextMenu({
           </ContextMenuSubContent>
         </ContextMenuSub>
         <ContextMenuSeparator />
-        <ContextMenuItem inset>
+        <ContextMenuItem inset onClick={props.onRemoteDownload}>
           离线下载
           <ContextMenuShortcut>⌘d</ContextMenuShortcut>
         </ContextMenuItem>

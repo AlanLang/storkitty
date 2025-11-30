@@ -3,6 +3,7 @@ mod download;
 mod file;
 mod folder;
 mod login;
+mod remote_download;
 mod setup;
 use axum::{
   Router, middleware,
@@ -56,5 +57,9 @@ fn create_api_router() -> Router<DBConnection> {
     .nest(
       "/folder",
       folder::create_folder_router().layer(middleware::from_fn(auth_middleware)),
+    )
+    .nest(
+      "/remote_download",
+      remote_download::create_remote_download_router().layer(middleware::from_fn(auth_middleware)),
     )
 }

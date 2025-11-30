@@ -93,6 +93,9 @@ function FilePage() {
         onCreateFile={(defaultName) =>
           setOpen({ type: "create-file", file: null, defaultName })
         }
+        onRemoteDownload={() =>
+          setOpen({ type: "remote-download", file: null })
+        }
       >
         <SidebarInset className="flex-1 flex flex-col">
           <div className="border-b p-4 flex items-center h-18">
@@ -103,6 +106,9 @@ function FilePage() {
               }
               onCreateFile={(defaultName) =>
                 setOpen({ type: "create-file", file: null, defaultName })
+              }
+              onRemoteDownload={() =>
+                setOpen({ type: "remote-download", file: null })
               }
             />
           </div>
@@ -135,6 +141,7 @@ interface FileToolbarProps {
   onOpenFileUpload: () => void;
   onCreateFolder: () => void;
   onCreateFile: (defaultName: string) => void;
+  onRemoteDownload: () => void;
 }
 
 function FileToolbar(props: FileToolbarProps) {
@@ -193,7 +200,7 @@ function FileToolbar(props: FileToolbarProps) {
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={props.onRemoteDownload}>
                   <CloudDownload />
                   离线下载
                 </DropdownMenuItem>

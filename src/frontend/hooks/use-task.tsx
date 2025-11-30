@@ -21,13 +21,19 @@ import {
   Trash2,
   XIcon,
 } from "lucide-react";
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 import { FileUploader } from "@/api/file/upload";
+import {
+  cancelRemoteDownload,
+  clearRemoteDownloads,
+  getRemoteDownloadList,
+} from "@/api/remote-download";
 import { QUERY_KEY } from "@/hooks/use-file-list";
 import { formatFileSize } from "@/lib/file";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
+import { usePrevious } from "node_modules/@tanstack/react-router/dist/esm/utils";
 import { useFileUpload } from "./use-file-upload";
 import { useIsMobile } from "./use-mobile";
 import { useWindowSize } from "./use-window-size";
@@ -77,11 +83,39 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     },
   });
 
+  // Poll remote download tasks
+  const { data: remoteDownloads = [] } = useQuery({
+    queryKey: ["remote-downloads", path],
+    queryFn: () => getRemoteDownloadList(path),
+    refetchInterval: 1000,
+    enabled: open === "remote-download",
+  });
+
+  const previousRemoteDownloads = usePrevious(remoteDownloads);
+
+  useEffect(() => {
+    if (
+      previousRemoteDownloads &&
+      previousRemoteDownloads.filter((r) => r.status === "completed").length <
+        remoteDownloads.filter((r) => r.status === "completed").length
+    ) {
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEY, path],
+      });
+    }
+  }, [
+    remoteDownloads,
+    path,
+    previousRemoteDownloads,
+    queryClient.invalidateQueries,
+  ]);
+
   const task = useMemo(() => {
     return {
       uploads: uploadTasks,
+      downloads: remoteDownloads,
     };
-  }, [uploadTasks]);
+  }, [uploadTasks, remoteDownloads]);
 
   const taskTitle = useMemo(() => {
     return open === "upload-file" ? "上传队列" : "离线下载";
@@ -140,7 +174,6 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         }}
       >
         {children}
-
         {/* Overlay */}
         <animated.div
           style={overlaySpring}
@@ -210,7 +243,17 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 rounded-full"
-                    onClick={cleanTasks}
+                    onClick={() => {
+                      if (open === "upload-file") {
+                        cleanTasks();
+                      } else if (open === "remote-download") {
+                        clearRemoteDownloads().then(() => {
+                          queryClient.invalidateQueries({
+                            queryKey: ["remote-downloads", path],
+                          });
+                        });
+                      }
+                    }}
                   >
                     <BrushCleaning />
                   </Button>
@@ -235,69 +278,149 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
 
-              {task.uploads.length === 0 && (
+              {open === "upload-file" && task.uploads.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-full">
                   <PackageOpen className="size-10 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">暂无上传任务</p>
                 </div>
               )}
 
+              {open === "remote-download" && task.downloads.length === 0 && (
+                <div className="flex flex-col items-center justify-center h-full">
+                  <PackageOpen className="size-10 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">暂无下载任务</p>
+                </div>
+              )}
+
               <ScrollArea className="flex-1">
-                {task.uploads.map((upload, index) => (
-                  <div
-                    key={`${upload.file.name}-${index}`}
-                    className="flex items-center justify-between p-3 hover:bg-muted/50 group border-b border-border/50 last:border-0 relative"
-                  >
-                    {upload.status === "in_progress" && (
-                      <div
-                        className="absolute bottom-0 left-0 top-0 bg-primary/5 pointer-events-none transition-all duration-100"
-                        style={{
-                          width: `${(upload.uploaded / upload.file.size) * 100}%`,
-                        }}
-                      />
-                    )}
-                    <div className="flex items-center gap-3 relative z-10">
-                      <div className="w-8 h-8 flex items-center justify-center rounded bg-muted">
-                        <FileIcon
-                          fileInfo={{
-                            fileType: "file" as FileType,
-                            name: upload.file.name,
+                {open === "upload-file" &&
+                  task.uploads.map((upload, index) => (
+                    <div
+                      key={`${upload.file.name}-${index}`}
+                      className="flex items-center justify-between p-3 hover:bg-muted/50 group border-b border-border/50 last:border-0 relative"
+                    >
+                      {upload.status === "in_progress" && (
+                        <div
+                          className="absolute bottom-0 left-0 top-0 bg-primary/5 pointer-events-none transition-all duration-100"
+                          style={{
+                            width: `${(upload.uploaded / upload.file.size) * 100}%`,
                           }}
                         />
-                      </div>
-                      <div className="flex flex-col gap-0.5">
-                        <p className="text-sm font-medium leading-none">
-                          {upload.file.name}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          {upload.status === "in_progress" && (
-                            <span className="text-xs text-muted-foreground">
-                              {formatFileSize(upload.speed)}/s，已上传
-                              {formatFileSize(upload.uploaded)}，共
-                              {formatFileSize(upload.file.size)}
-                            </span>
-                          )}
-                          {upload.status === "completed" && (
-                            <span className="text-xs text-green-500 flex items-center gap-1">
-                              完成
-                            </span>
-                          )}
-                          {upload.status === "failed" && (
-                            <span className="text-xs text-red-500">失败</span>
-                          )}
+                      )}
+                      <div className="flex items-center gap-3 relative z-10">
+                        <div className="w-8 h-8 flex items-center justify-center rounded bg-muted">
+                          <FileIcon
+                            fileInfo={{
+                              fileType: "file" as FileType,
+                              name: upload.file.name,
+                            }}
+                          />
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <p className="text-sm font-medium leading-none">
+                            {upload.file.name}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            {upload.status === "in_progress" && (
+                              <span className="text-xs text-muted-foreground">
+                                {formatFileSize(upload.speed)}/s，已上传
+                                {formatFileSize(upload.uploaded)}，共
+                                {formatFileSize(upload.file.size)}
+                              </span>
+                            )}
+                            {upload.status === "completed" && (
+                              <span className="text-xs text-green-500 flex items-center gap-1">
+                                完成
+                              </span>
+                            )}
+                            {upload.status === "failed" && (
+                              <span className="text-xs text-red-500">失败</span>
+                            )}
+                          </div>
                         </div>
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removeTask(upload.file)}
+                      >
+                        <Trash2 className="size-4 text-muted-foreground hover:text-destructive" />
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removeTask(upload.file)}
+                  ))}
+                {open === "remote-download" &&
+                  task.downloads.map((download) => (
+                    <div
+                      key={download.id}
+                      className="flex items-center justify-between p-3 hover:bg-muted/50 group border-b border-border/50 last:border-0 relative"
                     >
-                      <Trash2 className="size-4 text-muted-foreground hover:text-destructive" />
-                    </Button>
-                  </div>
-                ))}
+                      {download.status === "downloading" && download.size && (
+                        <div
+                          className="absolute bottom-0 left-0 top-0 bg-primary/5 pointer-events-none transition-all duration-100"
+                          style={{
+                            width: `${(download.downloaded / download.size) * 100}%`,
+                          }}
+                        />
+                      )}
+                      <div className="flex items-center gap-3 relative z-10">
+                        <div className="w-8 h-8 flex items-center justify-center rounded bg-muted">
+                          <FileIcon
+                            fileInfo={{
+                              fileType: "file" as FileType,
+                              name: download.name,
+                            }}
+                          />
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <p className="text-sm font-medium leading-none">
+                            {download.name}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            {download.status === "downloading" && (
+                              <span className="text-xs text-muted-foreground">
+                                已下载 {formatFileSize(download.downloaded)}
+                                {download.size &&
+                                  ` / ${formatFileSize(download.size)}`}
+                              </span>
+                            )}
+                            {download.status === "completed" && (
+                              <span className="text-xs text-green-500 flex items-center gap-1">
+                                完成
+                              </span>
+                            )}
+                            {download.status === "failed" && (
+                              <span className="text-xs text-red-500">失败</span>
+                            )}
+                            {download.status === "cancelled" && (
+                              <span className="text-xs text-gray-500">
+                                已取消
+                              </span>
+                            )}
+                            {download.status === "pending" && (
+                              <span className="text-xs text-yellow-600">
+                                等待中
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => {
+                          cancelRemoteDownload(path, download.id).then(() => {
+                            queryClient.invalidateQueries({
+                              queryKey: ["remote-downloads", path],
+                            });
+                          });
+                        }}
+                      >
+                        <Trash2 className="size-4 text-muted-foreground hover:text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
               </ScrollArea>
             </animated.div>
 
