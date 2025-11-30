@@ -16,7 +16,7 @@ export function ReadmePreview({
 }) {
   const filePath = `${path}/${file.name}`;
   const { data } = useQuery({
-    queryKey: ["file-content", filePath],
+    queryKey: ["readme-content", filePath.toUpperCase()],
     queryFn: () => getFileContent(filePath),
   });
   if (!data) return null;

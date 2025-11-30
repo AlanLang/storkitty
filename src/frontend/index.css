@@ -198,8 +198,12 @@
   margin-bottom: 1em;
 }
 
+.prose :where(.prose > :first-child):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  margin-top: 0 !important;
+}
+
 .prose :where(h1):not(:where([class~="not-prose"] *)) {
-  margin-top: 0;
+  margin-top: 1.75em;
   margin-bottom: 0.75em;
   padding-bottom: 0.5em;
   border-bottom: 1px solid var(--color-border);

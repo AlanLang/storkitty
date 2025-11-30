@@ -132,6 +132,9 @@ function FilePage() {
           queryClient.invalidateQueries({
             queryKey: [QUERY_KEY, path],
           });
+          queryClient.invalidateQueries({
+            queryKey: ["readme-content", `${path}/README.md`.toUpperCase()],
+          });
         }}
       />
     </div>
