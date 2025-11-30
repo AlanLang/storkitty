@@ -202,7 +202,7 @@ export class FileUploader {
           progress.transferredBytes[chunkIndex] = e.loaded;
           const uploaded = progress.transferredBytes.reduce((s, v) => s + v, 0);
           progress.onProgress({
-            percent: Math.min(uploaded / file.size, 1),
+            percent: Math.min(uploaded / file.size, 0.99),
             transferredBytes: uploaded,
           });
         }

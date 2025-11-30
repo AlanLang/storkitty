@@ -31,7 +31,7 @@ export type UploadFileTask =
   | {
       file: File;
       status: "in_progress";
-      speed: number;
+      percent: number;
       uploaded: number;
       createdAt: number;
     };
@@ -48,6 +48,7 @@ export function useFileUpload(options: UseFileUploadOptions) {
         status: "in_progress",
         speed: 0,
         uploaded: 0,
+        percent: 0,
         createdAt: Date.now(),
       },
     ]);
@@ -62,12 +63,6 @@ export function useFileUpload(options: UseFileUploadOptions) {
   }, []);
 
   const updateTask = useCallback((file: File, p: Progress) => {
-    const getSpeed = (prev: UploadFileTask, p: Progress) => {
-      const now = Date.now();
-      const diff = now - prev.createdAt;
-      return (prev.file.size - p.transferredBytes) / diff;
-    };
-
     const update = (task: UploadFileTask, p: Progress): UploadFileTask => {
       if (p.percent === 1) {
         return {
@@ -79,7 +74,7 @@ export function useFileUpload(options: UseFileUploadOptions) {
         ...task,
         ...p,
         status: "in_progress",
-        speed: getSpeed(task, p),
+        percent: p.percent,
         uploaded: p.transferredBytes,
       };
     };

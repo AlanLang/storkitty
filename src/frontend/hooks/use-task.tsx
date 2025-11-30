@@ -70,6 +70,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         file,
         (progress) => {
           onProgress(progress);
+          console.log("progress", progress.percent);
           if (progress.percent === 1) {
             queryClient.invalidateQueries({
               queryKey: [QUERY_KEY, path],
@@ -305,7 +306,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
                         <div
                           className="absolute bottom-0 left-0 top-0 bg-primary/5 pointer-events-none transition-all duration-100"
                           style={{
-                            width: `${(upload.uploaded / upload.file.size) * 100}%`,
+                            width: `${upload.percent * 100}%`,
                           }}
                         />
                       )}
@@ -325,7 +326,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
                           <div className="flex items-center gap-2">
                             {upload.status === "in_progress" && (
                               <span className="text-xs text-muted-foreground">
-                                {formatFileSize(upload.speed)}/s，已上传
+                                {formatNumber(upload.percent * 100)}%，已上传
                                 {formatFileSize(upload.uploaded)}，共
                                 {formatFileSize(upload.file.size)}
                               </span>
@@ -475,3 +476,13 @@ const FileUploadContext = createContext<{
 }>({
   openFileDialog: () => {},
 });
+
+function formatNumber(num: number) {
+  // 判断是否为整数
+  if (Number.isInteger(num)) {
+    return num.toString(); // 如果是整数，直接转换为字符串
+  } else {
+    // 如果不是整数，保留两位小数并转换为字符串
+    return num.toFixed(2);
+  }
+}
