@@ -288,25 +288,168 @@ function SecuritySettings() {
         </CardContent>
       </Card>
 
-      {/* SSH Keys - Placeholder */}
+      {/* Passkey Management */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FingerprintPattern className="h-5 w-5" />
             通行密钥
           </CardTitle>
+          <CardDescription>
+            使用生物识别或硬件密钥进行无密码登录
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
-            <div>
-              <p className="text-sm text-muted-foreground">即将推出</p>
-            </div>
-            <Button variant="outline" disabled>
-              管理密钥
-            </Button>
-          </div>
+          <PasskeyManagement />
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function PasskeyManagement() {
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [passkeyName, setPasskeyName] = useState("");
+
+  const {
+    data: passkeys,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["passkeys"],
+    queryFn: async () => {
+      const { listPasskeys } = await import("@/api/auth/webauthn");
+      return listPasskeys();
+    },
+  });
+
+  const registerMutation = useMutation({
+    mutationFn: async (name: string) => {
+      try {
+        const { startPasskeyRegistration, finishPasskeyRegistration } =
+          await import("@/api/auth/webauthn");
+        console.log("Starting passkey registration...");
+        const credential = await startPasskeyRegistration();
+        console.log("Registration credential received:", credential);
+        await finishPasskeyRegistration(credential, name);
+        console.log("Passkey registration completed");
+      } catch (error) {
+        console.error("Passkey registration error:", error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success("通行密钥注册成功");
+      setIsRegistering(false);
+      setPasskeyName("");
+      refetch();
+    },
+    onError: (error: any) => {
+      console.error("Registration mutation error:", error);
+      toast.error(error.message || "注册失败");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const { deletePasskey } = await import("@/api/auth/webauthn");
+      return deletePasskey(id);
+    },
+    onSuccess: () => {
+      toast.success("通行密钥已删除");
+      refetch();
+    },
+    onError: () => {
+      toast.error("删除失败");
+    },
+  });
+
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!passkeyName.trim()) {
+      toast.error("请输入通行密钥名称");
+      return;
+    }
+    registerMutation.mutate(passkeyName);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-10 w-32" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {passkeys && passkeys.length > 0 ? (
+        <div className="space-y-2">
+          {passkeys.map((passkey) => (
+            <div
+              key={passkey.id}
+              className="flex items-center justify-between p-3 border rounded-lg"
+            >
+              <div>
+                <p className="font-medium">{passkey.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  创建于{" "}
+                  {new Date(passkey.createdAt).toLocaleDateString("zh-CN")}
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => deleteMutation.mutate(passkey.id)}
+                disabled={deleteMutation.isPending}
+              >
+                删除
+              </Button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="p-4 border rounded-lg bg-muted/50 text-center">
+          <p className="text-sm text-muted-foreground">暂无通行密钥</p>
+        </div>
+      )}
+
+      {!isRegistering ? (
+        <Button onClick={() => setIsRegistering(true)}>
+          <FingerprintPattern className="h-4 w-4" />
+          注册新通行密钥
+        </Button>
+      ) : (
+        <form onSubmit={handleRegister} className="space-y-3">
+          <div className="space-y-2">
+            <Label htmlFor="passkeyName">通行密钥名称</Label>
+            <Input
+              id="passkeyName"
+              value={passkeyName}
+              onChange={(e) => setPasskeyName(e.target.value)}
+              placeholder="例如：我的 MacBook"
+              required
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button type="submit" disabled={registerMutation.isPending}>
+              {registerMutation.isPending ? "注册中..." : "注册"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsRegistering(false);
+                setPasskeyName("");
+              }}
+              disabled={registerMutation.isPending}
+            >
+              取消
+            </Button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }

@@ -11,6 +11,7 @@ pub fn init_db() -> anyhow::Result<DBConnection> {
   let conn = Connection::open("./data.db")?;
 
   user::create_user_database(&conn)?;
+  user::create_passkey_table(&conn)?;
   storage::create_storage_database(&conn)?;
   Ok(Arc::new(Mutex::new(conn)))
 }

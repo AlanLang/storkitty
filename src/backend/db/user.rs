@@ -132,3 +132,111 @@ pub fn update_user_password(
   )?;
   Ok(())
 }
+
+// Passkey credential storage
+pub fn create_passkey_table(conn: &Connection) -> anyhow::Result<()> {
+  conn.execute(
+    "CREATE TABLE IF NOT EXISTS passkey (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      credential_id TEXT NOT NULL UNIQUE,
+      public_key BLOB NOT NULL,
+      counter INTEGER NOT NULL DEFAULT 0,
+      name TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
+    )",
+    (),
+  )?;
+  Ok(())
+}
+
+pub struct Passkey {
+  pub id: i64,
+  pub user_id: i64,
+  pub credential_id: String,
+  pub public_key: Vec<u8>,
+  pub counter: u32,
+  pub name: String,
+  pub created_at: String,
+}
+
+pub fn save_passkey(
+  conn: &Connection,
+  user_id: i64,
+  credential_id: &str,
+  public_key: &[u8],
+  name: &str,
+) -> anyhow::Result<()> {
+  conn.execute(
+    "INSERT INTO passkey (user_id, credential_id, public_key, name) VALUES (?, ?, ?, ?)",
+    (user_id, credential_id, public_key, name),
+  )?;
+  Ok(())
+}
+
+pub fn get_passkeys_by_user_id(conn: &Connection, user_id: i64) -> anyhow::Result<Vec<Passkey>> {
+  let mut stmt = conn.prepare(
+    "SELECT id, user_id, credential_id, public_key, counter, name, created_at 
+     FROM passkey WHERE user_id = ? ORDER BY created_at DESC",
+  )?;
+
+  let passkeys = stmt
+    .query_map([user_id], |row| {
+      Ok(Passkey {
+        id: row.get("id")?,
+        user_id: row.get("user_id")?,
+        credential_id: row.get("credential_id")?,
+        public_key: row.get("public_key")?,
+        counter: row.get("counter")?,
+        name: row.get("name")?,
+        created_at: row.get("created_at")?,
+      })
+    })?
+    .collect::<Result<Vec<_>, _>>()?;
+
+  Ok(passkeys)
+}
+
+pub fn get_passkey_by_credential_id(
+  conn: &Connection,
+  credential_id: &str,
+) -> anyhow::Result<Passkey> {
+  let passkey = conn.query_row(
+    "SELECT id, user_id, credential_id, public_key, counter, name, created_at 
+     FROM passkey WHERE credential_id = ?",
+    [credential_id],
+    |row| {
+      Ok(Passkey {
+        id: row.get("id")?,
+        user_id: row.get("user_id")?,
+        credential_id: row.get("credential_id")?,
+        public_key: row.get("public_key")?,
+        counter: row.get("counter")?,
+        name: row.get("name")?,
+        created_at: row.get("created_at")?,
+      })
+    },
+  )?;
+  Ok(passkey)
+}
+
+pub fn update_passkey_counter(
+  conn: &Connection,
+  credential_id: &str,
+  counter: u32,
+) -> anyhow::Result<()> {
+  conn.execute(
+    "UPDATE passkey SET counter = ? WHERE credential_id = ?",
+    (counter, credential_id),
+  )?;
+  Ok(())
+}
+
+pub fn delete_passkey(conn: &Connection, id: i64, user_id: i64) -> anyhow::Result<()> {
+  conn.execute(
+    "DELETE FROM passkey WHERE id = ? AND user_id = ?",
+    (id, user_id),
+  )?;
+  Ok(())
+}
