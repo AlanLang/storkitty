@@ -103,7 +103,7 @@ function FilePage() {
         }
       >
         <SidebarInset className="flex-1 flex flex-col">
-          <div className="border-b p-4 flex items-center h-18">
+          <div className="border-b p-4 flex items-center h-18 shrink-0">
             <FileToolbar
               onOpenFileUpload={openFileDialog}
               onCreateFolder={() =>
