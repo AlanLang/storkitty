@@ -96,7 +96,7 @@ export async function finishPasskeyRegistration(
 
 // Authentication flow
 export async function startPasskeyAuthentication(
-  email: string,
+  email?: string,
 ): Promise<{ credential: PublicKeyCredential; sessionId: string }> {
   const response = await http
     .post("webauthn/authenticate/start", {

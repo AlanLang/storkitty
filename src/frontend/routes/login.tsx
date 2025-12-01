@@ -8,13 +8,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   Form,
   FormControl,
   FormField,
@@ -22,10 +15,8 @@ import {
   FormLabel,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { useFormField } from "@/components/ui/form";
@@ -86,8 +77,6 @@ function RouteComponent() {
 function LoginForm() {
   const navigate = useNavigate();
   const setAppInfo = useSetAppInfo();
-  const [showPasskeyDialog, setShowPasskeyDialog] = useState(false);
-  const [passkeyEmail, setPasskeyEmail] = useState("");
 
   const form = useForm<LoginDto>({
     resolver: zodResolver(loginSchema),
@@ -121,7 +110,7 @@ function LoginForm() {
   });
 
   const passkeyMutation = useMutation({
-    mutationFn: async (email: string) => {
+    mutationFn: async (email?: string) => {
       const { startPasskeyAuthentication, finishPasskeyAuthentication } =
         await import("@/api/auth/webauthn");
       const { credential, sessionId } = await startPasskeyAuthentication(email);
@@ -139,7 +128,6 @@ function LoginForm() {
         loggedIn: true,
       });
       token.set(data.token);
-      setShowPasskeyDialog(false);
       navigate({ to: "/" });
     },
     onError: (error: any) => {
@@ -149,15 +137,6 @@ function LoginForm() {
 
   function onSubmit(values: LoginDto) {
     mutate(values);
-  }
-
-  function handlePasskeyLogin(e: React.FormEvent) {
-    e.preventDefault();
-    if (!passkeyEmail.trim()) {
-      toast.error("请输入邮箱");
-      return;
-    }
-    passkeyMutation.mutate(passkeyEmail);
   }
 
   return (
@@ -218,9 +197,14 @@ function LoginForm() {
           <Button
             variant="outline"
             className="w-full rounded-xl"
-            onClick={() => setShowPasskeyDialog(true)}
+            onClick={() => passkeyMutation.mutate(undefined)}
+            disabled={passkeyMutation.isPending}
           >
-            <FingerprintPattern />
+            {passkeyMutation.isPending ? (
+              <Loader className="w-4 h-4 animate-spin" />
+            ) : (
+              <FingerprintPattern />
+            )}
             使用通行密钥登录
           </Button>
           <div className="flex justify-end">
@@ -228,47 +212,6 @@ function LoginForm() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Passkey Login Dialog */}
-      <Dialog open={showPasskeyDialog} onOpenChange={setShowPasskeyDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>通行密钥登录</DialogTitle>
-            <DialogDescription>
-              请输入您的邮箱以使用通行密钥登录
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handlePasskeyLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="passkey-email">邮箱</Label>
-              <Input
-                id="passkey-email"
-                type="email"
-                value={passkeyEmail}
-                onChange={(e) => setPasskeyEmail(e.target.value)}
-                placeholder="请输入邮箱"
-                required
-              />
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setShowPasskeyDialog(false);
-                  setPasskeyEmail("");
-                }}
-                disabled={passkeyMutation.isPending}
-              >
-                取消
-              </Button>
-              <Button type="submit" disabled={passkeyMutation.isPending}>
-                {passkeyMutation.isPending ? "验证中..." : "继续"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

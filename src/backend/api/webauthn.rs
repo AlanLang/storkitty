@@ -53,7 +53,7 @@ pub struct RegisterFinishRequest {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuthenticateStartRequest {
-  email: String,
+  pub email: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -191,25 +191,30 @@ pub async fn register_finish(
 #[axum::debug_handler(state = AppState)]
 pub async fn authenticate_start(
   State(state): State<AppState>,
-  Json(req): Json<AuthenticateStartRequest>,
+  Json(payload): Json<AuthenticateStartRequest>,
 ) -> Result<Json<AuthenticateStartResponse>, AppError> {
-  let conn = state.conn.lock().await;
-  let user = db::user::get_user_by_email(&conn, &req.email)
-    .context("User not found or no passkeys registered")?;
+  let passkeys = if let Some(email) = payload.email {
+    let conn = state.conn.lock().await;
+    let user = db::user::get_user_by_email(&conn, &email)
+      .context("User not found or no passkeys registered")?;
+    
+    // Get user's passkeys
+    let passkeys_db = db::user::get_passkeys_by_user_id(&conn, user.id)?;
+    
+    if passkeys_db.is_empty() {
+      return Err(AppError::new("No passkeys registered for this user"));
+    }
 
-  // Get user's passkeys
-  let passkeys_db = db::user::get_passkeys_by_user_id(&conn, user.id)?;
-
-  if passkeys_db.is_empty() {
-    return Err(AppError::new("No passkeys registered for this user"));
-  }
-
-  let passkeys: Vec<webauthn_rs::prelude::Passkey> = passkeys_db
-    .iter()
-    .filter_map(|pk| serde_json::from_slice::<webauthn_rs::prelude::Passkey>(&pk.public_key).ok())
-    .collect();
-
-  drop(conn);
+    let passkeys: Vec<webauthn_rs::prelude::Passkey> = passkeys_db
+      .iter()
+      .filter_map(|pk| serde_json::from_slice::<webauthn_rs::prelude::Passkey>(&pk.public_key).ok())
+      .collect();
+      
+    passkeys
+  } else {
+    // Discoverable credentials flow (no user specified)
+    Vec::new()
+  };
 
   let (rcr, auth_state) = state
     .webauthn
