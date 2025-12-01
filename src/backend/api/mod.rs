@@ -13,22 +13,21 @@ use axum::{
 use std::net::SocketAddr;
 use tower_http::services::{ServeDir, ServeFile};
 
-use crate::backend::{
-  db::{DBConnection, init_db},
-  extractor::auth::auth_middleware,
-};
+use crate::backend::{db::init_db, extractor::auth::auth_middleware, state::AppState};
 
 pub async fn start_server() -> anyhow::Result<()> {
   // 构建静态文件服务（用于 serve ./web 目录）
   let serve_dir = ServeDir::new("./web").not_found_service(ServeFile::new("./web/index.html"));
   let conn = init_db()?;
 
-  let app = Router::<DBConnection>::new()
+  let state = AppState { conn };
+
+  let app = Router::<AppState>::new()
     .nest("/api", create_api_router())
     .route("/download/{*path}", routing::get(download::download_file))
     .fallback_service(get_service(serve_dir))
     .layer(axum::extract::DefaultBodyLimit::disable())
-    .with_state(conn);
+    .with_state(state);
 
   let host = std::env::var("HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
   let port = std::env::var("PORT")
@@ -45,8 +44,8 @@ pub async fn start_server() -> anyhow::Result<()> {
   Ok(())
 }
 
-fn create_api_router() -> Router<DBConnection> {
-  Router::<DBConnection>::new()
+fn create_api_router() -> Router<AppState> {
+  Router::<AppState>::new()
     .nest("/app", app::create_app_router())
     .route("/setup", routing::post(setup::setup))
     .route("/login", routing::post(login::login))

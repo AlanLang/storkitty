@@ -3,7 +3,7 @@ mod clear;
 mod create;
 mod list;
 
-use crate::backend::db::DBConnection;
+use crate::backend::state::AppState;
 use axum::{
   Router,
   routing::{delete, get, post},
@@ -46,8 +46,8 @@ lazy_static! {
   pub static ref REMOTE_DOWNLOAD_STATE: RemoteDownloadState = Arc::new(Mutex::new(Vec::new()));
 }
 
-pub fn create_remote_download_router() -> Router<DBConnection> {
-  Router::<DBConnection>::new()
+pub fn create_remote_download_router() -> Router<AppState> {
+  Router::<AppState>::new()
     .route("/{*path}", post(create::create_remote_download))
     .route("/{*path}", get(list::list_remote_download))
     .route("/{*path}", delete(cancel::cancel_remote_download))

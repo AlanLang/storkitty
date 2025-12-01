@@ -11,10 +11,10 @@ use axum::{
   routing::{delete, get, patch, post, put},
 };
 
-use crate::backend::db::DBConnection;
+use crate::backend::state::AppState;
 
-pub fn create_file_router() -> Router<DBConnection> {
-  Router::<DBConnection>::new()
+pub fn create_file_router() -> Router<AppState> {
+  Router::<AppState>::new()
     .route("/{*path}", delete(delete::delete_file))
     .route("/{*path}", get(content::get_content))
     .route("/{*path}", put(content::save_content))

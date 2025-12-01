@@ -6,10 +6,10 @@ use axum::{
   routing::{delete, patch, post},
 };
 
-use crate::backend::db::DBConnection;
+use crate::backend::state::AppState;
 
-pub fn create_folder_router() -> Router<DBConnection> {
-  Router::<DBConnection>::new()
+pub fn create_folder_router() -> Router<AppState> {
+  Router::<AppState>::new()
     .route("/{*path}", post(create::create_folder))
     .route("/{*path}", delete(delete::delete_folder))
     .route("/{*path}", patch(rename::rename))

@@ -1,6 +1,7 @@
 use crate::backend::{
-  db::{self, DBConnection},
+  db::{self},
   error::AppError,
+  state::AppState,
   utils,
 };
 use axum::{Json, extract::State};
@@ -14,10 +15,10 @@ pub struct SetupDto {
 }
 
 pub async fn setup(
-  State(conn): State<DBConnection>,
+  State(state): State<AppState>,
   Json(setup): Json<SetupDto>,
 ) -> Result<(), AppError> {
-  let mut conn = conn.lock().await;
+  let mut conn = state.conn.lock().await;
   let no_user = db::user::is_no_user(&conn).unwrap_or(true);
   if !no_user {
     return Err(AppError::from(anyhow::anyhow!("用户已存在")));

@@ -9,9 +9,11 @@ use tokio::{
   io::AsyncWriteExt,
 };
 
-use crate::backend::{db::DBConnection, error::AppError, extractor::storage::Storage};
+use crate::backend::{
+  error::AppError, extractor::storage::Storage, state::AppState,
+};
 
-#[axum::debug_handler(state = DBConnection)]
+#[axum::debug_handler(state = AppState)]
 pub async fn upload_file(
   Storage {
     path: local_path,
@@ -129,7 +131,7 @@ pub struct AbortFileDto {
   file: String,
 }
 
-#[axum::debug_handler(state = DBConnection)]
+#[axum::debug_handler(state = AppState)]
 pub async fn abort_file(
   Storage { path: _, root }: Storage,
   Json(dto): Json<AbortFileDto>,

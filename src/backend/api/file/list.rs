@@ -8,16 +8,17 @@ use axum::{
 use serde::Serialize;
 
 use crate::backend::{
-  db::{DBConnection, storage},
+  db::storage,
   error::AppError,
+  state::AppState,
   utils::{self, path::split_path},
 };
 
 pub async fn list_files(
-  State(conn): State<DBConnection>,
+  State(state): State<AppState>,
   Path(path): Path<String>,
 ) -> Result<Json<FileListResponse>, AppError> {
-  let conn = conn.lock().await;
+  let conn = state.conn.lock().await;
   let (storage_path, path) = split_path(&path);
   let storage = storage::get_storage_by_path(&conn, &storage_path).context("存储不存在")?;
   if storage.disabled {

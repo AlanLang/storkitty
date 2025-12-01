@@ -5,8 +5,9 @@ use axum::{Json, extract::State};
 use serde::Deserialize;
 
 use crate::backend::{
-  db::{DBConnection, storage},
+  db::storage,
   error::AppError,
+  state::AppState,
   utils::path::split_path,
 };
 
@@ -17,10 +18,10 @@ pub struct MoveFileDto {
 }
 
 pub async fn copy_file(
-  State(conn): State<DBConnection>,
+  State(state): State<AppState>,
   Json(dto): Json<MoveFileDto>,
 ) -> Result<(), AppError> {
-  let conn = conn.lock().await;
+  let conn = state.conn.lock().await;
 
   // Resolve source path
   let (from_storage_path, from_path) = split_path(&dto.from);
@@ -64,10 +65,10 @@ pub async fn copy_file(
 }
 
 pub async fn move_file(
-  State(conn): State<DBConnection>,
+  State(state): State<AppState>,
   Json(dto): Json<MoveFileDto>,
 ) -> Result<(), AppError> {
-  let conn = conn.lock().await;
+  let conn = state.conn.lock().await;
 
   // Resolve source path
   let (from_storage_path, from_path) = split_path(&dto.from);

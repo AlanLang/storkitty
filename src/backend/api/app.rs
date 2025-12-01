@@ -4,13 +4,14 @@ use serde::Serialize;
 
 use crate::backend::{
   api::login::StorageDto,
-  db::{DBConnection, storage, user},
+  db::{storage, user},
   error::AppError,
+  state::AppState,
   utils::auth,
 };
 
-pub fn create_app_router() -> Router<DBConnection> {
-  Router::<DBConnection>::new().route("/info", get(get_app_info))
+pub fn create_app_router() -> Router<AppState> {
+  Router::<AppState>::new().route("/info", get(get_app_info))
 }
 
 #[derive(Serialize)]
@@ -33,13 +34,13 @@ pub struct AppInfoDto {
 }
 
 pub async fn get_app_info(
-  State(conn): State<DBConnection>,
+  State(state): State<AppState>,
   headers: HeaderMap,
 ) -> Result<Json<AppInfoDto>, AppError> {
   log::info!("get_app_info");
 
+  let conn = state.conn.lock().await;
   let user_id = auth::verify_token(&headers).ok();
-  let conn = conn.lock().await;
   let is_no_user = user::is_no_user(&conn)?;
 
   let logged_user = if let Some(user_id) = user_id {

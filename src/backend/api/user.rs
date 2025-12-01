@@ -7,13 +7,14 @@ use axum::{
 use serde::{Deserialize, Serialize};
 
 use crate::backend::{
-  db::{DBConnection, user},
+  db::user,
   error::AppError,
+  state::AppState,
   utils::auth,
 };
 
-pub fn create_user_router() -> Router<DBConnection> {
-  Router::<DBConnection>::new()
+pub fn create_user_router() -> Router<AppState> {
+  Router::<AppState>::new()
     .route("/profile", get(get_profile))
     .route("/profile", put(update_profile))
     .route("/password", put(update_password))
@@ -42,13 +43,13 @@ pub struct UpdatePasswordDto {
   pub new_password: String,
 }
 
-#[axum::debug_handler(state = DBConnection)]
+#[axum::debug_handler(state = AppState)]
 pub async fn get_profile(
-  State(conn): State<DBConnection>,
+  State(state): State<AppState>,
   headers: HeaderMap,
 ) -> Result<Json<UserProfileResponse>, AppError> {
   let user_id = auth::verify_token(&headers)?;
-  let conn = conn.lock().await;
+  let conn = state.conn.lock().await;
   let user = user::get_user_by_id(&conn, user_id)?;
 
   Ok(Json(UserProfileResponse {
@@ -59,28 +60,28 @@ pub async fn get_profile(
   }))
 }
 
-#[axum::debug_handler(state = DBConnection)]
+#[axum::debug_handler(state = AppState)]
 pub async fn update_profile(
-  State(conn): State<DBConnection>,
+  State(state): State<AppState>,
   headers: HeaderMap,
   Json(dto): Json<UpdateProfileDto>,
 ) -> Result<(), AppError> {
   let user_id = auth::verify_token(&headers)?;
-  let conn = conn.lock().await;
+  let conn = state.conn.lock().await;
 
   user::update_user_profile(&conn, user_id, &dto.name, &dto.avatar)?;
 
   Ok(())
 }
 
-#[axum::debug_handler(state = DBConnection)]
+#[axum::debug_handler(state = AppState)]
 pub async fn update_password(
-  State(conn): State<DBConnection>,
+  State(state): State<AppState>,
   headers: HeaderMap,
   Json(dto): Json<UpdatePasswordDto>,
 ) -> Result<(), AppError> {
   let user_id = auth::verify_token(&headers)?;
-  let conn = conn.lock().await;
+  let conn = state.conn.lock().await;
 
   // Verify old password
   let user = user::get_user_by_id(&conn, user_id)?;

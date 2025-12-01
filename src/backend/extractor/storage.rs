@@ -9,8 +9,9 @@ use axum::{
 };
 
 use crate::backend::{
-  db::{self, DBConnection},
+  db::{self},
   error::AppError,
+  state::AppState,
   utils::{self, path::split_path},
 };
 
@@ -48,7 +49,7 @@ struct StorageResolved {
 
 async fn resolve_storage<S>(parts: &mut Parts, state: &S) -> Result<StorageResolved, Response>
 where
-  DBConnection: FromRef<S>,
+  AppState: FromRef<S>,
   S: Send + Sync,
 {
   // 1. 解析 {*path}
@@ -71,8 +72,8 @@ where
   }
 
   // 2. 分割 path: storage_path + relative_path
-  let conn = DBConnection::from_ref(state);
-  let conn = conn.lock().await;
+  let state = AppState::from_ref(state);
+  let conn = state.conn.lock().await;
 
   let (storage_path, path) = split_path(&raw_path);
 
@@ -112,7 +113,7 @@ pub struct StoragePath(pub SafePath);
 
 impl<S> FromRequestParts<S> for StoragePath
 where
-  DBConnection: FromRef<S>,
+  AppState: FromRef<S>,
   S: Send + Sync,
 {
   type Rejection = Response;
@@ -134,7 +135,7 @@ pub struct Storage {
 
 impl<S> FromRequestParts<S> for Storage
 where
-  DBConnection: FromRef<S>,
+  AppState: FromRef<S>,
   S: Send + Sync,
 {
   type Rejection = Response;

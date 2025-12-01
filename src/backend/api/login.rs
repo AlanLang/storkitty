@@ -3,8 +3,9 @@ use axum::{Json, extract::State};
 use serde::{Deserialize, Serialize};
 
 use crate::backend::{
-  db::{self, DBConnection},
+  db::{self},
   error::AppError,
+  state::AppState,
   utils::auth,
 };
 
@@ -42,10 +43,10 @@ pub struct StorageDto {
 }
 
 pub async fn login(
-  State(conn): State<DBConnection>,
+  State(state): State<AppState>,
   Json(user): Json<LoginDto>,
 ) -> Result<Json<LoginResponseDto>, AppError> {
-  let conn = conn.lock().await;
+  let conn = state.conn.lock().await;
   let user_info = db::user::get_user_by_email(&conn, &user.email).context("用户不存在")?;
 
   if user_info.login_failure_count >= 5 {

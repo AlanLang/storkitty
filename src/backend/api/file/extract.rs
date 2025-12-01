@@ -3,7 +3,7 @@ use std::{fs, path::Path};
 use axum::Json;
 use serde::Deserialize;
 
-use crate::backend::{db::DBConnection, error::AppError, extractor::storage::StoragePath};
+use crate::backend::{error::AppError, extractor::storage::StoragePath, state::AppState};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -11,7 +11,7 @@ pub struct ExtractFileDto {
   name: String,
 }
 
-#[axum::debug_handler(state = DBConnection)]
+#[axum::debug_handler(state = AppState)]
 pub async fn extract_file(
   StoragePath(local_path): StoragePath,
   Json(dto): Json<ExtractFileDto>,
@@ -49,7 +49,7 @@ pub struct CompressDirectoryDto {
   name: String,
 }
 
-#[axum::debug_handler(state = DBConnection)]
+#[axum::debug_handler(state = AppState)]
 pub async fn compress_directory(
   StoragePath(local_path): StoragePath,
   Json(dto): Json<CompressDirectoryDto>,
