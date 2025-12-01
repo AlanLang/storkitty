@@ -1,6 +1,7 @@
 mod content;
 mod create;
 mod delete;
+mod extract;
 mod list;
 mod move_file;
 mod rename;
@@ -24,4 +25,5 @@ pub fn create_file_router() -> Router<DBConnection> {
     .route("/list/{*path}", get(list::list_files))
     .route("/copy", post(move_file::copy_file))
     .route("/move", post(move_file::move_file))
+    .route("/extract/{*path}", post(extract::extract_file))
 }

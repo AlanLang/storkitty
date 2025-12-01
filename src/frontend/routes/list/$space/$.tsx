@@ -1,3 +1,4 @@
+import { extractFile } from "@/api/file/extract";
 import type { FileInfo } from "@/api/file/list";
 import { MenuList, type MenuListProps } from "@/components/menu-list";
 import { TimeDisplay } from "@/components/time-display";
@@ -24,6 +25,7 @@ import { urlJoin } from "@/lib/urlJoin";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
 import {
+  Archive,
   ChevronRight,
   Circle,
   CloudDownload,
@@ -286,10 +288,24 @@ function FileList({
   onCopy: (file: FileInfo) => void;
   onMove: (file: FileInfo) => void;
 }) {
+  const queryClient = useQueryClient();
   const { space, _splat } = Route.useParams();
   const navigate = useNavigate();
   const path = urlJoin(space, _splat ?? "");
   const { data, isLoading, error } = useFileList({ path });
+
+  const handleExtract = async (file: FileInfo) => {
+    const extractPromise = extractFile({ path, name: file.name });
+
+    toast.promise(extractPromise, {
+      loading: "解压中...",
+      success: () => {
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEY, path] });
+        return "解压成功";
+      },
+      error: "解压失败",
+    });
+  };
 
   const handleClick = (file: FileInfo) => {
     if (file.fileType === "folder") {
@@ -355,6 +371,7 @@ function FileList({
             onEdit={onEdit}
             onCopy={onCopy}
             onMove={onMove}
+            onExtract={handleExtract}
           />
         ))}
       </div>
@@ -378,6 +395,7 @@ interface FileListItemProps {
   onEdit: (file: FileInfo) => void;
   onCopy: (file: FileInfo) => void;
   onMove: (file: FileInfo) => void;
+  onExtract: (file: FileInfo) => void;
 }
 
 function FileListItem({
@@ -389,8 +407,10 @@ function FileListItem({
   onEdit,
   onCopy,
   onMove,
+  onExtract,
 }: FileListItemProps) {
   const isFolder = file.fileType === "folder";
+  const isCompressed = !isFolder && /\.(zip|tar\.gz|tgz|tar)$/i.test(file.name);
 
   const baseItems: MenuListProps["items"] = [
     {
@@ -408,6 +428,18 @@ function FileListItem({
       icon: <SendToBack className="mr-2 h-4 w-4" />,
       onClick: () => onMove(file),
     },
+    ...(isCompressed
+      ? [
+          {
+            label: "解压缩",
+            icon: <Archive className="mr-2 h-4 w-4" />,
+            onClick: () => onExtract(file),
+          },
+          {
+            type: "separator" as const,
+          },
+        ]
+      : []),
     {
       type: "separator",
     },
