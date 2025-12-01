@@ -198,6 +198,29 @@ pub fn get_passkeys_by_user_id(conn: &Connection, user_id: i64) -> anyhow::Resul
   Ok(passkeys)
 }
 
+pub fn get_all_passkeys(conn: &Connection) -> anyhow::Result<Vec<Passkey>> {
+  let mut stmt = conn.prepare(
+    "SELECT id, user_id, credential_id, public_key, counter, name, created_at 
+     FROM passkey ORDER BY created_at DESC",
+  )?;
+
+  let passkeys = stmt
+    .query_map([], |row| {
+      Ok(Passkey {
+        id: row.get("id")?,
+        user_id: row.get("user_id")?,
+        credential_id: row.get("credential_id")?,
+        public_key: row.get("public_key")?,
+        counter: row.get("counter")?,
+        name: row.get("name")?,
+        created_at: row.get("created_at")?,
+      })
+    })?
+    .collect::<Result<Vec<_>, _>>()?;
+
+  Ok(passkeys)
+}
+
 pub fn get_passkey_by_credential_id(
   conn: &Connection,
   credential_id: &str,

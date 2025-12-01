@@ -110,10 +110,11 @@ function LoginForm() {
   });
 
   const passkeyMutation = useMutation({
-    mutationFn: async (email?: string) => {
+    mutationFn: async () => {
       const { startPasskeyAuthentication, finishPasskeyAuthentication } =
         await import("@/api/auth/webauthn");
-      const { credential, sessionId } = await startPasskeyAuthentication(email);
+      // Resident Key 模式：不需要传递任何参数
+      const { credential, sessionId } = await startPasskeyAuthentication();
       return finishPasskeyAuthentication(credential, sessionId);
     },
     onSuccess: (data) => {
@@ -197,7 +198,7 @@ function LoginForm() {
           <Button
             variant="outline"
             className="w-full rounded-xl"
-            onClick={() => passkeyMutation.mutate(undefined)}
+            onClick={() => passkeyMutation.mutate()}
             disabled={passkeyMutation.isPending}
           >
             {passkeyMutation.isPending ? (
