@@ -106,3 +106,29 @@ pub fn reset_login_failure(conn: &Connection, user_id: i64) -> anyhow::Result<()
   )?;
   Ok(())
 }
+
+pub fn update_user_profile(
+  conn: &Connection,
+  user_id: i64,
+  name: &str,
+  avatar: &str,
+) -> anyhow::Result<()> {
+  conn.execute(
+    "UPDATE user SET name = ?, avatar = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+    (name, avatar, user_id),
+  )?;
+  Ok(())
+}
+
+pub fn update_user_password(
+  conn: &Connection,
+  user_id: i64,
+  new_password: &str,
+) -> anyhow::Result<()> {
+  let password_hash = bcrypt::hash(new_password, bcrypt::DEFAULT_COST)?;
+  conn.execute(
+    "UPDATE user SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+    (password_hash, user_id),
+  )?;
+  Ok(())
+}

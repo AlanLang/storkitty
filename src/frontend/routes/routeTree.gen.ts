@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './__root'
 import { Route as SetupRouteImport } from './setup'
 import { Route as LoginRouteImport } from './login'
+import { Route as SettingsRouteRouteImport } from './settings/route'
 import { Route as ListRouteRouteImport } from './list/route'
 import { Route as IndexRouteImport } from './index'
+import { Route as SettingsUserRouteImport } from './settings/user'
 import { Route as ListSpaceSplatRouteImport } from './list/$space/$'
 
 const SetupRoute = SetupRouteImport.update({
@@ -25,6 +27,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsRouteRoute = SettingsRouteRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ListRouteRoute = ListRouteRouteImport.update({
   id: '/list',
   path: '/list',
@@ -35,6 +42,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsUserRoute = SettingsUserRouteImport.update({
+  id: '/user',
+  path: '/user',
+  getParentRoute: () => SettingsRouteRoute,
+} as any)
 const ListSpaceSplatRoute = ListSpaceSplatRouteImport.update({
   id: '/$space/$',
   path: '/$space/$',
@@ -44,36 +56,65 @@ const ListSpaceSplatRoute = ListSpaceSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/list': typeof ListRouteRouteWithChildren
+  '/settings': typeof SettingsRouteRouteWithChildren
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
+  '/settings/user': typeof SettingsUserRoute
   '/list/$space/$': typeof ListSpaceSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/list': typeof ListRouteRouteWithChildren
+  '/settings': typeof SettingsRouteRouteWithChildren
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
+  '/settings/user': typeof SettingsUserRoute
   '/list/$space/$': typeof ListSpaceSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/list': typeof ListRouteRouteWithChildren
+  '/settings': typeof SettingsRouteRouteWithChildren
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
+  '/settings/user': typeof SettingsUserRoute
   '/list/$space/$': typeof ListSpaceSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/list' | '/login' | '/setup' | '/list/$space/$'
+  fullPaths:
+    | '/'
+    | '/list'
+    | '/settings'
+    | '/login'
+    | '/setup'
+    | '/settings/user'
+    | '/list/$space/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/list' | '/login' | '/setup' | '/list/$space/$'
-  id: '__root__' | '/' | '/list' | '/login' | '/setup' | '/list/$space/$'
+  to:
+    | '/'
+    | '/list'
+    | '/settings'
+    | '/login'
+    | '/setup'
+    | '/settings/user'
+    | '/list/$space/$'
+  id:
+    | '__root__'
+    | '/'
+    | '/list'
+    | '/settings'
+    | '/login'
+    | '/setup'
+    | '/settings/user'
+    | '/list/$space/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ListRouteRoute: typeof ListRouteRouteWithChildren
+  SettingsRouteRoute: typeof SettingsRouteRouteWithChildren
   LoginRoute: typeof LoginRoute
   SetupRoute: typeof SetupRoute
 }
@@ -94,6 +135,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/list': {
       id: '/list'
       path: '/list'
@@ -107,6 +155,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/settings/user': {
+      id: '/settings/user'
+      path: '/user'
+      fullPath: '/settings/user'
+      preLoaderRoute: typeof SettingsUserRouteImport
+      parentRoute: typeof SettingsRouteRoute
     }
     '/list/$space/$': {
       id: '/list/$space/$'
@@ -130,9 +185,22 @@ const ListRouteRouteWithChildren = ListRouteRoute._addFileChildren(
   ListRouteRouteChildren,
 )
 
+interface SettingsRouteRouteChildren {
+  SettingsUserRoute: typeof SettingsUserRoute
+}
+
+const SettingsRouteRouteChildren: SettingsRouteRouteChildren = {
+  SettingsUserRoute: SettingsUserRoute,
+}
+
+const SettingsRouteRouteWithChildren = SettingsRouteRoute._addFileChildren(
+  SettingsRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ListRouteRoute: ListRouteRouteWithChildren,
+  SettingsRouteRoute: SettingsRouteRouteWithChildren,
   LoginRoute: LoginRoute,
   SetupRoute: SetupRoute,
 }

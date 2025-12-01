@@ -168,7 +168,13 @@ function LoginForm() {
             </form>
           </Form>
           <hr className="border-t border-border rounded-full" />
-          <Button variant="outline" className="w-full rounded-xl">
+          <Button
+            variant="outline"
+            className="w-full rounded-xl"
+            onClick={() => {
+              toast.error("即将推出, 敬请期待");
+            }}
+          >
             <FingerprintPattern />
             使用通行密钥登录
           </Button>

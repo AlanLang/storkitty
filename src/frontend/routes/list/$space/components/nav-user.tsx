@@ -83,7 +83,9 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigate({ to: "/settings/user" })}
+              >
                 <CircleUser />
                 用户设置
               </DropdownMenuItem>
