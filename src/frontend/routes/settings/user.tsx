@@ -268,6 +268,22 @@ function SecuritySettings() {
         </CardContent>
       </Card>
 
+      {/* Passkey Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FingerprintPattern className="h-5 w-5" />
+            通行密钥
+          </CardTitle>
+          <CardDescription>
+            使用生物识别或硬件密钥进行无密码登录
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PasskeyManagement />
+        </CardContent>
+      </Card>
+
       {/* Two-Factor Authentication - Placeholder */}
       <Card>
         <CardHeader>
@@ -285,22 +301,6 @@ function SecuritySettings() {
               配置
             </Button>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Passkey Management */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FingerprintPattern className="h-5 w-5" />
-            通行密钥
-          </CardTitle>
-          <CardDescription>
-            使用生物识别或硬件密钥进行无密码登录
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <PasskeyManagement />
         </CardContent>
       </Card>
     </div>

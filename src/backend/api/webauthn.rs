@@ -50,9 +50,6 @@ pub struct RegisterFinishRequest {
 }
 
 // Authentication types
-// Resident Key 模式不需要任何请求参数
-// 认证器会自动发现存储的密钥
-
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuthenticateStartResponse {
@@ -122,20 +119,16 @@ pub async fn register_start(
 
   drop(conn);
 
-  // Create a valid UUID from user_id using SHA256 to ensure proper length
-  // This UUID will be stored in the Resident Key and returned during authentication
+  // Generate user UUID from user_id for Resident Key
   use sha2::{Digest, Sha256};
   let mut hasher = Sha256::new();
   hasher.update(user_id.to_le_bytes());
-  hasher.update(b"webauthn-user-id"); // Add salt for uniqueness
+  hasher.update(b"webauthn-user-id");
   let hash = hasher.finalize();
-
-  // Take first 16 bytes of hash to create UUID
   let mut uuid_bytes = [0u8; 16];
   uuid_bytes.copy_from_slice(&hash[..16]);
   let user_unique_id = Uuid::from_bytes(uuid_bytes);
 
-  // 使用底层 API 来创建支持 Resident Key 的注册请求
   let (ccr, reg_state) = state
     .webauthn
     .start_passkey_registration(
@@ -146,31 +139,23 @@ pub async fn register_start(
     )
     .map_err(|e| AppError::new(&format!("Failed to start registration: {}", e)))?;
 
-  // 将 CreationChallengeResponse 转换为 JSON，以便修改
+  // Modify response to require Resident Key
   let mut ccr_json = serde_json::to_value(&ccr)
     .map_err(|e| AppError::new(&format!("Failed to serialize registration options: {}", e)))?;
 
-  // 修改 authenticatorSelection 以强制要求 Resident Key
-  // 这是关键步骤：将 residentKey 设置为 "required"
   if let Some(public_key) = ccr_json.get_mut("publicKey") {
     if let Some(auth_sel) = public_key.get_mut("authenticatorSelection") {
       auth_sel["residentKey"] = serde_json::json!("required");
       auth_sel["requireResidentKey"] = serde_json::json!(true);
-      log::info!("Modified authenticatorSelection to require Resident Key");
     } else {
-      // 如果没有 authenticatorSelection，创建一个
       public_key["authenticatorSelection"] = serde_json::json!({
         "residentKey": "required",
         "requireResidentKey": true,
         "userVerification": "required"
       });
-      log::info!("Created authenticatorSelection with Resident Key requirement");
     }
   }
 
-  log::info!("Created registration challenge with Resident Key requirement");
-
-  // Store registration state
   REGISTRATION_STATE
     .lock()
     .unwrap()
@@ -199,27 +184,12 @@ pub async fn register_finish(
     .finish_passkey_registration(&req.credential, &reg_state)
     .map_err(|e| AppError::new(&format!("Registration verification failed: {}", e)))?;
 
-  // Store the passkey in database
   let credential_id = BASE64.encode(passkey.cred_id().as_ref());
-
-  log::info!("Passkey registered successfully");
-  log::info!("Credential ID (base64): {}", credential_id);
-  log::info!(
-    "Credential ID bytes (hex): {}",
-    hex::encode(passkey.cred_id().as_ref())
-  );
-  log::info!("User ID: {}, Passkey name: {}", user_id, req.name);
-
   let public_key = serde_json::to_vec(&passkey)
     .map_err(|e| AppError::new(&format!("Failed to serialize passkey: {}", e)))?;
 
   let conn = state.conn.lock().await;
   db::user::save_passkey(&conn, user_id, &credential_id, &public_key, &req.name)?;
-
-  log::info!(
-    "Passkey saved to database with credential_id: {}",
-    credential_id
-  );
 
   Ok(())
 }
@@ -229,58 +199,29 @@ pub async fn register_finish(
 pub async fn authenticate_start(
   State(state): State<AppState>,
 ) -> Result<Json<AuthenticateStartResponse>, AppError> {
-  log::info!("=== authenticate_start called (Resident Key mode) ===");
-
-  // Resident Key (Discoverable Credentials) 模式
-  // 虽然前端不需要指定用户，但后端需要加载所有 passkeys 以便验证
-  // 这样 webauthn-rs 才能在 finish 时找到匹配的凭证
+  // Load all passkeys for verification (required by webauthn-rs)
   let conn = state.conn.lock().await;
   let passkeys_db = db::user::get_all_passkeys(&conn)?;
-
-  log::info!(
-    "Loaded {} passkeys from database for authentication",
-    passkeys_db.len()
-  );
 
   let passkeys: Vec<webauthn_rs::prelude::Passkey> = passkeys_db
     .iter()
     .filter_map(|pk| {
-      match serde_json::from_slice::<webauthn_rs::prelude::Passkey>(&pk.public_key) {
-        Ok(passkey) => {
-          log::info!(
-            "Loaded passkey for user_id: {}, credential_id: {}",
-            pk.user_id,
-            pk.credential_id
-          );
-          Some(passkey)
-        }
-        Err(e) => {
-          log::error!("Failed to deserialize passkey: {}", e);
-          None
-        }
-      }
+      serde_json::from_slice::<webauthn_rs::prelude::Passkey>(&pk.public_key)
+        .map_err(|e| log::error!("Failed to deserialize passkey: {}", e))
+        .ok()
     })
     .collect();
 
   drop(conn);
-
-  log::info!(
-    "Starting authentication with {} valid passkeys",
-    passkeys.len()
-  );
 
   let (mut rcr, auth_state) = state
     .webauthn
     .start_passkey_authentication(&passkeys)
     .map_err(|e| AppError::new(&format!("Failed to start authentication: {}", e)))?;
 
-  // 对于 Resident Key 模式，清空 allowCredentials
-  // 这样浏览器会使用认证器中存储的凭证，而不是限制在特定列表中
+  // Clear allowCredentials for Resident Key mode
   rcr.public_key.allow_credentials = Vec::new();
 
-  log::info!("Authentication challenge created (allowCredentials cleared for Resident Key mode)");
-
-  // Generate session ID and store auth state
   let session_id = uuid::Uuid::new_v4().to_string();
   AUTHENTICATION_STATE
     .lock()
@@ -298,94 +239,34 @@ pub async fn authenticate_finish(
   State(state): State<AppState>,
   Json(req): Json<AuthenticateFinishRequest>,
 ) -> Result<Json<AuthenticateFinishResponse>, AppError> {
-  log::info!("=== authenticate_finish called ===");
-  log::info!("Session ID: {}", req.session_id);
-  log::info!("Credential ID: {}", req.credential.id);
-
-  // 打印 rawId 的内容
-  if let Ok(raw_id_bytes) = BASE64.decode(&req.credential.raw_id) {
-    log::info!("Raw ID (hex): {}", hex::encode(&raw_id_bytes));
-    log::info!("Raw ID (base64): {}", BASE64.encode(&raw_id_bytes));
-  }
-
-  // Retrieve authentication state
   let auth_state = AUTHENTICATION_STATE
     .lock()
     .unwrap()
     .remove(&req.session_id)
-    .ok_or_else(|| {
-      log::error!("Session not found: {}", req.session_id);
-      AppError::new("Invalid or expired session")
-    })?;
-
-  log::info!("Authentication state retrieved successfully");
-  log::info!("Calling webauthn.finish_passkey_authentication...");
+    .ok_or_else(|| AppError::new("Invalid or expired session"))?;
 
   let auth_result = state
     .webauthn
     .finish_passkey_authentication(&req.credential, &auth_state)
-    .map_err(|e| {
-      log::error!("finish_passkey_authentication failed: {:?}", e);
-      AppError::new(&format!("Authentication failed: {}", e))
-    })?;
+    .map_err(|e| AppError::new(&format!("Authentication failed: {}", e)))?;
 
-  log::info!("finish_passkey_authentication succeeded!");
-
-  // Get credential ID and update counter
   let credential_id = BASE64.encode(auth_result.cred_id().as_ref());
-
-  log::info!(
-    "Authentication successful for credential_id: {}",
-    credential_id
-  );
-  log::info!(
-    "Credential ID bytes (hex): {}",
-    hex::encode(auth_result.cred_id().as_ref())
-  );
-
   let conn = state.conn.lock().await;
 
-  // 通过 credential_id 查找用户和 passkey
-  // 在 Resident Key 模式下，认证器返回了 credential_id
-  // 我们使用它来查找对应的用户和密钥
-  let passkey_db = db::user::get_passkey_by_credential_id(&conn, &credential_id).map_err(|e| {
-    log::error!("Failed to find passkey by credential_id: {}", e);
-    log::error!("Searching for credential_id in database: {}", credential_id);
+  let passkey_db = db::user::get_passkey_by_credential_id(&conn, &credential_id)
+    .map_err(|_| AppError::new("Authentication failed: passkey not found"))?;
 
-    // 尝试列出所有 passkeys 来调试
-    if let Ok(all_passkeys) = db::user::get_all_passkeys(&conn) {
-      log::error!("All passkeys in database:");
-      for pk in all_passkeys {
-        log::error!(
-          "  - user_id: {}, credential_id: {}, name: {}",
-          pk.user_id,
-          pk.credential_id,
-          pk.name
-        );
-      }
-    }
-
-    AppError::new("Authentication failed: passkey not found")
-  })?;
-
-  // Update counter
   db::user::update_passkey_counter(&conn, &credential_id, auth_result.counter())?;
 
-  // Get user info
   let user = db::user::get_user_by_id(&conn, passkey_db.user_id)?;
 
-  // 检查用户是否被禁用
   if user.disabled {
     return Err(AppError::new("User account is disabled"));
   }
 
-  // Reset login failure count
   db::user::reset_login_failure(&conn, user.id)?;
 
-  // Generate token
   let token = auth::generate_token(user.id)?;
-
-  // Get storages
   let storages = db::storage::get_all_enabled_storage(&conn).context("Failed to get storages")?;
 
   Ok(Json(AuthenticateFinishResponse {
