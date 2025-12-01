@@ -1,6 +1,7 @@
 import { FileType, type FileInfo } from "@/api/file/list";
 import { FileCreateDialog } from "./file-create-dialog";
 import { FileDeleteDialog } from "./file-delete-dialog";
+import { FileMoveDialog } from "./file-move-dialog";
 import { FileOpenDialog } from "./file-open/file-open-dialog";
 import { FileRenameDialog } from "./file-rename-dialog";
 import { FolderCreateDialog } from "./folder-create-dialog";
@@ -17,7 +18,9 @@ export interface ListDialogProps {
       | "create-folder"
       | "create-file"
       | "edit"
-      | "remote-download";
+      | "remote-download"
+      | "copy"
+      | "move";
     file: FileInfo | null;
     defaultName?: string;
   } | null;
@@ -95,6 +98,24 @@ export function ListDialog({
       <RemoteDownloadDialog
         path={path}
         isOpen={open?.type === "remote-download"}
+        onCancel={onCancel}
+        onFinish={onFinish}
+      />
+
+      <FileMoveDialog
+        path={path}
+        file={file ?? null}
+        mode="copy"
+        isOpen={open?.type === "copy"}
+        onCancel={onCancel}
+        onFinish={onFinish}
+      />
+
+      <FileMoveDialog
+        path={path}
+        file={file ?? null}
+        mode="move"
+        isOpen={open?.type === "move"}
         onCancel={onCancel}
         onFinish={onFinish}
       />

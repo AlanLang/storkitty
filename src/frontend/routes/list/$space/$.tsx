@@ -119,6 +119,8 @@ function FilePage() {
               onDelete={(file) => setOpen({ type: "delete", file })}
               onRename={(file) => setOpen({ type: "rename", file })}
               onEdit={(file) => setOpen({ type: "edit", file })}
+              onCopy={(file) => setOpen({ type: "copy", file })}
+              onMove={(file) => setOpen({ type: "move", file })}
             />
           </div>
         </SidebarInset>
@@ -275,10 +277,14 @@ function FileList({
   onDelete,
   onRename,
   onEdit,
+  onCopy,
+  onMove,
 }: {
   onDelete: (file: FileInfo) => void;
   onRename: (file: FileInfo) => void;
   onEdit: (file: FileInfo) => void;
+  onCopy: (file: FileInfo) => void;
+  onMove: (file: FileInfo) => void;
 }) {
   const { space, _splat } = Route.useParams();
   const navigate = useNavigate();
@@ -347,6 +353,8 @@ function FileList({
             onDelete={onDelete}
             onRename={onRename}
             onEdit={onEdit}
+            onCopy={onCopy}
+            onMove={onMove}
           />
         ))}
       </div>
@@ -368,6 +376,8 @@ interface FileListItemProps {
   onRename: (file: FileInfo) => void;
   onClick: (file: FileInfo) => void;
   onEdit: (file: FileInfo) => void;
+  onCopy: (file: FileInfo) => void;
+  onMove: (file: FileInfo) => void;
 }
 
 function FileListItem({
@@ -377,6 +387,8 @@ function FileListItem({
   onDelete,
   onRename,
   onEdit,
+  onCopy,
+  onMove,
 }: FileListItemProps) {
   const isFolder = file.fileType === "folder";
 
@@ -389,12 +401,12 @@ function FileListItem({
     {
       label: "复制",
       icon: <Copy className="mr-2 h-4 w-4" />,
-      onClick: () => {},
+      onClick: () => onCopy(file),
     },
     {
       label: "移动",
       icon: <SendToBack className="mr-2 h-4 w-4" />,
-      onClick: () => {},
+      onClick: () => onMove(file),
     },
     {
       type: "separator",
