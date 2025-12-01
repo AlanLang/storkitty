@@ -16,7 +16,9 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { CircleUser, EllipsisVertical, LogOut } from "lucide-react";
+import { token } from "@/lib/token";
+import { useNavigate } from "@tanstack/react-router";
+import { CircleUser, EllipsisVertical, LogOut, Settings2 } from "lucide-react";
 
 export function NavUser({
   user,
@@ -28,7 +30,7 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
-
+  const navigate = useNavigate();
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -76,14 +78,25 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
+                <Settings2 />
+                系统设置
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuGroup>
+              <DropdownMenuItem>
                 <CircleUser />
-                Account
+                用户设置
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                token.remove();
+                navigate({ to: "/login" });
+              }}
+            >
               <LogOut />
-              Log out
+              退出登录
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
