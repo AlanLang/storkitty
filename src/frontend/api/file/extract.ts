@@ -5,5 +5,6 @@ export function extractFile(dto: { path: string; name: string }) {
     json: {
       name: dto.name,
     },
+    timeout: 300000, // 5 minutes for extraction
   });
 }

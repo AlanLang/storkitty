@@ -1,3 +1,4 @@
+import { compressDirectory } from "@/api/file/compress";
 import { extractFile } from "@/api/file/extract";
 import type { FileInfo } from "@/api/file/list";
 import { MenuList, type MenuListProps } from "@/components/menu-list";
@@ -31,6 +32,7 @@ import {
   CloudDownload,
   Copy,
   Eye,
+  FileArchive,
   FilePlus,
   FolderOpen,
   FolderPen,
@@ -307,6 +309,19 @@ function FileList({
     });
   };
 
+  const handleCompress = async (file: FileInfo) => {
+    const compressPromise = compressDirectory({ path, name: file.name });
+
+    toast.promise(compressPromise, {
+      loading: "压缩中...",
+      success: () => {
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEY, path] });
+        return "压缩成功";
+      },
+      error: "压缩失败",
+    });
+  };
+
   const handleClick = (file: FileInfo) => {
     if (file.fileType === "folder") {
       navigate({
@@ -372,6 +387,7 @@ function FileList({
             onCopy={onCopy}
             onMove={onMove}
             onExtract={handleExtract}
+            onCompress={handleCompress}
           />
         ))}
       </div>
@@ -396,6 +412,7 @@ interface FileListItemProps {
   onCopy: (file: FileInfo) => void;
   onMove: (file: FileInfo) => void;
   onExtract: (file: FileInfo) => void;
+  onCompress: (file: FileInfo) => void;
 }
 
 function FileListItem({
@@ -408,6 +425,7 @@ function FileListItem({
   onCopy,
   onMove,
   onExtract,
+  onCompress,
 }: FileListItemProps) {
   const isFolder = file.fileType === "folder";
   const isCompressed = !isFolder && /\.(zip|tar\.gz|tgz|tar)$/i.test(file.name);
@@ -435,8 +453,14 @@ function FileListItem({
             icon: <Archive className="mr-2 h-4 w-4" />,
             onClick: () => onExtract(file),
           },
+        ]
+      : []),
+    ...(isFolder
+      ? [
           {
-            type: "separator" as const,
+            label: "压缩",
+            icon: <FileArchive className="mr-2 h-4 w-4" />,
+            onClick: () => onCompress(file),
           },
         ]
       : []),
