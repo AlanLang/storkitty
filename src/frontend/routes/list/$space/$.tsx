@@ -490,7 +490,10 @@ function FileListItem({
         {
           label: "预览",
           icon: <SquareArrowOutUpRight className="mr-2 h-4 w-4" />,
-          onClick: () => {},
+          onClick: () => {
+            const url = urlJoin("/open", path, file.name);
+            window.open(url, "_blank");
+          },
         },
         {
           label: "复制链接",

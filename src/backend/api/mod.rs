@@ -3,6 +3,7 @@ mod download;
 mod file;
 mod folder;
 mod login;
+mod open;
 mod remote_download;
 mod setup;
 mod user;
@@ -30,6 +31,7 @@ pub async fn start_server() -> anyhow::Result<()> {
   let app = Router::<AppState>::new()
     .nest("/api", create_api_router())
     .route("/download/{*path}", routing::get(download::download_file))
+    .route("/open/{*path}", routing::get(open::file_open))
     .fallback_service(
       get_service(ServeDir::new("./web").fallback(ServeFile::new("./web/index.html")))
         .handle_error(|_| async {
