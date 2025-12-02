@@ -26,6 +26,7 @@ import { token } from "@/lib/token";
 import { cn } from "@/lib/utils";
 import { animated, easings, useTransition } from "@react-spring/web";
 import { useMutation } from "@tanstack/react-query";
+import { HTTPError } from "ky";
 import { FingerprintPattern, Loader } from "lucide-react";
 import { toast } from "sonner";
 
@@ -102,9 +103,13 @@ function LoginForm() {
       token.set(data.token);
       navigate({ to: "/" });
     },
-    onError: async (error: any) => {
-      const msg = (await error.response.text()) || "登录失败，请稍后重试";
-      toast.error(msg);
+    onError: async (error: unknown) => {
+      if (error instanceof HTTPError) {
+        const msg = (await error.response.text()) || "登录失败，请稍后重试";
+        toast.error(msg);
+      } else {
+        toast.error("登录失败，请稍后重试");
+      }
       token.remove();
     },
   });
@@ -131,8 +136,12 @@ function LoginForm() {
       token.set(data.token);
       navigate({ to: "/" });
     },
-    onError: (error: any) => {
-      toast.error(error.message || "通行密钥登录失败");
+    onError: (error: unknown) => {
+      if (error instanceof Error) {
+        toast.error(error.message || "通行密钥登录失败");
+      } else {
+        toast.error("通行密钥登录失败");
+      }
     },
   });
 

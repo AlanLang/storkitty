@@ -344,9 +344,13 @@ function PasskeyManagement() {
       setPasskeyName("");
       refetch();
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error("Registration mutation error:", error);
-      toast.error(error.message || "注册失败");
+      if (error instanceof Error) {
+        toast.error(error.message || "注册失败");
+      } else {
+        toast.error("注册失败");
+      }
     },
   });
 

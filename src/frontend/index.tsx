@@ -33,6 +33,7 @@ if (!rootElement.innerHTML) {
     defaultOptions: {
       mutations: {
         retry: 0,
+        // biome-ignore lint/suspicious/noExplicitAny: error is unknown
         onError: async (error: any) => {
           const msg = (await error.response.text()) || "操作失败，请稍后重试";
           toast.error(msg);
