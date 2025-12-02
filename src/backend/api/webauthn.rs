@@ -3,6 +3,7 @@ use axum::{
   Json, Router,
   extract::State,
   http::HeaderMap,
+  middleware,
   routing::{get, post},
 };
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
@@ -18,6 +19,7 @@ use webauthn_rs::prelude::*;
 use crate::backend::{
   db::{self},
   error::AppError,
+  extractor::auth::auth_middleware,
   state::AppState,
   utils::auth,
 };
@@ -77,12 +79,24 @@ fn clean_expired_authentication_states() {
 
 pub fn create_webauthn_router() -> Router<AppState> {
   Router::<AppState>::new()
-    .route("/register/start", post(register_start))
-    .route("/register/finish", post(register_finish))
+    .route(
+      "/register/start",
+      post(register_start).layer(middleware::from_fn(auth_middleware)),
+    )
+    .route(
+      "/register/finish",
+      post(register_finish).layer(middleware::from_fn(auth_middleware)),
+    )
     .route("/authenticate/start", post(authenticate_start))
     .route("/authenticate/finish", post(authenticate_finish))
-    .route("/list", get(list_passkeys))
-    .route("/delete/{id}", post(delete_passkey))
+    .route(
+      "/list",
+      get(list_passkeys).layer(middleware::from_fn(auth_middleware)),
+    )
+    .route(
+      "/delete/{id}",
+      post(delete_passkey).layer(middleware::from_fn(auth_middleware)),
+    )
 }
 
 // Registration types
@@ -160,17 +174,8 @@ pub async fn register_start(
   // Clean expired states periodically
   clean_expired_registration_states();
 
-  // Check for existing registration in progress
-  {
-    let states = REGISTRATION_STATE
-      .lock()
-      .expect("Failed to lock registration state");
-    if states.contains_key(&user_id) {
-      return Err(AppError::new(
-        "Registration already in progress. Please complete or wait for the current registration to expire.",
-      ));
-    }
-  }
+  // Note: We allow overwriting previous registration attempts to handle cases
+  // where users cancel or encounter errors. The old state will be replaced.
 
   let conn = state.conn.lock().await;
   let user = db::user::get_user_by_id(&conn, user_id)?;
@@ -344,7 +349,7 @@ pub async fn authenticate_finish(
     })?;
 
   let credential_id = BASE64.encode(credential_id_bytes);
-  
+
   // Load only the specific passkey that was used
   let conn = state.conn.lock().await;
   let passkey_db = db::user::get_passkey_by_credential_id(&conn, &credential_id).map_err(|e| {
@@ -357,11 +362,10 @@ pub async fn authenticate_finish(
   })?;
 
   // Deserialize the passkey
-  let passkey = serde_json::from_slice::<DiscoverableKey>(&passkey_db.public_key)
-    .map_err(|e| {
-      log::error!("Corrupted passkey id={}: {}", passkey_db.id, e);
-      AppError::new("Authentication failed")
-    })?;
+  let passkey = serde_json::from_slice::<DiscoverableKey>(&passkey_db.public_key).map_err(|e| {
+    log::error!("Corrupted passkey id={}: {}", passkey_db.id, e);
+    AppError::new("Authentication failed")
+  })?;
 
   drop(conn);
 
