@@ -8,7 +8,11 @@ use axum::{
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, sync::Mutex};
+use std::{
+  collections::HashMap,
+  sync::Mutex,
+  time::{SystemTime, UNIX_EPOCH},
+};
 use webauthn_rs::prelude::*;
 
 use crate::backend::{
@@ -18,11 +22,57 @@ use crate::backend::{
   utils::auth,
 };
 
+// State wrappers with expiration
+#[derive(Clone)]
+struct RegistrationStateEntry {
+  state: PasskeyRegistration,
+  expires_at: u64,
+}
+
+#[derive(Clone)]
+struct AuthenticationStateEntry {
+  state: DiscoverableAuthentication,
+  expires_at: u64,
+}
+
 lazy_static! {
-  static ref REGISTRATION_STATE: Mutex<HashMap<i64, PasskeyRegistration>> =
+  static ref REGISTRATION_STATE: Mutex<HashMap<i64, RegistrationStateEntry>> =
     Mutex::new(HashMap::new());
-  static ref AUTHENTICATION_STATE: Mutex<HashMap<String, PasskeyAuthentication>> =
+  static ref AUTHENTICATION_STATE: Mutex<HashMap<String, AuthenticationStateEntry>> =
     Mutex::new(HashMap::new());
+}
+
+// Session timeout in seconds
+const SESSION_TIMEOUT_SECS: u64 = 300; // 5 minutes
+
+// UUID namespace for WebAuthn user IDs
+const WEBAUTHN_NAMESPACE: uuid::Uuid = uuid::Uuid::from_bytes([
+  0x6b, 0xa7, 0xb8, 0x10, 0x9d, 0xad, 0x11, 0xd1, 0x80, 0xb4, 0x00, 0xc0, 0x4f, 0xd4, 0x30, 0xc8,
+]);
+
+// Helper function to get current timestamp
+fn current_timestamp() -> u64 {
+  SystemTime::now()
+    .duration_since(UNIX_EPOCH)
+    .expect("Time went backwards")
+    .as_secs()
+}
+
+// Helper function to clean expired states
+fn clean_expired_registration_states() {
+  let now = current_timestamp();
+  let mut states = REGISTRATION_STATE
+    .lock()
+    .expect("Failed to lock registration state for cleanup");
+  states.retain(|_, entry| entry.expires_at > now);
+}
+
+fn clean_expired_authentication_states() {
+  let now = current_timestamp();
+  let mut states = AUTHENTICATION_STATE
+    .lock()
+    .expect("Failed to lock authentication state for cleanup");
+  states.retain(|_, entry| entry.expires_at > now);
 }
 
 pub fn create_webauthn_router() -> Router<AppState> {
@@ -106,6 +156,22 @@ pub async fn register_start(
   headers: HeaderMap,
 ) -> Result<Json<RegisterStartResponse>, AppError> {
   let user_id = auth::verify_token(&headers)?;
+
+  // Clean expired states periodically
+  clean_expired_registration_states();
+
+  // Check for existing registration in progress
+  {
+    let states = REGISTRATION_STATE
+      .lock()
+      .expect("Failed to lock registration state");
+    if states.contains_key(&user_id) {
+      return Err(AppError::new(
+        "Registration already in progress. Please complete or wait for the current registration to expire.",
+      ));
+    }
+  }
+
   let conn = state.conn.lock().await;
   let user = db::user::get_user_by_id(&conn, user_id)?;
 
@@ -119,15 +185,8 @@ pub async fn register_start(
 
   drop(conn);
 
-  // Generate user UUID from user_id for Resident Key
-  use sha2::{Digest, Sha256};
-  let mut hasher = Sha256::new();
-  hasher.update(user_id.to_le_bytes());
-  hasher.update(b"webauthn-user-id");
-  let hash = hasher.finalize();
-  let mut uuid_bytes = [0u8; 16];
-  uuid_bytes.copy_from_slice(&hash[..16]);
-  let user_unique_id = Uuid::from_bytes(uuid_bytes);
+  // Generate user UUID using UUID v5 (namespace-based)
+  let user_unique_id = uuid::Uuid::new_v5(&WEBAUTHN_NAMESPACE, user_id.to_string().as_bytes());
 
   let (ccr, reg_state) = state
     .webauthn
@@ -156,10 +215,19 @@ pub async fn register_start(
     }
   }
 
+  let expires_at = current_timestamp() + SESSION_TIMEOUT_SECS;
   REGISTRATION_STATE
     .lock()
-    .unwrap()
-    .insert(user_id, reg_state);
+    .expect("Failed to lock registration state")
+    .insert(
+      user_id,
+      RegistrationStateEntry {
+        state: reg_state,
+        expires_at,
+      },
+    );
+
+  log::info!("Started passkey registration for user {}", user_id);
 
   Ok(Json(RegisterStartResponse { options: ccr_json }))
 }
@@ -173,15 +241,20 @@ pub async fn register_finish(
   let user_id = auth::verify_token(&headers)?;
 
   // Retrieve registration state
-  let reg_state = REGISTRATION_STATE
+  let reg_entry = REGISTRATION_STATE
     .lock()
-    .unwrap()
+    .expect("Failed to lock registration state")
     .remove(&user_id)
     .ok_or_else(|| AppError::new("No registration in progress"))?;
 
+  // Check if session has expired
+  if reg_entry.expires_at < current_timestamp() {
+    return Err(AppError::new("Registration session has expired"));
+  }
+
   let passkey = state
     .webauthn
-    .finish_passkey_registration(&req.credential, &reg_state)
+    .finish_passkey_registration(&req.credential, &reg_entry.state)
     .map_err(|e| AppError::new(&format!("Registration verification failed: {}", e)))?;
 
   let credential_id = BASE64.encode(passkey.cred_id().as_ref());
@@ -191,6 +264,12 @@ pub async fn register_finish(
   let conn = state.conn.lock().await;
   db::user::save_passkey(&conn, user_id, &credential_id, &public_key, &req.name)?;
 
+  log::info!(
+    "User {} successfully registered passkey '{}'",
+    user_id,
+    req.name
+  );
+
   Ok(())
 }
 
@@ -199,34 +278,34 @@ pub async fn register_finish(
 pub async fn authenticate_start(
   State(state): State<AppState>,
 ) -> Result<Json<AuthenticateStartResponse>, AppError> {
-  // Load all passkeys for verification (required by webauthn-rs)
-  let conn = state.conn.lock().await;
-  let passkeys_db = db::user::get_all_passkeys(&conn)?;
+  // Clean expired states periodically
+  clean_expired_authentication_states();
 
-  let passkeys: Vec<webauthn_rs::prelude::Passkey> = passkeys_db
-    .iter()
-    .filter_map(|pk| {
-      serde_json::from_slice::<webauthn_rs::prelude::Passkey>(&pk.public_key)
-        .map_err(|e| log::error!("Failed to deserialize passkey: {}", e))
-        .ok()
-    })
-    .collect();
-
-  drop(conn);
-
-  let (mut rcr, auth_state) = state
+  // Use discoverable authentication for usernameless login
+  // This requires the conditional-ui feature to be enabled
+  let (rcr, auth_state) = state
     .webauthn
-    .start_passkey_authentication(&passkeys)
+    .start_discoverable_authentication()
     .map_err(|e| AppError::new(&format!("Failed to start authentication: {}", e)))?;
 
-  // Clear allowCredentials for Resident Key mode
-  rcr.public_key.allow_credentials = Vec::new();
-
   let session_id = uuid::Uuid::new_v4().to_string();
+  let expires_at = current_timestamp() + SESSION_TIMEOUT_SECS;
+
   AUTHENTICATION_STATE
     .lock()
-    .unwrap()
-    .insert(session_id.clone(), auth_state);
+    .expect("Failed to lock authentication state")
+    .insert(
+      session_id.clone(),
+      AuthenticationStateEntry {
+        state: auth_state,
+        expires_at,
+      },
+    );
+
+  log::debug!(
+    "Started discoverable authentication with session {}",
+    session_id
+  );
 
   Ok(Json(AuthenticateStartResponse {
     options: rcr,
@@ -239,28 +318,70 @@ pub async fn authenticate_finish(
   State(state): State<AppState>,
   Json(req): Json<AuthenticateFinishRequest>,
 ) -> Result<Json<AuthenticateFinishResponse>, AppError> {
-  let auth_state = AUTHENTICATION_STATE
+  let auth_entry = AUTHENTICATION_STATE
     .lock()
-    .unwrap()
+    .expect("Failed to lock authentication state")
     .remove(&req.session_id)
     .ok_or_else(|| AppError::new("Invalid or expired session"))?;
 
+  // Check if session has expired
+  if auth_entry.expires_at < current_timestamp() {
+    log::warn!(
+      "Authentication attempt with expired session: {}",
+      req.session_id
+    );
+    return Err(AppError::new("Authentication session has expired"));
+  }
+
+  // First, identify which credential was used (extract credential_id)
+  // This allows us to load only the specific passkey instead of all passkeys
+  let (_user_unique_id, credential_id_bytes) = state
+    .webauthn
+    .identify_discoverable_authentication(&req.credential)
+    .map_err(|e| {
+      log::warn!("Failed to identify credential: {}", e);
+      AppError::new("Authentication failed")
+    })?;
+
+  let credential_id = BASE64.encode(credential_id_bytes);
+  
+  // Load only the specific passkey that was used
+  let conn = state.conn.lock().await;
+  let passkey_db = db::user::get_passkey_by_credential_id(&conn, &credential_id).map_err(|e| {
+    log::warn!(
+      "Passkey lookup failed for credential {}: {}",
+      credential_id,
+      e
+    );
+    AppError::new("Authentication failed")
+  })?;
+
+  // Deserialize the passkey
+  let passkey = serde_json::from_slice::<DiscoverableKey>(&passkey_db.public_key)
+    .map_err(|e| {
+      log::error!("Corrupted passkey id={}: {}", passkey_db.id, e);
+      AppError::new("Authentication failed")
+    })?;
+
+  drop(conn);
+
+  // Now verify the authentication with only the specific passkey
   let auth_result = state
     .webauthn
-    .finish_passkey_authentication(&req.credential, &auth_state)
-    .map_err(|e| AppError::new(&format!("Authentication failed: {}", e)))?;
+    .finish_discoverable_authentication(&req.credential, auth_entry.state, &[passkey])
+    .map_err(|e| {
+      log::warn!("Authentication verification failed: {}", e);
+      AppError::new("Authentication failed")
+    })?;
 
-  let credential_id = BASE64.encode(auth_result.cred_id().as_ref());
+  // Update the passkey counter
   let conn = state.conn.lock().await;
-
-  let passkey_db = db::user::get_passkey_by_credential_id(&conn, &credential_id)
-    .map_err(|_| AppError::new("Authentication failed: passkey not found"))?;
-
   db::user::update_passkey_counter(&conn, &credential_id, auth_result.counter())?;
 
   let user = db::user::get_user_by_id(&conn, passkey_db.user_id)?;
 
   if user.disabled {
+    log::warn!("Authentication attempt for disabled user: {}", user.id);
     return Err(AppError::new("User account is disabled"));
   }
 
@@ -268,6 +389,8 @@ pub async fn authenticate_finish(
 
   let token = auth::generate_token(user.id)?;
   let storages = db::storage::get_all_enabled_storage(&conn).context("Failed to get storages")?;
+
+  log::info!("User {} authenticated successfully via passkey", user.id);
 
   Ok(Json(AuthenticateFinishResponse {
     token,
