@@ -19,8 +19,6 @@ use crate::backend::{
 };
 
 pub async fn start_server() -> anyhow::Result<()> {
-  // 构建静态文件服务（用于 serve ./web 目录）
-  let serve_dir = ServeDir::new("./web").not_found_service(ServeFile::new("./web/index.html"));
   let conn = init_db()?;
   let webauthn = init_webauthn()?;
 
@@ -32,7 +30,15 @@ pub async fn start_server() -> anyhow::Result<()> {
   let app = Router::<AppState>::new()
     .nest("/api", create_api_router())
     .route("/download/{*path}", routing::get(download::download_file))
-    .fallback_service(get_service(serve_dir))
+    .fallback_service(
+      get_service(ServeDir::new("./web").fallback(ServeFile::new("./web/index.html")))
+        .handle_error(|_| async {
+          (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            "Internal server error",
+          )
+        }),
+    )
     .layer(axum::extract::DefaultBodyLimit::disable())
     .with_state(state);
 
