@@ -28,6 +28,18 @@ export default defineConfig({
           generatedRouteTree: "./src/frontend/routes/routeTree.gen.ts",
         }),
       ],
+      optimization: {
+        splitChunks: {
+          chunks: "all",
+          minSize: 0,
+          cacheGroups: {
+            vendor: {
+              test: /node_modules/,
+              name: "vendor",
+            },
+          },
+        },
+      },
     },
   },
   server: {
