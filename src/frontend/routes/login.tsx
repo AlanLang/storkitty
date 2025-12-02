@@ -109,6 +109,33 @@ function LoginForm() {
     },
   });
 
+  const passkeyMutation = useMutation({
+    mutationFn: async () => {
+      const { startPasskeyAuthentication, finishPasskeyAuthentication } =
+        await import("@/api/auth/webauthn");
+      // Resident Key 模式：不需要传递任何参数
+      const { credential, sessionId } = await startPasskeyAuthentication();
+      return finishPasskeyAuthentication(credential, sessionId);
+    },
+    onSuccess: (data) => {
+      setAppInfo({
+        user: {
+          id: data.user.id,
+          name: data.user.name,
+          avatar: data.user.avatar,
+          email: data.user.email,
+        },
+        storages: data.storages,
+        loggedIn: true,
+      });
+      token.set(data.token);
+      navigate({ to: "/" });
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "通行密钥登录失败");
+    },
+  });
+
   function onSubmit(values: LoginDto) {
     mutate(values);
   }
@@ -171,11 +198,14 @@ function LoginForm() {
           <Button
             variant="outline"
             className="w-full rounded-xl"
-            onClick={() => {
-              toast.error("即将推出, 敬请期待");
-            }}
+            onClick={() => passkeyMutation.mutate()}
+            disabled={passkeyMutation.isPending}
           >
-            <FingerprintPattern />
+            {passkeyMutation.isPending ? (
+              <Loader className="w-4 h-4 animate-spin" />
+            ) : (
+              <FingerprintPattern />
+            )}
             使用通行密钥登录
           </Button>
           <div className="flex justify-end">

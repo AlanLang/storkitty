@@ -20,7 +20,5 @@
     "--all-targets",
     "--allow-dirty"
   ],
-  "cSpell.words": [
-    "Storkitty"
-  ]
+  "cSpell.words": ["dotenv", "dtos", "Storkitty", "Webauthn"]
 }

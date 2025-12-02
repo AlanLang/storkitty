@@ -6,21 +6,28 @@ mod login;
 mod remote_download;
 mod setup;
 mod user;
+mod webauthn;
 use axum::{
   Router, middleware,
   routing::{self, get_service},
 };
-use std::net::SocketAddr;
+use std::{net::SocketAddr, sync::Arc};
 use tower_http::services::{ServeDir, ServeFile};
 
-use crate::backend::{db::init_db, extractor::auth::auth_middleware, state::AppState};
+use crate::backend::{
+  db::init_db, extractor::auth::auth_middleware, state::AppState, webauthn::init_webauthn,
+};
 
 pub async fn start_server() -> anyhow::Result<()> {
   // 构建静态文件服务（用于 serve ./web 目录）
   let serve_dir = ServeDir::new("./web").not_found_service(ServeFile::new("./web/index.html"));
   let conn = init_db()?;
+  let webauthn = init_webauthn()?;
 
-  let state = AppState { conn };
+  let state = AppState {
+    conn,
+    webauthn: Arc::new(webauthn),
+  };
 
   let app = Router::<AppState>::new()
     .nest("/api", create_api_router())
@@ -66,4 +73,5 @@ fn create_api_router() -> Router<AppState> {
       "/user",
       user::create_user_router().layer(middleware::from_fn(auth_middleware)),
     )
+    .nest("/webauthn", webauthn::create_webauthn_router())
 }
