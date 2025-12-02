@@ -2,6 +2,7 @@ mod backend;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+  dotenv::dotenv().ok();
   // 设置日志级别
   if std::env::var("RUST_LOG").is_err() {
     unsafe {

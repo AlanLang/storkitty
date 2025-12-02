@@ -144,6 +144,7 @@ pub fn create_passkey_table(conn: &Connection) -> anyhow::Result<()> {
       counter INTEGER NOT NULL DEFAULT 0,
       name TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      last_used_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
     )",
     (),
@@ -159,6 +160,7 @@ pub struct Passkey {
   pub counter: u32,
   pub name: String,
   pub created_at: String,
+  pub last_used_at: String,
 }
 
 pub fn save_passkey(
@@ -177,7 +179,7 @@ pub fn save_passkey(
 
 pub fn get_passkeys_by_user_id(conn: &Connection, user_id: i64) -> anyhow::Result<Vec<Passkey>> {
   let mut stmt = conn.prepare(
-    "SELECT id, user_id, credential_id, public_key, counter, name, created_at 
+    "SELECT id, user_id, credential_id, public_key, counter, name, created_at, last_used_at
      FROM passkey WHERE user_id = ? ORDER BY created_at DESC",
   )?;
 
@@ -191,6 +193,7 @@ pub fn get_passkeys_by_user_id(conn: &Connection, user_id: i64) -> anyhow::Resul
         counter: row.get("counter")?,
         name: row.get("name")?,
         created_at: row.get("created_at")?,
+        last_used_at: row.get("last_used_at")?,
       })
     })?
     .collect::<Result<Vec<_>, _>>()?;
@@ -203,7 +206,7 @@ pub fn get_passkey_by_credential_id(
   credential_id: &str,
 ) -> anyhow::Result<Passkey> {
   let passkey = conn.query_row(
-    "SELECT id, user_id, credential_id, public_key, counter, name, created_at 
+    "SELECT id, user_id, credential_id, public_key, counter, name, created_at, last_used_at
      FROM passkey WHERE credential_id = ?",
     [credential_id],
     |row| {
@@ -215,6 +218,7 @@ pub fn get_passkey_by_credential_id(
         counter: row.get("counter")?,
         name: row.get("name")?,
         created_at: row.get("created_at")?,
+        last_used_at: row.get("last_used_at")?,
       })
     },
   )?;
@@ -227,7 +231,7 @@ pub fn update_passkey_counter(
   counter: u32,
 ) -> anyhow::Result<()> {
   conn.execute(
-    "UPDATE passkey SET counter = ? WHERE credential_id = ?",
+    "UPDATE passkey SET counter = ?, last_used_at = CURRENT_TIMESTAMP WHERE credential_id = ?",
     (counter, credential_id),
   )?;
   Ok(())
