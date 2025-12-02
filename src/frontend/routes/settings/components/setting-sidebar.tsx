@@ -74,14 +74,31 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="p-4">
         <Button
           variant="outline"
-          className="w-full justify-start gap-2"
+          className="w-full justify-start gap-3 h-12 relative overflow-hidden group
+                     border-2 border-primary/20 hover:border-primary/40
+                     bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5
+                     hover:from-primary/10 hover:via-primary/20 hover:to-primary/10
+                     transition-all duration-300 ease-out
+                     hover:shadow-lg hover:shadow-primary/20
+                     font-medium text-base"
           onClick={() => navigate({ to: "/" })}
         >
-          <ChevronLeft className="h-4 w-4" />
-          返回主页
+          <div
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent 
+                          translate-x-[-100%] group-hover:translate-x-[100%] 
+                          transition-transform duration-700 ease-out"
+          />
+          <ChevronLeft
+            className="h-5 w-5 transition-transform duration-300 
+                                  group-hover:-translate-x-1 group-hover:scale-110
+                                  relative z-10"
+          />
+          <span className="relative z-10 group-hover:translate-x-0.5 transition-transform duration-300">
+            返回主页
+          </span>
         </Button>
       </SidebarFooter>
     </Sidebar>
