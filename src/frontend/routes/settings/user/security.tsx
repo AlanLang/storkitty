@@ -1,9 +1,4 @@
-import {
-  getUserProfile,
-  updatePassword,
-  updateProfile,
-  type UpdatePasswordDto,
-} from "@/api/user";
+import { updatePassword, type UpdatePasswordDto } from "@/api/user";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,168 +10,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { FingerprintPattern, Lock, Shield, User } from "lucide-react";
-import { useEffect, useState } from "react";
+import { FingerprintPattern, Lock, Shield } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
-
-export const Route = createFileRoute("/settings/user")({
+export const Route = createFileRoute("/settings/user/security")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">用户设置</h1>
-        <p className="text-muted-foreground mt-2">
-          管理您的个人资料和账户安全设置
-        </p>
-      </div>
-
-      <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
-          <TabsTrigger value="profile" className="gap-2">
-            <User className="h-4 w-4" />
-            个人资料
-          </TabsTrigger>
-          <TabsTrigger value="security" className="gap-2">
-            <Shield className="h-4 w-4" />
-            密码和安全
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="profile">
-          <ProfileSettings />
-        </TabsContent>
-
-        <TabsContent value="security">
-          <SecuritySettings />
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
-
-function ProfileSettings() {
-  const queryClient = useQueryClient();
-  const { data: profile, isLoading } = useQuery({
-    queryKey: ["userProfile"],
-    queryFn: getUserProfile,
-  });
-
-  const [name, setName] = useState("");
-  const [avatar, setAvatar] = useState("");
-
-  useEffect(() => {
-    if (profile) {
-      setName(profile.name);
-      setAvatar(profile.avatar);
-    }
-  }, [profile]);
-
-  const updateMutation = useMutation({
-    mutationFn: updateProfile,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
-      queryClient.invalidateQueries({ queryKey: ["appInfo"] });
-      toast.success("个人资料已更新");
-    },
-    onError: () => {
-      toast.error("更新失败");
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    updateMutation.mutate({ name, avatar });
-  };
-
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-6 w-32" />
-          <Skeleton className="h-4 w-48 mt-2" />
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-12" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-3 w-32" />
-          </div>
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-12" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-3 w-40" />
-          </div>
-          <Skeleton className="h-10 w-24" />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>个人信息</CardTitle>
-        <CardDescription>更新您的个人资料信息</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="email">邮箱</Label>
-            <Input
-              id="email"
-              type="email"
-              value={profile?.email || ""}
-              disabled
-              className="bg-muted"
-            />
-            <p className="text-sm text-muted-foreground">邮箱地址不可修改</p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="name">昵称</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="输入您的昵称"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="avatar">头像 URL</Label>
-            <Input
-              id="avatar"
-              type="url"
-              value={avatar}
-              onChange={(e) => setAvatar(e.target.value)}
-              placeholder="https://example.com/avatar.jpg"
-            />
-            <p className="text-sm text-muted-foreground">
-              输入头像图片的 URL 地址
-            </p>
-          </div>
-
-          <Button type="submit" disabled={updateMutation.isPending}>
-            {updateMutation.isPending ? "保存中..." : "保存更改"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
-  );
-}
-
-function SecuritySettings() {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");

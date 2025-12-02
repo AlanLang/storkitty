@@ -14,7 +14,10 @@ import { Route as LoginRouteImport } from './login'
 import { Route as SettingsRouteRouteImport } from './settings/route'
 import { Route as ListRouteRouteImport } from './list/route'
 import { Route as IndexRouteImport } from './index'
-import { Route as SettingsUserRouteImport } from './settings/user'
+import { Route as SettingsUserRouteRouteImport } from './settings/user/route'
+import { Route as SettingsUserIndexRouteImport } from './settings/user/index'
+import { Route as SettingsUserSecurityRouteImport } from './settings/user/security'
+import { Route as SettingsUserProfileRouteImport } from './settings/user/profile'
 import { Route as ListSpaceSplatRouteImport } from './list/$space/$'
 
 const SetupRoute = SetupRouteImport.update({
@@ -42,10 +45,25 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SettingsUserRoute = SettingsUserRouteImport.update({
+const SettingsUserRouteRoute = SettingsUserRouteRouteImport.update({
   id: '/user',
   path: '/user',
   getParentRoute: () => SettingsRouteRoute,
+} as any)
+const SettingsUserIndexRoute = SettingsUserIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsUserRouteRoute,
+} as any)
+const SettingsUserSecurityRoute = SettingsUserSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => SettingsUserRouteRoute,
+} as any)
+const SettingsUserProfileRoute = SettingsUserProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => SettingsUserRouteRoute,
 } as any)
 const ListSpaceSplatRoute = ListSpaceSplatRouteImport.update({
   id: '/$space/$',
@@ -59,8 +77,11 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRouteRouteWithChildren
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
-  '/settings/user': typeof SettingsUserRoute
+  '/settings/user': typeof SettingsUserRouteRouteWithChildren
   '/list/$space/$': typeof ListSpaceSplatRoute
+  '/settings/user/profile': typeof SettingsUserProfileRoute
+  '/settings/user/security': typeof SettingsUserSecurityRoute
+  '/settings/user/': typeof SettingsUserIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -68,8 +89,10 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRouteRouteWithChildren
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
-  '/settings/user': typeof SettingsUserRoute
   '/list/$space/$': typeof ListSpaceSplatRoute
+  '/settings/user/profile': typeof SettingsUserProfileRoute
+  '/settings/user/security': typeof SettingsUserSecurityRoute
+  '/settings/user': typeof SettingsUserIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -78,8 +101,11 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRouteRouteWithChildren
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
-  '/settings/user': typeof SettingsUserRoute
+  '/settings/user': typeof SettingsUserRouteRouteWithChildren
   '/list/$space/$': typeof ListSpaceSplatRoute
+  '/settings/user/profile': typeof SettingsUserProfileRoute
+  '/settings/user/security': typeof SettingsUserSecurityRoute
+  '/settings/user/': typeof SettingsUserIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +117,9 @@ export interface FileRouteTypes {
     | '/setup'
     | '/settings/user'
     | '/list/$space/$'
+    | '/settings/user/profile'
+    | '/settings/user/security'
+    | '/settings/user/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -98,8 +127,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/login'
     | '/setup'
-    | '/settings/user'
     | '/list/$space/$'
+    | '/settings/user/profile'
+    | '/settings/user/security'
+    | '/settings/user'
   id:
     | '__root__'
     | '/'
@@ -109,6 +140,9 @@ export interface FileRouteTypes {
     | '/setup'
     | '/settings/user'
     | '/list/$space/$'
+    | '/settings/user/profile'
+    | '/settings/user/security'
+    | '/settings/user/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -160,8 +194,29 @@ declare module '@tanstack/react-router' {
       id: '/settings/user'
       path: '/user'
       fullPath: '/settings/user'
-      preLoaderRoute: typeof SettingsUserRouteImport
+      preLoaderRoute: typeof SettingsUserRouteRouteImport
       parentRoute: typeof SettingsRouteRoute
+    }
+    '/settings/user/': {
+      id: '/settings/user/'
+      path: '/'
+      fullPath: '/settings/user/'
+      preLoaderRoute: typeof SettingsUserIndexRouteImport
+      parentRoute: typeof SettingsUserRouteRoute
+    }
+    '/settings/user/security': {
+      id: '/settings/user/security'
+      path: '/security'
+      fullPath: '/settings/user/security'
+      preLoaderRoute: typeof SettingsUserSecurityRouteImport
+      parentRoute: typeof SettingsUserRouteRoute
+    }
+    '/settings/user/profile': {
+      id: '/settings/user/profile'
+      path: '/profile'
+      fullPath: '/settings/user/profile'
+      preLoaderRoute: typeof SettingsUserProfileRouteImport
+      parentRoute: typeof SettingsUserRouteRoute
     }
     '/list/$space/$': {
       id: '/list/$space/$'
@@ -185,12 +240,27 @@ const ListRouteRouteWithChildren = ListRouteRoute._addFileChildren(
   ListRouteRouteChildren,
 )
 
+interface SettingsUserRouteRouteChildren {
+  SettingsUserProfileRoute: typeof SettingsUserProfileRoute
+  SettingsUserSecurityRoute: typeof SettingsUserSecurityRoute
+  SettingsUserIndexRoute: typeof SettingsUserIndexRoute
+}
+
+const SettingsUserRouteRouteChildren: SettingsUserRouteRouteChildren = {
+  SettingsUserProfileRoute: SettingsUserProfileRoute,
+  SettingsUserSecurityRoute: SettingsUserSecurityRoute,
+  SettingsUserIndexRoute: SettingsUserIndexRoute,
+}
+
+const SettingsUserRouteRouteWithChildren =
+  SettingsUserRouteRoute._addFileChildren(SettingsUserRouteRouteChildren)
+
 interface SettingsRouteRouteChildren {
-  SettingsUserRoute: typeof SettingsUserRoute
+  SettingsUserRouteRoute: typeof SettingsUserRouteRouteWithChildren
 }
 
 const SettingsRouteRouteChildren: SettingsRouteRouteChildren = {
-  SettingsUserRoute: SettingsUserRoute,
+  SettingsUserRouteRoute: SettingsUserRouteRouteWithChildren,
 }
 
 const SettingsRouteRouteWithChildren = SettingsRouteRoute._addFileChildren(
