@@ -72,6 +72,9 @@ function RouteComponent() {
   if (!app.initialed) {
     return <Navigate to="/setup" />;
   }
+  if (app.loggedIn) {
+    return <Navigate to="/" />;
+  }
   return <LoginForm />;
 }
 
