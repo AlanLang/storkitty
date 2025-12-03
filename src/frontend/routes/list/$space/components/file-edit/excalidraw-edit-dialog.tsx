@@ -52,7 +52,25 @@ export function ExcalidrawEditDialog(props: FileEditDialogProps) {
         const el = document.createElement("div");
         el.style.height = "100%";
         el.style.width = "100%";
-        fileRef.current = JSON.parse(file);
+        try {
+          fileRef.current = JSON.parse(file);
+        } catch (_) {
+          console.warn("加载 Excalidraw 文件失败，使用默认数据");
+          fileRef.current = {
+            type: "excalidraw",
+            version: 2,
+            source: "https://excalidraw.com",
+            elements: [],
+            appState: {
+              gridSize: 20,
+              gridStep: 5,
+              gridModeEnabled: false,
+              viewBackgroundColor: "#ffffff",
+              lockedMultiSelections: {},
+            },
+            files: {},
+          };
+        }
         js.renderExcalidraw(el, {
           initialData: fileRef.current,
           excalidrawAPI: (api: ExcalidrawImperativeAPI) => {
