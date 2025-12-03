@@ -1,3 +1,4 @@
+mod excalidraw;
 mod previewable;
 
 use crate::backend::{error::AppError, extractor::storage::StoragePath};
@@ -7,6 +8,10 @@ pub async fn file_open(
   StoragePath(path): StoragePath,
 ) -> Result<axum::response::Response, AppError> {
   let file_path = path.get_path();
+
+  if excalidraw::is_excalidraw_file(file_path) {
+    return excalidraw::open_excalidraw_file(file_path).await;
+  }
 
   // 检查文件是否存在且是文件
   if !file_path.exists() || !file_path.is_file() {
