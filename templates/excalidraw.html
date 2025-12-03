@@ -39,13 +39,16 @@
     // 启动应用
     System.import("excalidraw").then((ExcalidrawModule) => {
       const Excalidraw = ExcalidrawModule.Excalidraw; // named export
+      const initialData = {{ data|safe }};
+      initialData.appState.viewModeEnabled = true;
+      initialData.appState.zenModeEnabled = true;
 
       const App = () => {
         return React.createElement(
           "div",
           { style: { height: "100%", width: "100%" } },
           React.createElement(Excalidraw, {
-            initialData: {{ data }},
+            initialData: initialData,
             theme: "light",
           })
         );
