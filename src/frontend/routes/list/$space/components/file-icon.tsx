@@ -134,5 +134,6 @@ export const fileExtensions = {
     ".xlsx",
     ".ppt",
     ".pptx",
+    ".rs",
   ],
 };

@@ -52,6 +52,10 @@ export default defineConfig({
         target: "http://localhost:3330",
         changeOrigin: true,
       },
+      "/open": {
+        target: "http://localhost:3330",
+        changeOrigin: true,
+      },
     },
   },
 });

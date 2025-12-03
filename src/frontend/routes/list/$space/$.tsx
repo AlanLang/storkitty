@@ -476,21 +476,25 @@ function FileListItem({
     ? baseItems
     : [
         {
+          label: "预览",
+          icon: <SquareArrowOutUpRight className="mr-2 h-4 w-4" />,
+          onClick: () => {
+            const url = urlJoin("/open", path, file.name);
+            window.open(url, "_blank");
+          },
+        },
+        {
           label: "编辑",
           icon: <SquarePen className="mr-2 h-4 w-4" />,
           onClick: () => onEdit(file),
         },
+
         {
           label: "下载",
           icon: <CloudDownload className="mr-2 h-4 w-4" />,
           onClick: () => {
             downloadFile(path, file.name);
           },
-        },
-        {
-          label: "预览",
-          icon: <SquareArrowOutUpRight className="mr-2 h-4 w-4" />,
-          onClick: () => {},
         },
         {
           label: "复制链接",
