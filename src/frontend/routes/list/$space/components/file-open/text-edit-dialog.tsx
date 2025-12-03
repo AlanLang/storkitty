@@ -38,7 +38,7 @@ export function TextFileEditDialog(props: FileOpenDialogProps) {
     {
       enabled: isOpen,
       preventDefault: true,
-    },
+    }
   );
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -86,7 +86,7 @@ export function TextFileEditDialog(props: FileOpenDialogProps) {
         showCloseButton={false}
         className={cn(
           DIALOG_CONTENT_CLASSNAME,
-          "sm:max-w-[90vw] sm:w-[90vw] sm:h-[90vh] w-full max-w-full h-full sm:rounded-lg rounded-none flex flex-col p-0 gap-0 overflow-hidden",
+          "sm:max-w-[90vw] sm:w-[90vw] sm:h-[90vh] w-full max-w-full h-full sm:rounded-lg rounded-none flex flex-col p-0 gap-0 overflow-hidden"
         )}
       >
         <DialogHeader className="p-4 border-b shrink-0 flex flex-row items-center justify-between">

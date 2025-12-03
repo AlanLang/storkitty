@@ -1,3 +1,4 @@
+import { getFileContent } from "@/api/file/content";
 import { FileType } from "@/api/file/list";
 import { Button } from "@/components/ui/button";
 import {
@@ -6,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { urlJoin } from "@/lib/urlJoin";
 import { cn } from "@/lib/utils";
 import { Loader2, Maximize, Minimize, Save, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -14,40 +16,49 @@ import { FileIcon } from "../file-icon";
 import type { FileOpenDialogProps } from "./type";
 
 export function ExcalidrawEditDialog(props: FileOpenDialogProps) {
-  const { isOpen, onCancel, onFinish, fileName } = props;
+  const { path, isOpen, onFinish, fileName } = props;
   const ref = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMaximized, setIsMaximized] = useState(false);
   const cssRef = useRef<HTMLLinkElement>(null);
-  const editorRef = useRef<unknown>(null);
+  const editorRef = useRef<ExcalidrawImperativeAPI>(null);
+  const filePath = urlJoin(path, fileName);
 
   useEffect(() => {
     const loadExcalidrawCss = loadCss(
-      "https://unpkg.com/excalidraw-embed/dist/excalidraw-embed.css",
+      "https://unpkg.com/excalidraw-embed/dist/excalidraw-embed.css"
     );
     const loadExcalidrawJs = import(
       // @ts-expect-error
       "https://unpkg.com/excalidraw-embed@0.18.1/dist/index.js"
     );
+    const getFile = getFileContent(filePath);
 
-    Promise.all([loadExcalidrawCss, loadExcalidrawJs]).then(([css, js]) => {
-      const el = document.createElement("div");
-      el.style.height = "100%";
-      el.style.width = "100%";
-      js.renderExcalidraw(el).then((api: unknown) => {
-        editorRef.current = api;
-        ref.current?.appendChild(el);
-        setIsLoading(false);
-      });
-      cssRef.current = css;
-    });
+    Promise.all([loadExcalidrawCss, loadExcalidrawJs, getFile]).then(
+      ([css, js, file]) => {
+        const el = document.createElement("div");
+        el.style.height = "100%";
+        el.style.width = "100%";
+        js.renderExcalidraw(el, JSON.parse(file)).then(
+          (api: ExcalidrawImperativeAPI) => {
+            editorRef.current = api;
+            ref.current?.appendChild(el);
+            setIsLoading(false);
+            setTimeout(() => {
+              api.scrollToContent();
+            }, 3000);
+          }
+        );
+        cssRef.current = css;
+      }
+    );
 
     return () => {
       if (cssRef.current) {
         document.head.removeChild(cssRef.current);
       }
     };
-  }, []);
+  }, [filePath]);
 
   const handleClose = () => {
     onFinish();
@@ -64,7 +75,7 @@ export function ExcalidrawEditDialog(props: FileOpenDialogProps) {
           DIALOG_CONTENT_CLASSNAME,
           "sm:max-w-[90vw] sm:w-[90vw] sm:h-[90vh] w-full max-w-full h-full sm:rounded-lg rounded-none flex flex-col p-0 gap-0 overflow-hidden",
           isMaximized &&
-            "sm:max-w-full sm:w-full sm:h-full w-full max-w-full h-full rounded-none flex flex-col p-0 gap-0 overflow-hidden shadow-none border-none sm:rounded-none",
+            "sm:max-w-full sm:w-full sm:h-full w-full max-w-full h-full rounded-none flex flex-col p-0 gap-0 overflow-hidden shadow-none border-none sm:rounded-none"
         )}
       >
         <DialogHeader className="p-4 border-b shrink-0 flex flex-row items-center justify-between">
@@ -117,4 +128,11 @@ export function loadCss(url: string): Promise<HTMLLinkElement> {
 
     document.head.appendChild(link);
   });
+}
+
+interface ExcalidrawImperativeAPI {
+  getAppState: () => unknown;
+  getFiles: () => unknown;
+  getSceneElements: () => unknown;
+  scrollToContent: () => void;
 }
