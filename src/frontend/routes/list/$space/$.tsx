@@ -31,7 +31,6 @@ import {
   Circle,
   CloudDownload,
   Copy,
-  Eye,
   FileArchive,
   FilePlus,
   FolderOpen,
@@ -43,6 +42,7 @@ import {
   MoreVertical,
   SendToBack,
   SquareArrowOutUpRight,
+  SquarePen,
   Trash2,
   UploadIcon,
 } from "lucide-react";
@@ -328,8 +328,6 @@ function FileList({
         to: "/list/$space/$",
         params: { space, _splat: `${_splat}/${file.name}` },
       });
-    } else {
-      onEdit(file);
     }
   };
 
@@ -478,8 +476,8 @@ function FileListItem({
     ? baseItems
     : [
         {
-          label: "查看",
-          icon: <Eye className="mr-2 h-4 w-4" />,
+          label: "编辑",
+          icon: <SquarePen className="mr-2 h-4 w-4" />,
           onClick: () => onEdit(file),
         },
         {
