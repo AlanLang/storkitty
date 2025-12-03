@@ -476,11 +476,6 @@ function FileListItem({
     ? baseItems
     : [
         {
-          label: "编辑",
-          icon: <SquarePen className="mr-2 h-4 w-4" />,
-          onClick: () => onEdit(file),
-        },
-        {
           label: "预览",
           icon: <SquareArrowOutUpRight className="mr-2 h-4 w-4" />,
           onClick: () => {
@@ -488,6 +483,12 @@ function FileListItem({
             window.open(url, "_blank");
           },
         },
+        {
+          label: "编辑",
+          icon: <SquarePen className="mr-2 h-4 w-4" />,
+          onClick: () => onEdit(file),
+        },
+
         {
           label: "下载",
           icon: <CloudDownload className="mr-2 h-4 w-4" />,
