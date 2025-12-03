@@ -1,4 +1,4 @@
-export interface FileOpenDialogProps {
+export interface FileEditDialogProps {
   path: string;
   fileName: string;
   isOpen: boolean;

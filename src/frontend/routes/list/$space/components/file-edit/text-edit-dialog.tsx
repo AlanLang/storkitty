@@ -24,11 +24,11 @@ import { lazy, Suspense, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { toast } from "sonner";
 import { DIALOG_CONTENT_CLASSNAME } from "../constant";
-import type { FileOpenDialogProps } from "./type";
+import type { FileEditDialogProps } from "./type";
 
 const Editor = lazy(() => import("@monaco-editor/react"));
 
-export function TextFileEditDialog(props: FileOpenDialogProps) {
+export function TextFileEditDialog(props: FileEditDialogProps) {
   const { path, fileName, isOpen, onCancel, onFinish } = props;
   const filePath = `${path}/${fileName}`;
   const fileExtension = fileName.split(".").pop() || "txt";

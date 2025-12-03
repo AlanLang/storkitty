@@ -15,9 +15,9 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { DIALOG_CONTENT_CLASSNAME } from "../constant";
 import { FileIcon } from "../file-icon";
-import type { FileOpenDialogProps } from "./type";
+import type { FileEditDialogProps } from "./type";
 
-export function ExcalidrawEditDialog(props: FileOpenDialogProps) {
+export function ExcalidrawEditDialog(props: FileEditDialogProps) {
   const { path, isOpen, onFinish, fileName } = props;
   const ref = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);

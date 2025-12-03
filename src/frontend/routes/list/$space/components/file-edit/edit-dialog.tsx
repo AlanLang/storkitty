@@ -13,9 +13,9 @@ import { useEffect, useState } from "react";
 import { DIALOG_CONTENT_CLASSNAME } from "../constant";
 import { fileExtensions } from "../file-icon";
 import { TextFileEditDialog } from "./text-edit-dialog";
-import type { FileOpenDialogProps } from "./type";
+import type { FileEditDialogProps } from "./type";
 
-export function EditDialog(props: FileOpenDialogProps) {
+export function EditDialog(props: FileEditDialogProps) {
   const { fileName, isOpen, onCancel } = props;
   const [forceEdit, setForceEdit] = useState(false);
 

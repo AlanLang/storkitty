@@ -1,8 +1,8 @@
 import { FileType, type FileInfo } from "@/api/file/list";
 import { FileCreateDialog } from "./file-create-dialog";
 import { FileDeleteDialog } from "./file-delete-dialog";
+import { FileEditDialog } from "./file-edit/file-edit-dialog";
 import { FileMoveDialog } from "./file-move-dialog";
-import { FileOpenDialog } from "./file-open/file-open-dialog";
 import { FileRenameDialog } from "./file-rename-dialog";
 import { FolderCreateDialog } from "./folder-create-dialog";
 import { FolderDeleteDialog } from "./folder-delete-dialog";
@@ -87,7 +87,7 @@ export function ListDialog({
         onFinish={onFinish}
       />
 
-      <FileOpenDialog
+      <FileEditDialog
         path={path}
         fileName={file?.name ?? ""}
         isOpen={open?.type === "edit" && file?.fileType === FileType.File}
