@@ -9,8 +9,8 @@ pub async fn file_open(
 ) -> Result<axum::response::Response, AppError> {
   let file_path = path.get_path();
 
-  if excalidraw::is_excalidraw_file(file_path) {
-    return excalidraw::open_excalidraw_file(file_path).await;
+  if excalidraw::is_excalidraw_file(&file_path) {
+    return excalidraw::open_excalidraw_file(&file_path).await;
   }
 
   // 检查文件是否存在且是文件

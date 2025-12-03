@@ -1,11 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <title>{{ title }}</title>
+  <meta charset="UTF-8" />
+  <title>{{ title }}</title>
+  <style>
+    html, body, #root {
+      margin: 0;
+      height: 100%;
+      width: 100%;
+    }
+  </style>
 </head>
 <body>
-    <h1>Hello, {{ name }}!</h1>
-    <p>This is Askama + Axum working together.</p>
+  <div id="root"></div>
+
+  <!-- React & ReactDOM UMD -->
+  <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js"></script>
+
+  <!-- SystemJS for loading ESM modules -->
+  <script src="https://cdn.jsdelivr.net/npm/systemjs/dist/system.min.js"></script>
+
+  <script type="text/javascript">
+    // 让 SystemJS 支持 import-map
+    System.import = System.import || System["import"];
+  </script>
+
+  <!-- Import Map：告诉 SystemJS 从哪里加载 Excalidraw -->
+  <script type="systemjs-importmap">
+  {
+    "imports": {
+      "excalidraw": "https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6/dist/excalidraw.development.js"
+    }
+  }
+  </script>
+
+  <script>
+    // 启动应用
+    System.import("excalidraw").then((ExcalidrawModule) => {
+      const Excalidraw = ExcalidrawModule.Excalidraw; // named export
+
+      const App = () => {
+        return React.createElement(
+          "div",
+          { style: { height: "100%", width: "100%" } },
+          React.createElement(Excalidraw, {
+            initialData: {{ data }},
+            theme: "light",
+          })
+        );
+      };
+
+      ReactDOM.createRoot(document.getElementById("root")).render(
+        React.createElement(App)
+      );
+    });
+  </script>
 </body>
 </html>
