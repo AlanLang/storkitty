@@ -11,8 +11,16 @@ import { cn } from "@/lib/utils";
 import { FileIcon } from "@/routes/list/$space/components/file-icon";
 import type { OnMount } from "@monaco-editor/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Blocks, Copy, Loader2, Save, X } from "lucide-react";
-import { lazy, Suspense, useRef } from "react";
+import {
+  Blocks,
+  Copy,
+  Loader2,
+  Maximize,
+  Minimize,
+  Save,
+  X,
+} from "lucide-react";
+import { lazy, Suspense, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { toast } from "sonner";
 import { DIALOG_CONTENT_CLASSNAME } from "../constant";
@@ -26,6 +34,7 @@ export function TextFileEditDialog(props: FileOpenDialogProps) {
   const fileExtension = fileName.split(".").pop() || "txt";
   const editorRef = useRef<Parameters<OnMount>[0]>(null);
   const isChanged = useRef(false);
+  const [isMaximized, setIsMaximized] = useState(false);
 
   const theme = localStorage.getItem("theme") || "light";
   const isDark = theme === "dark";
@@ -87,6 +96,8 @@ export function TextFileEditDialog(props: FileOpenDialogProps) {
         className={cn(
           DIALOG_CONTENT_CLASSNAME,
           "sm:max-w-[90vw] sm:w-[90vw] sm:h-[90vh] w-full max-w-full h-full sm:rounded-lg rounded-none flex flex-col p-0 gap-0 overflow-hidden",
+          isMaximized &&
+            "sm:max-w-full sm:w-full sm:h-full w-full max-w-full h-full rounded-none flex flex-col p-0 gap-0 overflow-hidden shadow-none border-none sm:rounded-none",
         )}
       >
         <DialogHeader className="p-4 border-b shrink-0 flex flex-row items-center justify-between">
@@ -96,6 +107,14 @@ export function TextFileEditDialog(props: FileOpenDialogProps) {
             {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
           </DialogTitle>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-full outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              onClick={() => setIsMaximized(!isMaximized)}
+            >
+              {isMaximized ? <Minimize /> : <Maximize />}
+            </Button>
             <Button
               variant="ghost"
               size="icon"
