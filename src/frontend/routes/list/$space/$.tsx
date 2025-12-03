@@ -518,6 +518,7 @@ function FileListItem({
       key={file.name}
       items={items}
       onClick={() => onClick(file)}
+      onDoubleClick={() => onEdit(file)}
     >
       <div className="flex items-center justify-between p-3 hover:bg-muted/50 data-[state=open]:bg-muted/50 has-data-[[state=open]]:bg-muted/50 cursor-pointer group mt-0">
         <div className="flex items-center space-x-3 flex-1 min-w-0">

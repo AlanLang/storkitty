@@ -28,6 +28,7 @@ export interface MenuListProps {
   items: (MenuItem | MenuSeparator)[];
   children: React.ReactNode;
   onClick?: () => void;
+  onDoubleClick?: () => void;
   className?: string;
 }
 
@@ -41,11 +42,17 @@ export function MenuList({
   children,
   className,
   onClick,
+  onDoubleClick,
 }: MenuListProps) {
   if (type === "context") {
     return (
       <ContextMenu>
-        <ContextMenuTrigger asChild onClick={onClick} className={className}>
+        <ContextMenuTrigger
+          asChild
+          onClick={onClick}
+          onDoubleClick={onDoubleClick}
+          className={className}
+        >
           {children}
         </ContextMenuTrigger>
         <ContextMenuContent className="w-52">
