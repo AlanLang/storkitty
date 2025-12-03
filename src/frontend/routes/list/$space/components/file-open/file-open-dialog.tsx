@@ -21,7 +21,7 @@ export function FileOpenDialog(props: FileOpenDialogProps) {
   );
   const isExcalidraw = fileName.toLowerCase().endsWith(".excalidraw");
   if (isExcalidraw) {
-    return <ExcalidrawEditDialog />;
+    return <ExcalidrawEditDialog {...props} />;
   }
 
   if (isText) {
