@@ -15,41 +15,42 @@ import type { FileOpenDialogProps } from "./type";
 
 export function ExcalidrawEditDialog(props: FileOpenDialogProps) {
   const { isOpen, onCancel, onFinish, fileName } = props;
-  const isChanged = useRef(false);
   const ref = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMaximized, setIsMaximized] = useState(false);
-  useEffect(() => {
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = "https://unpkg.com/excalidraw-embed/dist/excalidraw-embed.css";
+  const cssRef = useRef<HTMLLinkElement>(null);
+  const editorRef = useRef<unknown>(null);
 
-    document.head.appendChild(link);
-    // @ts-expect-error
-    import("https://unpkg.com/excalidraw-embed@0.18.1/dist/index.js").then(
-      (mod) => {
-        const el = document.createElement("div");
-        el.style.height = "100%";
-        el.style.width = "100%";
-        mod.renderExcalidraw(el).then((api) => {
-          ref.current?.appendChild(el);
-          setIsLoading(false);
-        });
-      },
+  useEffect(() => {
+    const loadExcalidrawCss = loadCss(
+      "https://unpkg.com/excalidraw-embed/dist/excalidraw-embed.css",
+    );
+    const loadExcalidrawJs = import(
+      // @ts-expect-error
+      "https://unpkg.com/excalidraw-embed@0.18.1/dist/index.js"
     );
 
+    Promise.all([loadExcalidrawCss, loadExcalidrawJs]).then(([css, js]) => {
+      const el = document.createElement("div");
+      el.style.height = "100%";
+      el.style.width = "100%";
+      js.renderExcalidraw(el).then((api: unknown) => {
+        editorRef.current = api;
+        ref.current?.appendChild(el);
+        setIsLoading(false);
+      });
+      cssRef.current = css;
+    });
+
     return () => {
-      document.head.removeChild(link);
+      if (cssRef.current) {
+        document.head.removeChild(cssRef.current);
+      }
     };
   }, []);
 
   const handleClose = () => {
-    if (isChanged.current) {
-      onFinish();
-    } else {
-      onCancel();
-    }
-    isChanged.current = false;
+    onFinish();
   };
 
   return (
@@ -103,4 +104,17 @@ export function ExcalidrawEditDialog(props: FileOpenDialogProps) {
       </DialogContent>
     </Dialog>
   );
+}
+
+export function loadCss(url: string): Promise<HTMLLinkElement> {
+  return new Promise((resolve, reject) => {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = url;
+
+    link.onload = () => resolve(link);
+    link.onerror = (err) => reject(err);
+
+    document.head.appendChild(link);
+  });
 }
