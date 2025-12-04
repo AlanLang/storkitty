@@ -27,6 +27,7 @@ export function ExcalidrawEditDialog(props: FileEditDialogProps) {
   const filePath = urlJoin(path, fileName);
   const fileRef = useRef<Record<string, unknown>>({});
   const serializeAsJSON = useRef<(...args: unknown[]) => string>(() => "");
+  const theme = localStorage.getItem("theme") || "light";
 
   const { mutate: saveContent, isPending: isSaving } = useMutation({
     mutationFn: async (content: string) => {
@@ -73,6 +74,7 @@ export function ExcalidrawEditDialog(props: FileEditDialogProps) {
         }
         js.renderExcalidraw(el, {
           initialData: fileRef.current,
+          theme: theme,
           excalidrawAPI: (api: ExcalidrawImperativeAPI) => {
             editorRef.current = api;
           },
@@ -89,7 +91,7 @@ export function ExcalidrawEditDialog(props: FileEditDialogProps) {
         document.head.removeChild(cssRef.current);
       }
     };
-  }, [filePath]);
+  }, [filePath, theme]);
 
   const handleClose = () => {
     onFinish();
