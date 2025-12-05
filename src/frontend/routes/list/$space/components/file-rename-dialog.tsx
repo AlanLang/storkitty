@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useMutation } from "@tanstack/react-query";
 import { FilePen, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { DIALOG_CONTENT_CLASSNAME } from "./constant";
 
 interface FileRenameDialogProps {
@@ -31,12 +31,33 @@ export function FileRenameDialog({
   onFinish,
 }: FileRenameDialogProps) {
   const [newName, setNewName] = useState(name);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // 选中文件名部分（不包含后缀）
+  const selectFileName = useCallback((fileName: string) => {
+    // 使用 requestAnimationFrame 确保在 DOM 更新后执行
+    requestAnimationFrame(() => {
+      const input = inputRef.current;
+      if (!input) return;
+      input.focus();
+      const lastDotIndex = fileName.lastIndexOf(".");
+      // 如果有后缀且不是以点开头的隐藏文件（如 .gitignore）
+      if (lastDotIndex > 0) {
+        console.log(0, lastDotIndex);
+        input.setSelectionRange(0, lastDotIndex);
+      } else {
+        // 没有后缀或是隐藏文件，全选
+        input.select();
+      }
+    });
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
       setNewName(name);
+      selectFileName(name);
     }
-  }, [isOpen, name]);
+  }, [isOpen, name, selectFileName]);
 
   const { mutate, isPending } = useMutation({
     mutationFn: renameFile,
@@ -76,6 +97,7 @@ export function FileRenameDialog({
 
           <div className="w-full mt-4">
             <Input
+              ref={inputRef}
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="请输入名称"
