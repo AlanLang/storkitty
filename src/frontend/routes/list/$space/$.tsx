@@ -1,3 +1,4 @@
+import { cloneFile } from "@/api/file/clone";
 import { compressDirectory } from "@/api/file/compress";
 import { extractFile } from "@/api/file/extract";
 import type { FileInfo } from "@/api/file/list";
@@ -23,7 +24,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { TaskProvider, useFileUploadDialog } from "@/hooks/use-task";
 import { formatFileSize } from "@/lib/file";
 import { urlJoin } from "@/lib/urlJoin";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
 import {
   Archive,
@@ -43,6 +44,7 @@ import {
   SendToBack,
   SquareArrowOutUpRight,
   SquarePen,
+  Timer,
   Trash2,
   UploadIcon,
 } from "lucide-react";
@@ -88,6 +90,13 @@ function FilePage() {
   const { openFileDialog } = useFileUploadDialog();
   const isMobile = useIsMobile();
 
+  const { mutate: cloneFileMutation } = useMutation({
+    mutationFn: cloneFile,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, path] });
+    },
+  });
+
   return (
     <div className="flex h-full w-full">
       <FileListSidebar />
@@ -125,6 +134,9 @@ function FilePage() {
               onEdit={(file) => setOpen({ type: "edit", file })}
               onCopy={(file) => setOpen({ type: "copy", file })}
               onMove={(file) => setOpen({ type: "move", file })}
+              onClone={(file) =>
+                cloneFileMutation({ path, fileName: file.name })
+              }
             />
           </div>
         </SidebarInset>
@@ -283,12 +295,14 @@ function FileList({
   onEdit,
   onCopy,
   onMove,
+  onClone,
 }: {
   onDelete: (file: FileInfo) => void;
   onRename: (file: FileInfo) => void;
   onEdit: (file: FileInfo) => void;
   onCopy: (file: FileInfo) => void;
   onMove: (file: FileInfo) => void;
+  onClone: (file: FileInfo) => void;
 }) {
   const queryClient = useQueryClient();
   const { space, _splat } = Route.useParams();
@@ -386,6 +400,7 @@ function FileList({
             onMove={onMove}
             onExtract={handleExtract}
             onCompress={handleCompress}
+            onClone={onClone}
           />
         ))}
       </div>
@@ -411,6 +426,7 @@ interface FileListItemProps {
   onMove: (file: FileInfo) => void;
   onExtract: (file: FileInfo) => void;
   onCompress: (file: FileInfo) => void;
+  onClone: (file: FileInfo) => void;
 }
 
 function FileListItem({
@@ -424,6 +440,7 @@ function FileListItem({
   onMove,
   onExtract,
   onCompress,
+  onClone,
 }: FileListItemProps) {
   const isFolder = file.fileType === "folder";
   const isCompressed = !isFolder && /\.(zip|tar\.gz|tgz|tar)$/i.test(file.name);
@@ -505,6 +522,14 @@ function FileListItem({
               toast.success("链接已复制到剪贴板");
             });
           },
+        },
+        {
+          type: "separator",
+        },
+        {
+          label: "创建版本",
+          icon: <Timer className="mr-2 h-4 w-4" />,
+          onClick: () => onClone(file),
         },
         {
           type: "separator",

@@ -1,3 +1,4 @@
+mod clone_file;
 mod content;
 mod create;
 mod delete;
@@ -27,4 +28,5 @@ pub fn create_file_router() -> Router<AppState> {
     .route("/move", post(move_file::move_file))
     .route("/extract/{*path}", post(extract::extract_file))
     .route("/compress/{*path}", post(extract::compress_directory))
+    .route("/clone/{*path}", post(clone_file::clone_file))
 }
