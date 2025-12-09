@@ -97,6 +97,10 @@ function FilePage() {
     },
   });
 
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: [QUERY_KEY, path] });
+  };
+
   return (
     <div className="flex h-full w-full">
       <FileListSidebar />
@@ -110,6 +114,7 @@ function FilePage() {
         onRemoteDownload={() =>
           setOpen({ type: "remote-download", file: null })
         }
+        onRefresh={handleRefresh}
       >
         <SidebarInset className="flex-1 flex flex-col">
           <div className="border-b p-4 flex items-center h-18 shrink-0">
@@ -164,6 +169,7 @@ interface FileToolbarProps {
   onCreateFolder: () => void;
   onCreateFile: (defaultName: string) => void;
   onRemoteDownload: () => void;
+  onRefresh: () => void;
 }
 
 function FileToolbar(props: FileToolbarProps) {

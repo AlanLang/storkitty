@@ -18,6 +18,7 @@ interface ListContextMenuProps {
   onCreateFolder: () => void;
   onCreateFile: (defaultName?: string) => void;
   onRemoteDownload: () => void;
+  onRefresh: () => void;
   disabled: boolean;
 }
 export function ListContextMenu({
@@ -90,7 +91,9 @@ export function ListContextMenu({
           <ContextMenuShortcut>⌘a</ContextMenuShortcut>
         </ContextMenuItem>
         <ContextMenuSeparator />
-        <ContextMenuItem inset>刷新</ContextMenuItem>
+        <ContextMenuItem inset onClick={props.onRefresh}>
+          刷新
+        </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>
   );
