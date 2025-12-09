@@ -13,9 +13,13 @@ function SettingsLayout() {
       <SidebarProvider>
         <div className="flex h-screen w-full">
           <AppSidebar />
-          <main className="flex-1 overflow-auto relative">
-            <SidebarTrigger className="absolute top-2 left-2" />
-            <Outlet />
+          <main className="flex-1 overflow-auto bg-sidebar flex flex-col">
+            <div className="p-2">
+              <SidebarTrigger className="" />
+            </div>
+            <div className="bg-background flex-1 rounded-l-lg">
+              <Outlet />
+            </div>
           </main>
         </div>
       </SidebarProvider>

@@ -6,6 +6,7 @@ mod login;
 mod open;
 mod remote_download;
 mod setup;
+mod storage;
 mod user;
 mod webauthn;
 use axum::{
@@ -80,6 +81,10 @@ fn create_api_router() -> Router<AppState> {
     .nest(
       "/user",
       user::create_user_router().layer(middleware::from_fn(auth_middleware)),
+    )
+    .nest(
+      "/storage",
+      storage::create_storage_router().layer(middleware::from_fn(auth_middleware)),
     )
     .nest("/webauthn", webauthn::create_webauthn_router())
 }

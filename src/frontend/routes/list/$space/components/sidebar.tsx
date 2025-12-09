@@ -33,7 +33,7 @@ export function FileListSidebar() {
         <ThemeSwitch className="translate-y-0.5" />
       </div>
 
-      <SidebarContent className="space-y-2 p-4">
+      <SidebarContent className="space-y-2 p-4 gap-0">
         <div className="text-xs font-medium text-muted-foreground mb-2 px-2">
           存储目录
         </div>

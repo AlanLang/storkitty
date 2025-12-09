@@ -21,6 +21,11 @@ const settingsNav = [
     href: "/settings/user",
     icon: User,
   },
+  {
+    title: "存储设置",
+    href: "/settings/storage",
+    icon: HardDrive,
+  },
   // Add more settings items here in the future
 ];
 
@@ -32,8 +37,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const version = appInfo.version;
 
   return (
-    <Sidebar collapsible="offcanvas" className="z-0" {...props}>
-      <div className="flex items-center justify-between border-b p-4 h-18">
+    <Sidebar collapsible="offcanvas" className="z-0 border-none" {...props}>
+      <div className="flex items-center justify-between p-4 h-18">
         <div className="flex items-center space-x-2">
           <HardDrive className="h-6 w-6 text-primary" />
           <h1 data-testid="app-title" className="text-xl font-semibold">

@@ -77,7 +77,9 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigate({ to: "/settings/storage" })}
+              >
                 <Settings2 />
                 系统设置
               </DropdownMenuItem>
