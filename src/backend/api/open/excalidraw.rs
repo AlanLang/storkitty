@@ -8,7 +8,7 @@ use crate::backend::error::AppError;
 
 // 定义模板数据结构：与 templates/index.html 绑定
 #[derive(Template)]
-#[template(path = "excalidraw.html")]
+#[template(path = "excalidraw.html.askama")]
 struct IndexTemplate<'a> {
   title: &'a str,
   data: &'a str,
