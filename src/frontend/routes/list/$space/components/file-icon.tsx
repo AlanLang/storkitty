@@ -135,5 +135,6 @@ export const fileExtensions = {
     ".ppt",
     ".pptx",
     ".rs",
+    ".mermaid",
   ],
 };

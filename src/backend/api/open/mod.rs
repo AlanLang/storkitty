@@ -1,5 +1,6 @@
 mod excalidraw;
 mod markdown;
+mod mermaid;
 mod previewable;
 
 use crate::backend::{error::AppError, extractor::storage::StoragePath};
@@ -16,6 +17,10 @@ pub async fn file_open(
 
   if markdown::is_markdown_file(&file_path) {
     return markdown::open_markdown_file(&file_path).await;
+  }
+
+  if mermaid::is_mermaid_file(&file_path) {
+    return mermaid::open_mermaid_file(&file_path).await;
   }
 
   // 检查文件是否存在且是文件
