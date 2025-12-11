@@ -50,6 +50,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { FetchingDrawer } from "./components/fetching-drawer";
 import { FileIcon } from "./components/file-icon";
 import { FileListEmpty } from "./components/file-list-empty";
 import { ListContextMenu } from "./components/list-context-menu";
@@ -131,7 +132,7 @@ function FilePage() {
               }
             />
           </div>
-          <div className="flex-1 p-4 flex flex-col gap-4">
+          <div className="flex-1 p-4 flex flex-col gap-4 relative">
             <FileBreadcrumb />
             <FileList
               onDelete={(file) => setOpen({ type: "delete", file })}
@@ -169,7 +170,6 @@ interface FileToolbarProps {
   onCreateFolder: () => void;
   onCreateFile: (defaultName: string) => void;
   onRemoteDownload: () => void;
-  onRefresh: () => void;
 }
 
 function FileToolbar(props: FileToolbarProps) {
@@ -314,7 +314,7 @@ function FileList({
   const { space, _splat } = Route.useParams();
   const navigate = useNavigate();
   const path = urlJoin(space, _splat ?? "");
-  const { data, isLoading, error } = useFileList({ path });
+  const { data, isLoading, error, isPlaceholderData } = useFileList({ path });
 
   const handleExtract = async (file: FileInfo) => {
     const extractPromise = extractFile({ path, name: file.name });
@@ -343,7 +343,7 @@ function FileList({
   };
 
   const handleClick = (file: FileInfo) => {
-    if (file.fileType === "folder") {
+    if (file.fileType === "folder" && !isPlaceholderData) {
       navigate({
         to: "/list/$space/$",
         params: { space, _splat: `${_splat}/${file.name}` },
@@ -392,6 +392,7 @@ function FileList({
 
   return (
     <>
+      {isPlaceholderData && <FetchingDrawer />}
       <div data-testid="file-list" className="divide-y divide-border border">
         {data?.files.map((file) => (
           <FileListItem
