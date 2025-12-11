@@ -1,4 +1,5 @@
 mod excalidraw;
+mod markdown;
 mod previewable;
 
 use crate::backend::{error::AppError, extractor::storage::StoragePath};
@@ -11,6 +12,10 @@ pub async fn file_open(
 
   if excalidraw::is_excalidraw_file(&file_path) {
     return excalidraw::open_excalidraw_file(&file_path).await;
+  }
+
+  if markdown::is_markdown_file(&file_path) {
+    return markdown::open_markdown_file(&file_path).await;
   }
 
   // 检查文件是否存在且是文件
