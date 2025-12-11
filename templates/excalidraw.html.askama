@@ -46,6 +46,7 @@
           React.createElement(Excalidraw, {
             initialData: initialData,
             theme: "light",
+            langCode: "zh-CN",
           })
         );
       };

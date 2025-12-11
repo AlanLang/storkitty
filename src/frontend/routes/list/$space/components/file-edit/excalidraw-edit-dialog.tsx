@@ -78,6 +78,7 @@ export function ExcalidrawEditDialog(props: FileEditDialogProps) {
           excalidrawAPI: (api: ExcalidrawImperativeAPI) => {
             editorRef.current = api;
           },
+          langCode: "zh-CN",
         });
         ref.current?.appendChild(el);
         setIsLoading(false);
