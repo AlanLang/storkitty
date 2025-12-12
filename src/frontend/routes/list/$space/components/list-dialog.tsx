@@ -7,6 +7,7 @@ import { FileRenameDialog } from "./file-rename-dialog";
 import { FolderCreateDialog } from "./folder-create-dialog";
 import { FolderDeleteDialog } from "./folder-delete-dialog";
 import { FolderRenameDialog } from "./folder-rename-dialog";
+import { LinkCreateDialog } from "./link-create-dialog";
 import { RemoteDownloadDialog } from "./remote-download-dialog";
 
 export interface ListDialogProps {
@@ -20,7 +21,8 @@ export interface ListDialogProps {
       | "edit"
       | "remote-download"
       | "copy"
-      | "move";
+      | "move"
+      | "create-link";
     file: FileInfo | null;
     defaultName?: string;
   } | null;
@@ -118,6 +120,13 @@ export function ListDialog({
         isOpen={open?.type === "move"}
         onCancel={onCancel}
         onFinish={onFinish}
+      />
+
+      <LinkCreateDialog
+        path={path}
+        isOpen={open?.type === "create-link"}
+        onCancel={onCancel}
+        onFinish={onCancel}
       />
     </>
   );

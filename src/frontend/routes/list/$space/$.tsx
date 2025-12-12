@@ -130,6 +130,7 @@ function FilePage() {
               onRemoteDownload={() =>
                 setOpen({ type: "remote-download", file: null })
               }
+              onCreateLink={() => setOpen({ type: "create-link", file: null })}
             />
           </div>
           <div className="flex-1 p-4 flex flex-col gap-4 relative">
@@ -170,6 +171,7 @@ interface FileToolbarProps {
   onCreateFolder: () => void;
   onCreateFile: (defaultName: string) => void;
   onRemoteDownload: () => void;
+  onCreateLink: () => void;
 }
 
 function FileToolbar(props: FileToolbarProps) {
@@ -231,6 +233,13 @@ function FileToolbar(props: FileToolbarProps) {
                 <DropdownMenuItem onClick={props.onRemoteDownload}>
                   <CloudDownload />
                   离线下载
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                <DropdownMenuItem onClick={props.onCreateLink}>
+                  <Link />
+                  收藏
                 </DropdownMenuItem>
               </DropdownMenuGroup>
             </DropdownMenuContent>

@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use crate::backend::{
   api::login::StorageDto,
-  db::{storage, user},
+  db::{self, storage, user},
   error::AppError,
   state::AppState,
   utils::auth,
@@ -25,12 +25,22 @@ pub struct UserResponse {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct LinkDto {
+  pub id: i64,
+  pub name: String,
+  pub path: String,
+  pub icon: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AppInfoDto {
   version: String,
   initialed: bool,
   logged_in: bool,
   user: Option<UserResponse>,
   storages: Vec<StorageDto>,
+  links: Vec<LinkDto>,
 }
 
 pub async fn get_app_info(
@@ -58,6 +68,7 @@ pub async fn get_app_info(
   };
 
   let storages = storage::get_all_enabled_storage(&conn).context("获取存储失败")?;
+  let links = db::link::get_all_links(&conn).unwrap_or_default();
 
   Ok(Json(AppInfoDto {
     version: env!("CARGO_PKG_VERSION").to_string(),
@@ -72,6 +83,15 @@ pub async fn get_app_info(
         path: storage.path,
         sort_index: storage.sort_index,
         icon: storage.icon,
+      })
+      .collect(),
+    links: links
+      .into_iter()
+      .map(|link| LinkDto {
+        id: link.id,
+        name: link.name,
+        path: link.path,
+        icon: link.icon,
       })
       .collect(),
   }))
