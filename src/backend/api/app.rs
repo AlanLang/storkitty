@@ -71,6 +71,7 @@ pub async fn get_app_info(
         name: storage.name,
         path: storage.path,
         sort_index: storage.sort_index,
+        icon: storage.icon,
       })
       .collect(),
   }))

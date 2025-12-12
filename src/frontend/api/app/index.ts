@@ -19,6 +19,7 @@ const appInfoSchema = z.object({
         id: z.number(),
         name: z.string(),
         path: z.string(),
+        icon: z.string(),
       }),
     ),
   ),

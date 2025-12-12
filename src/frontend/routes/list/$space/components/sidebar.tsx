@@ -53,7 +53,11 @@ export function FileListSidebar() {
               }
               title={storage.name}
             >
-              <Folder className="h-4 w-4" />
+              {storage.icon ? (
+                <span className="text-lg pt-0.5">{storage.icon}</span>
+              ) : (
+                <Folder className="h-4 w-4" />
+              )}
               {storage.name}
             </Button>
           );

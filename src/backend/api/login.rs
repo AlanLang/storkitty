@@ -40,6 +40,7 @@ pub struct StorageDto {
   pub name: String,
   pub path: String,
   pub sort_index: i64,
+  pub icon: String,
 }
 
 pub async fn login(
@@ -86,6 +87,7 @@ pub async fn login(
         name: storage.name,
         path: storage.path,
         sort_index: storage.sort_index,
+        icon: storage.icon,
       })
       .collect(),
   }))
