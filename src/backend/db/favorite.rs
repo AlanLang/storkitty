@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 pub struct FavoriteDatabase {
   pub id: i64,
   pub name: String,
-  pub user_id: i64,
   pub storage_id: i64,
   pub path: String,
   pub icon: String,
@@ -31,7 +30,7 @@ pub fn create_favorite_database(conn: &Connection) -> anyhow::Result<()> {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
       storage_id INTEGER NOT NULL,
-      name TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
       path TEXT NOT NULL,
       icon TEXT DEFAULT '',
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -45,14 +44,6 @@ pub fn create_favorite_database(conn: &Connection) -> anyhow::Result<()> {
 }
 
 pub fn create_favorite(conn: &Connection, favorite: CreateFavoriteDto) -> anyhow::Result<()> {
-  if conn.query_row(
-    "SELECT COUNT(*) FROM link WHERE name = ?",
-    (favorite.name.clone(),),
-    |row| row.get::<_, i64>(0),
-  )? > 0
-  {
-    return Err(anyhow::anyhow!("链接名称已存在"));
-  }
   conn.execute(
     "INSERT INTO favorite (name, path, icon, user_id, storage_id) VALUES (?, ?, ?, ?, ?)",
     (
@@ -66,13 +57,12 @@ pub fn create_favorite(conn: &Connection, favorite: CreateFavoriteDto) -> anyhow
   Ok(())
 }
 
-pub fn get_all_favorites(conn: &Connection) -> anyhow::Result<Vec<FavoriteDatabase>> {
-  let mut stmt = conn.prepare("SELECT * FROM favorite")?;
-  let favorites = stmt.query_map([], |row| {
+pub fn get_all_favorites(conn: &Connection, user_id: i64) -> anyhow::Result<Vec<FavoriteDatabase>> {
+  let mut stmt = conn.prepare("SELECT * FROM favorite WHERE user_id = ?")?;
+  let favorites = stmt.query_map([user_id], |row| {
     Ok(FavoriteDatabase {
       id: row.get("id")?,
       name: row.get("name")?,
-      user_id: row.get("user_id")?,
       storage_id: row.get("storage_id")?,
       path: row.get("path")?,
       icon: row.get("icon")?,

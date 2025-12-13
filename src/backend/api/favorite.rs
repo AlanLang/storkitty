@@ -24,9 +24,11 @@ pub fn create_favorite_router() -> Router<AppState> {
 #[axum::debug_handler(state = AppState)]
 async fn get_favorite_list(
   State(state): State<AppState>,
+  headers: HeaderMap,
 ) -> Result<Json<Vec<db::favorite::FavoriteDatabase>>, AppError> {
+  let user_id = utils::auth::verify_token(&headers).context("用户未登录")?;
   let conn = state.conn.lock().await;
-  let favorites = db::favorite::get_all_favorites(&conn)?;
+  let favorites = db::favorite::get_all_favorites(&conn, user_id)?;
   Ok(Json(favorites))
 }
 

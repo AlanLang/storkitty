@@ -40,7 +40,7 @@ pub struct AppInfoDto {
   logged_in: bool,
   user: Option<UserResponse>,
   storages: Vec<StorageDto>,
-  favorites: Vec<FavoriteDto>,
+  has_favorites: bool,
 }
 
 pub async fn get_app_info(
@@ -68,7 +68,12 @@ pub async fn get_app_info(
   };
 
   let storages = storage::get_all_enabled_storage(&conn).context("获取存储失败")?;
-  let favorites = favorite::get_all_favorites(&conn).unwrap_or_default();
+  let has_favorites = if let Some(user_id) = user_id {
+    !favorite::get_all_favorites(&conn, user_id)
+      .unwrap_or_default().is_empty()
+  } else {
+    false
+  };
   Ok(Json(AppInfoDto {
     version: env!("CARGO_PKG_VERSION").to_string(),
     initialed: !is_no_user,
@@ -84,14 +89,6 @@ pub async fn get_app_info(
         icon: storage.icon,
       })
       .collect(),
-    favorites: favorites
-      .into_iter()
-      .map(|favorite| FavoriteDto {
-        id: favorite.id,
-        name: favorite.name,
-        path: favorite.path,
-        icon: favorite.icon,
-      })
-      .collect(),
+    has_favorites,
   }))
 }

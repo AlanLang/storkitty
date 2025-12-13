@@ -35,7 +35,7 @@ export function FileListSidebar({ space }: { space?: string }) {
       </div>
 
       <SidebarContent className="space-y-2 p-4 gap-0">
-        <FavoriteSidebar favorites={appInfo.favorites} />
+        <FavoriteSidebar hasFavorites={appInfo.hasFavorites} />
         <SidebarGroupLabel>存储目录</SidebarGroupLabel>
         {appInfo.storages?.map((storage) => {
           const isSelected = space === storage.path;
@@ -70,11 +70,15 @@ export function FileListSidebar({ space }: { space?: string }) {
   );
 }
 
-function FavoriteSidebar({ favorites }: { favorites: AppInfo["favorites"] }) {
+function FavoriteSidebar({
+  hasFavorites,
+}: {
+  hasFavorites: AppInfo["hasFavorites"];
+}) {
   const navigate = useNavigate();
   const matchRoute = useMatchRoute();
   const isSelected = matchRoute({ to: "/list", fuzzy: false });
-  if (!favorites) return null;
+  if (!hasFavorites) return null;
 
   return (
     <Button
