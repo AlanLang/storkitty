@@ -11,7 +11,7 @@ use crate::backend::{
   db::{self},
   error::AppError,
   state::AppState,
-  utils,
+  utils::{self, path::split_path},
 };
 
 pub fn create_favorite_router() -> Router<AppState> {
@@ -34,7 +34,6 @@ async fn get_favorite_list(
 #[serde(rename_all = "camelCase")]
 pub struct CreateFavorite {
   pub name: String,
-  pub storage: String,
   pub path: String,
   pub icon: String,
 }
@@ -47,10 +46,11 @@ async fn create_favorite(
 ) -> Result<Json<()>, AppError> {
   let user_id = utils::auth::verify_token(&headers).context("用户未登录")?;
   let conn = state.conn.lock().await;
-  let storage = db::storage::get_storage_by_path(&conn, &dto.storage)?;
+  let (storage_path, path) = split_path(&dto.path);
+  let storage = db::storage::get_storage_by_path(&conn, &storage_path)?;
   let favorite = db::favorite::CreateFavoriteDto {
     name: dto.name,
-    path: dto.path,
+    path: path.unwrap_or_default(),
     icon: dto.icon,
     user_id,
     storage_id: storage.id,
