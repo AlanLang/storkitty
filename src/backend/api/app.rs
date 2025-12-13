@@ -70,7 +70,8 @@ pub async fn get_app_info(
   let storages = storage::get_all_enabled_storage(&conn).context("获取存储失败")?;
   let has_favorites = if let Some(user_id) = user_id {
     !favorite::get_all_favorites(&conn, user_id)
-      .unwrap_or_default().is_empty()
+      .unwrap_or_default()
+      .is_empty()
   } else {
     false
   };

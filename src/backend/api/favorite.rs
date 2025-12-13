@@ -1,8 +1,6 @@
-use anyhow::Context;
 use axum::{
   Json, Router,
   extract::{Path, State},
-  http::HeaderMap,
   routing::{delete, get, post},
 };
 use serde::{Deserialize, Serialize};
@@ -10,8 +8,9 @@ use serde::{Deserialize, Serialize};
 use crate::backend::{
   db::{self},
   error::AppError,
+  extractor::auth::AuthUser,
   state::AppState,
-  utils::{self, path::split_path},
+  utils::path::split_path,
 };
 
 pub fn create_favorite_router() -> Router<AppState> {
@@ -24,9 +23,8 @@ pub fn create_favorite_router() -> Router<AppState> {
 #[axum::debug_handler(state = AppState)]
 async fn get_favorite_list(
   State(state): State<AppState>,
-  headers: HeaderMap,
+  AuthUser(user_id): AuthUser,
 ) -> Result<Json<Vec<db::favorite::FavoriteDatabase>>, AppError> {
-  let user_id = utils::auth::verify_token(&headers).context("用户未登录")?;
   let conn = state.conn.lock().await;
   let favorites = db::favorite::get_all_favorites(&conn, user_id)?;
   Ok(Json(favorites))
@@ -43,10 +41,9 @@ pub struct CreateFavorite {
 #[axum::debug_handler(state = AppState)]
 async fn create_favorite(
   State(state): State<AppState>,
-  headers: HeaderMap,
+  AuthUser(user_id): AuthUser,
   Json(dto): Json<CreateFavorite>,
 ) -> Result<Json<()>, AppError> {
-  let user_id = utils::auth::verify_token(&headers).context("用户未登录")?;
   let conn = state.conn.lock().await;
   let (storage_path, path) = split_path(&dto.path);
   let storage = db::storage::get_storage_by_path(&conn, &storage_path)?;
