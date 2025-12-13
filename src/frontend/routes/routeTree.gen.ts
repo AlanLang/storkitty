@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './login'
 import { Route as SettingsRouteRouteImport } from './settings/route'
 import { Route as ListRouteRouteImport } from './list/route'
 import { Route as IndexRouteImport } from './index'
+import { Route as ListIndexRouteImport } from './list/index'
 import { Route as SettingsStorageRouteImport } from './settings/storage'
 import { Route as SettingsUserRouteRouteImport } from './settings/user/route'
 import { Route as SettingsUserIndexRouteImport } from './settings/user/index'
@@ -45,6 +46,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ListIndexRoute = ListIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ListRouteRoute,
 } as any)
 const SettingsStorageRoute = SettingsStorageRouteImport.update({
   id: '/storage',
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/setup': typeof SetupRoute
   '/settings/user': typeof SettingsUserRouteRouteWithChildren
   '/settings/storage': typeof SettingsStorageRoute
+  '/list/': typeof ListIndexRoute
   '/list/$space/$': typeof ListSpaceSplatRoute
   '/settings/user/profile': typeof SettingsUserProfileRoute
   '/settings/user/security': typeof SettingsUserSecurityRoute
@@ -92,11 +99,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/list': typeof ListRouteRouteWithChildren
   '/settings': typeof SettingsRouteRouteWithChildren
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
   '/settings/storage': typeof SettingsStorageRoute
+  '/list': typeof ListIndexRoute
   '/list/$space/$': typeof ListSpaceSplatRoute
   '/settings/user/profile': typeof SettingsUserProfileRoute
   '/settings/user/security': typeof SettingsUserSecurityRoute
@@ -111,6 +118,7 @@ export interface FileRoutesById {
   '/setup': typeof SetupRoute
   '/settings/user': typeof SettingsUserRouteRouteWithChildren
   '/settings/storage': typeof SettingsStorageRoute
+  '/list/': typeof ListIndexRoute
   '/list/$space/$': typeof ListSpaceSplatRoute
   '/settings/user/profile': typeof SettingsUserProfileRoute
   '/settings/user/security': typeof SettingsUserSecurityRoute
@@ -126,6 +134,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/settings/user'
     | '/settings/storage'
+    | '/list/'
     | '/list/$space/$'
     | '/settings/user/profile'
     | '/settings/user/security'
@@ -133,11 +142,11 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/list'
     | '/settings'
     | '/login'
     | '/setup'
     | '/settings/storage'
+    | '/list'
     | '/list/$space/$'
     | '/settings/user/profile'
     | '/settings/user/security'
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/settings/user'
     | '/settings/storage'
+    | '/list/'
     | '/list/$space/$'
     | '/settings/user/profile'
     | '/settings/user/security'
@@ -202,6 +212,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/list/': {
+      id: '/list/'
+      path: '/'
+      fullPath: '/list/'
+      preLoaderRoute: typeof ListIndexRouteImport
+      parentRoute: typeof ListRouteRoute
+    }
     '/settings/storage': {
       id: '/settings/storage'
       path: '/storage'
@@ -248,10 +265,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface ListRouteRouteChildren {
+  ListIndexRoute: typeof ListIndexRoute
   ListSpaceSplatRoute: typeof ListSpaceSplatRoute
 }
 
 const ListRouteRouteChildren: ListRouteRouteChildren = {
+  ListIndexRoute: ListIndexRoute,
   ListSpaceSplatRoute: ListSpaceSplatRoute,
 }
 

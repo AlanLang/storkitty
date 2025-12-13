@@ -1,4 +1,5 @@
 import { FileType, type FileInfo } from "@/api/file/list";
+import { FavoriteCreateDialog } from "./facorite-create-dialog";
 import { FileCreateDialog } from "./file-create-dialog";
 import { FileDeleteDialog } from "./file-delete-dialog";
 import { FileEditDialog } from "./file-edit/file-edit-dialog";
@@ -7,7 +8,6 @@ import { FileRenameDialog } from "./file-rename-dialog";
 import { FolderCreateDialog } from "./folder-create-dialog";
 import { FolderDeleteDialog } from "./folder-delete-dialog";
 import { FolderRenameDialog } from "./folder-rename-dialog";
-import { LinkCreateDialog } from "./link-create-dialog";
 import { RemoteDownloadDialog } from "./remote-download-dialog";
 
 export interface ListDialogProps {
@@ -22,7 +22,7 @@ export interface ListDialogProps {
       | "remote-download"
       | "copy"
       | "move"
-      | "create-link";
+      | "create-favorite";
     file: FileInfo | null;
     defaultName?: string;
   } | null;
@@ -122,9 +122,9 @@ export function ListDialog({
         onFinish={onFinish}
       />
 
-      <LinkCreateDialog
+      <FavoriteCreateDialog
         path={path}
-        isOpen={open?.type === "create-link"}
+        isOpen={open?.type === "create-favorite"}
         onCancel={onCancel}
         onFinish={onCancel}
       />

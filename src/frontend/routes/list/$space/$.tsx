@@ -104,7 +104,7 @@ function FilePage() {
 
   return (
     <div className="flex h-full w-full">
-      <FileListSidebar />
+      <FileListSidebar space={space} />
       <ListContextMenu
         disabled={isMobile}
         onUpload={openFileDialog}
@@ -130,7 +130,9 @@ function FilePage() {
               onRemoteDownload={() =>
                 setOpen({ type: "remote-download", file: null })
               }
-              onCreateLink={() => setOpen({ type: "create-link", file: null })}
+              onCreateFavorite={() =>
+                setOpen({ type: "create-favorite", file: null })
+              }
             />
           </div>
           <div className="flex-1 p-4 flex flex-col gap-4 relative">
@@ -171,7 +173,7 @@ interface FileToolbarProps {
   onCreateFolder: () => void;
   onCreateFile: (defaultName: string) => void;
   onRemoteDownload: () => void;
-  onCreateLink: () => void;
+  onCreateFavorite: () => void;
 }
 
 function FileToolbar(props: FileToolbarProps) {
@@ -237,7 +239,7 @@ function FileToolbar(props: FileToolbarProps) {
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                <DropdownMenuItem onClick={props.onCreateLink}>
+                <DropdownMenuItem onClick={props.onCreateFavorite}>
                   <Link />
                   收藏
                 </DropdownMenuItem>

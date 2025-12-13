@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use crate::backend::{
   api::login::StorageDto,
-  db::{self, storage, user},
+  db::{favorite, storage, user},
   error::AppError,
   state::AppState,
   utils::auth,
@@ -25,11 +25,12 @@ pub struct UserResponse {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct LinkDto {
+pub struct FavoriteDto {
   pub id: i64,
   pub name: String,
   pub path: String,
   pub icon: String,
+  pub disabled: bool,
 }
 
 #[derive(Serialize)]
@@ -40,7 +41,7 @@ pub struct AppInfoDto {
   logged_in: bool,
   user: Option<UserResponse>,
   storages: Vec<StorageDto>,
-  links: Vec<LinkDto>,
+  favorites: Vec<FavoriteDto>,
 }
 
 pub async fn get_app_info(
@@ -68,8 +69,7 @@ pub async fn get_app_info(
   };
 
   let storages = storage::get_all_enabled_storage(&conn).context("获取存储失败")?;
-  let links = db::link::get_all_links(&conn).unwrap_or_default();
-
+  let favorites = favorite::get_all_favorites(&conn).unwrap_or_default();
   Ok(Json(AppInfoDto {
     version: env!("CARGO_PKG_VERSION").to_string(),
     initialed: !is_no_user,
@@ -85,13 +85,14 @@ pub async fn get_app_info(
         icon: storage.icon,
       })
       .collect(),
-    links: links
+    favorites: favorites
       .into_iter()
-      .map(|link| LinkDto {
-        id: link.id,
-        name: link.name,
-        path: link.path,
-        icon: link.icon,
+      .map(|favorite| FavoriteDto {
+        id: favorite.id,
+        name: favorite.name,
+        path: favorite.path,
+        icon: favorite.icon,
+        disabled: favorite.disabled,
       })
       .collect(),
   }))

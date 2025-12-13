@@ -1,4 +1,4 @@
-pub mod link;
+pub mod favorite;
 pub mod storage;
 pub mod user;
 use std::sync::Arc;
@@ -14,6 +14,6 @@ pub fn init_db() -> anyhow::Result<DBConnection> {
   user::create_user_database(&conn)?;
   user::create_passkey_table(&conn)?;
   storage::create_storage_database(&conn)?;
-  link::create_link_database(&conn)?;
+  favorite::create_favorite_database(&conn)?;
   Ok(Arc::new(Mutex::new(conn)))
 }

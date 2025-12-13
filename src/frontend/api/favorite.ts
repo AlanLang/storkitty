@@ -1,7 +1,7 @@
 import { http } from "@/api/http";
 import z from "zod/v3";
 
-export const createLinkSchema = z.object({
+export const createFavoriteSchema = z.object({
   name: z
     .string()
     .min(1, {
@@ -14,10 +14,10 @@ export const createLinkSchema = z.object({
   icon: z.string().optional(),
 });
 
-export type CreateLinkDto = z.infer<typeof createLinkSchema>;
+export type CreateFavoriteDto = z.infer<typeof createFavoriteSchema>;
 
-export const createLink = async (dto: CreateLinkDto) => {
-  return http.post<void>("link", {
+export const createFavorite = async (dto: CreateFavoriteDto) => {
+  return http.post<void>("favorite", {
     json: {
       name: dto.name,
       path: dto.path,
@@ -26,7 +26,7 @@ export const createLink = async (dto: CreateLinkDto) => {
   });
 };
 
-export interface LinkInfo {
+export interface FavoriteInfo {
   id: number;
   name: string;
   path: string;
@@ -35,10 +35,10 @@ export interface LinkInfo {
   updatedAt: string;
 }
 
-export const getLinks = async (): Promise<LinkInfo[]> => {
-  return http.get("link").json<LinkInfo[]>();
+export const getFavorites = async (): Promise<FavoriteInfo[]> => {
+  return http.get("favorite").json<FavoriteInfo[]>();
 };
 
-export const deleteLink = async (id: number): Promise<void> => {
-  return http.delete(`link/${id}`).json<void>();
+export const deleteFavorite = async (id: number): Promise<void> => {
+  return http.delete(`favorite/${id}`).json<void>();
 };

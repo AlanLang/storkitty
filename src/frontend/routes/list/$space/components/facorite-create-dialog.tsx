@@ -1,4 +1,8 @@
-import { createLink, type CreateLinkDto, createLinkSchema } from "@/api/link";
+import {
+  createFavorite,
+  type CreateFavoriteDto,
+  createFavoriteSchema,
+} from "@/api/favorite";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,30 +21,30 @@ import { Loader2, Star } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { DIALOG_CONTENT_CLASSNAME } from "./constant";
 
-interface LinkCreateDialogProps {
+interface FavoriteCreateDialogProps {
   path: string;
   isOpen: boolean;
   onCancel: () => void;
   onFinish: () => void;
 }
 
-export function LinkCreateDialog({
+export function FavoriteCreateDialog({
   path,
   isOpen,
   onCancel,
   onFinish,
-}: LinkCreateDialogProps) {
-  const form = useForm<CreateLinkDto>({
-    resolver: zodResolver(createLinkSchema),
+}: FavoriteCreateDialogProps) {
+  const form = useForm<CreateFavoriteDto>({
+    resolver: zodResolver(createFavoriteSchema),
     defaultValues: {
       name: "",
-      path: "",
+      path: path,
       icon: "",
     },
   });
 
   const { mutate, isPending } = useMutation({
-    mutationFn: createLink,
+    mutationFn: createFavorite,
     onSuccess: () => {
       onFinish();
     },

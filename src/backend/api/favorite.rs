@@ -10,38 +10,38 @@ use crate::backend::{
   state::AppState,
 };
 
-pub fn create_link_router() -> Router<AppState> {
+pub fn create_favorite_router() -> Router<AppState> {
   Router::<AppState>::new()
-    .route("/", get(get_link_list))
-    .route("/", post(create_link))
-    .route("/{id}", delete(delete_link))
+    .route("/", get(get_favorite_list))
+    .route("/", post(create_favorite))
+    .route("/{id}", delete(delete_favorite))
 }
 
 #[axum::debug_handler(state = AppState)]
-async fn get_link_list(
+async fn get_favorite_list(
   State(state): State<AppState>,
-) -> Result<Json<Vec<db::link::LinkDatabase>>, AppError> {
+) -> Result<Json<Vec<db::favorite::FavoriteDatabase>>, AppError> {
   let conn = state.conn.lock().await;
-  let links = db::link::get_all_links(&conn)?;
-  Ok(Json(links))
+  let favorites = db::favorite::get_all_favorites(&conn)?;
+  Ok(Json(favorites))
 }
 
 #[axum::debug_handler(state = AppState)]
-async fn create_link(
+async fn create_favorite(
   State(state): State<AppState>,
-  Json(dto): Json<db::link::CreateLinkDto>,
+  Json(dto): Json<db::favorite::CreateFavoriteDto>,
 ) -> Result<Json<()>, AppError> {
   let conn = state.conn.lock().await;
-  db::link::create_link(&conn, dto)?;
+  db::favorite::create_favorite(&conn, dto)?;
   Ok(Json(()))
 }
 
 #[axum::debug_handler(state = AppState)]
-async fn delete_link(
+async fn delete_favorite(
   State(state): State<AppState>,
   Path(id): Path<i64>,
 ) -> Result<Json<()>, AppError> {
   let conn = state.conn.lock().await;
-  db::link::delete_link(&conn, id)?;
+  db::favorite::delete_favorite(&conn, id)?;
   Ok(Json(()))
 }

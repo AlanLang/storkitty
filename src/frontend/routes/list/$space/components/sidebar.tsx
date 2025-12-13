@@ -1,19 +1,20 @@
+import type { AppInfo } from "@/api/app";
 import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroupLabel,
 } from "@/components/ui/sidebar";
 import { ThemeSwitch } from "@/components/ui/theme-switch-button";
 import { useApp } from "@/hooks/use-app";
-import { useNavigate, useParams } from "@tanstack/react-router";
-import { Folder, HardDrive } from "lucide-react";
+import { useMatchRoute, useNavigate } from "@tanstack/react-router";
+import { Folder, HardDrive, Star } from "lucide-react";
 import { NavUser } from "./nav-user";
 
-export function FileListSidebar() {
+export function FileListSidebar({ space }: { space?: string }) {
   const appInfo = useApp();
   const navigate = useNavigate();
-  const { space } = useParams({ from: "/list/$space/$" });
   const version = appInfo.version;
 
   return (
@@ -34,12 +35,10 @@ export function FileListSidebar() {
       </div>
 
       <SidebarContent className="space-y-2 p-4 gap-0">
-        <div className="text-xs font-medium text-muted-foreground mb-2 px-2">
-          存储目录
-        </div>
+        <FavoriteSidebar favorites={appInfo.favorites} />
+        <SidebarGroupLabel>存储目录</SidebarGroupLabel>
         {appInfo.storages?.map((storage) => {
           const isSelected = space === storage.path;
-
           return (
             <Button
               key={storage.name}
@@ -68,5 +67,28 @@ export function FileListSidebar() {
         {appInfo.user && <NavUser user={appInfo.user} />}
       </SidebarFooter>
     </Sidebar>
+  );
+}
+
+function FavoriteSidebar({ favorites }: { favorites: AppInfo["favorites"] }) {
+  const navigate = useNavigate();
+  const matchRoute = useMatchRoute();
+  const isSelected = matchRoute({ to: "/list", fuzzy: false });
+  if (!favorites) return null;
+
+  return (
+    <Button
+      variant={isSelected ? "default" : "ghost"}
+      className="w-full justify-start gap-2"
+      onClick={() =>
+        navigate({
+          to: "/list",
+        })
+      }
+      title="个人收藏"
+    >
+      <Star className="h-4 w-4" />
+      个人收藏
+    </Button>
   );
 }

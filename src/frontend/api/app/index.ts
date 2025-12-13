@@ -23,6 +23,16 @@ const appInfoSchema = z.object({
       }),
     ),
   ),
+  favorites: z.optional(
+    z.array(
+      z.object({
+        id: z.number(),
+        name: z.string(),
+        path: z.string(),
+        icon: z.string(),
+      }),
+    ),
+  ),
 });
 
 export type AppInfo = z.infer<typeof appInfoSchema>;

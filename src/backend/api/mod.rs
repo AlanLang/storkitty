@@ -1,8 +1,8 @@
 mod app;
 mod download;
+mod favorite;
 mod file;
 mod folder;
-mod link;
 mod login;
 mod open;
 mod remote_download;
@@ -88,8 +88,8 @@ fn create_api_router() -> Router<AppState> {
       storage::create_storage_router().layer(middleware::from_fn(auth_middleware)),
     )
     .nest(
-      "/link",
-      link::create_link_router().layer(middleware::from_fn(auth_middleware)),
+      "/favorite",
+      favorite::create_favorite_router().layer(middleware::from_fn(auth_middleware)),
     )
     .nest("/webauthn", webauthn::create_webauthn_router())
 }
