@@ -30,7 +30,6 @@ pub struct FavoriteDto {
   pub name: String,
   pub path: String,
   pub icon: String,
-  pub disabled: bool,
 }
 
 #[derive(Serialize)]
@@ -92,7 +91,6 @@ pub async fn get_app_info(
         name: favorite.name,
         path: favorite.path,
         icon: favorite.icon,
-        disabled: favorite.disabled,
       })
       .collect(),
   }))
