@@ -61,6 +61,11 @@ export function ListContextMenu({
             <ContextMenuItem onClick={() => props.onCreateFile("新文件.d2")}>
               D2(.d2)
             </ContextMenuItem>
+            <ContextMenuItem
+              onClick={() => props.onCreateFile("新文件.mermaid")}
+            >
+              Mermaid(.mermaid)
+            </ContextMenuItem>
           </ContextMenuSubContent>
         </ContextMenuSub>
         <ContextMenuSeparator />
