@@ -1,4 +1,5 @@
 import { cloneFile } from "@/api/file/clone";
+import { generateUploadToken } from "@/api/file/upload-script";
 import { compressDirectory } from "@/api/file/compress";
 import { extractFile } from "@/api/file/extract";
 import type { FileInfo } from "@/api/file/list";
@@ -102,12 +103,25 @@ function FilePage() {
     queryClient.invalidateQueries({ queryKey: [QUERY_KEY, path] });
   };
 
+  const handleCopyUploadCommand = async () => {
+    try {
+      const { token } = await generateUploadToken(path);
+      const scriptUrl = `${window.location.origin}/api/upload-script/${token}`;
+      const command = `bash <(curl -s "${scriptUrl}")`;
+      await writeTextIntoClipboard(command);
+      toast.success("上传命令已复制，1小时内有效，仅限一次上传");
+    } catch {
+      toast.error("复制失败");
+    }
+  };
+
   return (
     <div className="flex h-full w-full">
       <FileListSidebar />
       <ListContextMenu
         disabled={isMobile}
         onUpload={openFileDialog}
+        onCopyUploadCommand={handleCopyUploadCommand}
         onCreateFolder={() => setOpen({ type: "create-folder", file: null })}
         onCreateFile={(defaultName) =>
           setOpen({ type: "create-file", file: null, defaultName })
@@ -121,6 +135,7 @@ function FilePage() {
           <div className="border-b p-4 flex items-center h-18 shrink-0">
             <FileToolbar
               onOpenFileUpload={openFileDialog}
+              onCopyUploadCommand={handleCopyUploadCommand}
               onCreateFolder={() =>
                 setOpen({ type: "create-folder", file: null })
               }
@@ -167,6 +182,7 @@ function FilePage() {
 
 interface FileToolbarProps {
   onOpenFileUpload: () => void;
+  onCopyUploadCommand: () => void;
   onCreateFolder: () => void;
   onCreateFile: (defaultName: string) => void;
   onRemoteDownload: () => void;
@@ -209,6 +225,10 @@ function FileToolbar(props: FileToolbarProps) {
                 <DropdownMenuItem onClick={props.onOpenFileUpload}>
                   <UploadIcon />
                   上传文件
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={props.onCopyUploadCommand}>
+                  <Copy />
+                  复制上传命令
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem

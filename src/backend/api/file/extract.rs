@@ -140,11 +140,10 @@ fn extract_zip(file_path: &Path, target_dir: &Path) -> Result<(), AppError> {
     if file.name().ends_with('/') {
       fs::create_dir_all(&outpath).map_err(|e| AppError::new(&e.to_string()))?;
     } else {
-      if let Some(p) = outpath.parent() {
-        if !p.exists() {
+      if let Some(p) = outpath.parent()
+        && !p.exists() {
           fs::create_dir_all(p).map_err(|e| AppError::new(&e.to_string()))?;
         }
-      }
       let mut outfile = fs::File::create(&outpath).map_err(|e| AppError::new(&e.to_string()))?;
       std::io::copy(&mut file, &mut outfile).map_err(|e| AppError::new(&e.to_string()))?;
     }

@@ -15,6 +15,7 @@ import { useTaskDrawer } from "@/hooks/use-task";
 interface ListContextMenuProps {
   children: React.ReactNode;
   onUpload: () => void;
+  onCopyUploadCommand: () => void;
   onCreateFolder: () => void;
   onCreateFile: (defaultName?: string) => void;
   onRemoteDownload: () => void;
@@ -37,6 +38,9 @@ export function ListContextMenu({
         <ContextMenuItem inset onClick={props.onUpload}>
           上传文件
           <ContextMenuShortcut>⌘u</ContextMenuShortcut>
+        </ContextMenuItem>
+        <ContextMenuItem inset onClick={props.onCopyUploadCommand}>
+          复制上传命令
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem inset onClick={props.onCreateFolder}>
