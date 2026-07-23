@@ -117,25 +117,34 @@ upload_chunked() {{
   local encoded_name
   encoded_name=$(url_encode "$filename")
   echo "正在上传 $filename (${{size_mb}}MB，分 $total_chunks 片上传)..."
+  local tmp_chunk
+  tmp_chunk=$(mktemp)
   for i in $(seq 0 $((total_chunks - 1))); do
-    printf "  片段 [%d/%d]..." "$((i + 1))" "$total_chunks"
-    local http_code
-    http_code=$(dd if="$file" bs="$CHUNK_SIZE" skip="$i" count=1 2>/dev/null | \
-      curl -s -o /dev/null -w "%{{http_code}}" \
-        -X POST "$UPLOAD_URL" \
-        -H "Authorization: Bearer $TOKEN" \
-        -H "X-Chunk-Index: $i" \
-        -H "X-Total-Chunks: $total_chunks" \
-        -H "X-Filename: $encoded_name" \
-        -H "Content-Type: application/octet-stream" \
-        --data-binary @-)
+    printf "  片段 [%d/%d]\n" "$((i + 1))" "$total_chunks"
+    dd if="$file" bs="$CHUNK_SIZE" skip="$i" count=1 2>/dev/null > "$tmp_chunk"
+    local result http_code time_total speed_upload
+    result=$(curl -# -o /dev/null -w "%{{http_code}}|%{{time_total}}|%{{speed_upload}}" \
+      -X POST "$UPLOAD_URL" \
+      -H "Authorization: Bearer $TOKEN" \
+      -H "X-Chunk-Index: $i" \
+      -H "X-Total-Chunks: $total_chunks" \
+      -H "X-Filename: $encoded_name" \
+      -H "Content-Type: application/octet-stream" \
+      --data-binary "@$tmp_chunk")
+    http_code=$(echo "$result" | cut -d'|' -f1)
+    time_total=$(echo "$result" | cut -d'|' -f2)
+    speed_upload=$(echo "$result" | cut -d'|' -f3)
     if [ "$http_code" = "200" ]; then
-      echo " ✓"
+      printf "  ✓ 耗时: %ss  速度: %sMB/s\n" \
+        "$(awk "BEGIN {{printf \"%.1f\", $time_total}}")" \
+        "$(awk "BEGIN {{printf \"%.1f\", $speed_upload / 1048576}}")"
     else
-      echo " ✗ (HTTP $http_code)" >&2
+      rm -f "$tmp_chunk"
+      echo "  ✗ 上传失败 (HTTP $http_code)" >&2
       exit 1
     fi
   done
+  rm -f "$tmp_chunk"
   echo "✓ $filename 上传成功"
 }}
 
