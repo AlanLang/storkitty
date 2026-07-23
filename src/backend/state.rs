@@ -11,6 +11,8 @@ pub struct UploadTokenEntry {
   pub path: String,
   pub created_at: Instant,
   pub used: bool,
+  /// 分片上传时记录文件名，防止同一 token 被用于不同文件
+  pub uploading_filename: Option<String>,
 }
 
 pub type UploadTokens = Arc<Mutex<HashMap<String, UploadTokenEntry>>>;

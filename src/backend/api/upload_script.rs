@@ -48,6 +48,7 @@ async fn generate_upload_token(
       path: dto.path,
       created_at: std::time::Instant::now(),
       used: false,
+      uploading_filename: None,
     },
   );
 
@@ -86,6 +87,57 @@ async fn get_upload_script(
         r#"#!/bin/bash
 UPLOAD_URL="{upload_url}"
 TOKEN="{token}"
+CHUNK_SIZE=$((50 * 1024 * 1024))   # 50MB per chunk
+THRESHOLD=$((100 * 1024 * 1024))   # files >= 100MB use chunked upload
+
+url_encode() {{
+  python3 -c "import sys,urllib.parse; print(urllib.parse.quote(sys.argv[1]))" "$1" 2>/dev/null || printf '%s' "$1"
+}}
+
+upload_single() {{
+  local file="$1" filename="$2"
+  echo "正在上传 $filename..."
+  local http_code
+  http_code=$(curl -# -o /dev/null -w "%{{http_code}}" \
+    -X POST "$UPLOAD_URL" \
+    -H "Authorization: Bearer $TOKEN" \
+    -F "file=@$file")
+  if [ "$http_code" = "200" ]; then
+    echo "✓ $filename 上传成功"
+  else
+    echo "✗ $filename 上传失败 (HTTP $http_code)" >&2
+    exit 1
+  fi
+}}
+
+upload_chunked() {{
+  local file="$1" filename="$2" file_size="$3"
+  local total_chunks=$(( (file_size + CHUNK_SIZE - 1) / CHUNK_SIZE ))
+  local size_mb=$(( file_size / 1024 / 1024 ))
+  local encoded_name
+  encoded_name=$(url_encode "$filename")
+  echo "正在上传 $filename (${{size_mb}}MB，分 $total_chunks 片上传)..."
+  for i in $(seq 0 $((total_chunks - 1))); do
+    printf "  片段 [%d/%d]..." "$((i + 1))" "$total_chunks"
+    local http_code
+    http_code=$(dd if="$file" bs="$CHUNK_SIZE" skip="$i" count=1 2>/dev/null | \
+      curl -s -o /dev/null -w "%{{http_code}}" \
+        -X POST "$UPLOAD_URL" \
+        -H "Authorization: Bearer $TOKEN" \
+        -H "X-Chunk-Index: $i" \
+        -H "X-Total-Chunks: $total_chunks" \
+        -H "X-Filename: $encoded_name" \
+        -H "Content-Type: application/octet-stream" \
+        --data-binary @-)
+    if [ "$http_code" = "200" ]; then
+      echo " ✓"
+    else
+      echo " ✗ (HTTP $http_code)" >&2
+      exit 1
+    fi
+  done
+  echo "✓ $filename 上传成功"
+}}
 
 upload_file() {{
   local file="$1"
@@ -95,17 +147,12 @@ upload_file() {{
   fi
   local filename
   filename=$(basename "$file")
-  printf "正在上传 %s..." "$filename"
-  local http_code
-  http_code=$(curl -s -o /dev/null -w "%{{http_code}}" \
-    -X POST "$UPLOAD_URL" \
-    -H "Authorization: Bearer $TOKEN" \
-    -F "file=@$file")
-  if [ "$http_code" = "200" ]; then
-    echo " ✓ 上传成功"
+  local file_size
+  file_size=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null)
+  if [ "$file_size" -ge "$THRESHOLD" ]; then
+    upload_chunked "$file" "$filename" "$file_size"
   else
-    echo " ✗ 上传失败 (HTTP $http_code)" >&2
-    exit 1
+    upload_single "$file" "$filename"
   fi
 }}
 
