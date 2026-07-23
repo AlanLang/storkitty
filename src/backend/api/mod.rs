@@ -1,4 +1,5 @@
 mod app;
+mod cli_upload;
 mod download;
 mod file;
 mod folder;
@@ -7,13 +8,15 @@ mod open;
 mod remote_download;
 mod setup;
 mod storage;
+mod upload_script;
 mod user;
 mod webauthn;
 use axum::{
   Router, middleware,
   routing::{self, get_service},
 };
-use std::{net::SocketAddr, sync::Arc};
+use std::{collections::HashMap, net::SocketAddr, sync::Arc};
+use tokio::sync::Mutex;
 use tower_http::services::{ServeDir, ServeFile};
 
 use crate::backend::{
@@ -27,6 +30,7 @@ pub async fn start_server() -> anyhow::Result<()> {
   let state = AppState {
     conn,
     webauthn: Arc::new(webauthn),
+    upload_tokens: Arc::new(Mutex::new(HashMap::new())),
   };
 
   let app = Router::<AppState>::new()
@@ -87,4 +91,12 @@ fn create_api_router() -> Router<AppState> {
       storage::create_storage_router().layer(middleware::from_fn(auth_middleware)),
     )
     .nest("/webauthn", webauthn::create_webauthn_router())
+    .nest(
+      "/upload-script",
+      upload_script::create_upload_script_router(),
+    )
+    .route(
+      "/file/cli-upload/{*path}",
+      routing::post(cli_upload::cli_upload),
+    )
 }

@@ -22,13 +22,11 @@ pub async fn upload_file(
   headers: axum::http::HeaderMap,
   body: axum::body::Bytes,
 ) -> Result<impl IntoResponse, AppError> {
-  if !local_path.0.exists() {
-    if let Some(parent) = local_path.0.parent() {
-      if !parent.exists() {
+  if !local_path.0.exists()
+    && let Some(parent) = local_path.0.parent()
+      && !parent.exists() {
         return Err(AppError::new("Target directory does not exist"));
       }
-    }
-  }
 
   let chunk_index: usize = headers
     .get("X-Chunk-Index")
@@ -84,13 +82,11 @@ pub async fn upload_file(
   while let Some(entry) = entries.next_entry().await? {
     let name = entry.file_name().to_string_lossy().to_string();
     // name format: {index}_{hash}
-    if let Some((idx_str, _)) = name.split_once('_') {
-      if let Ok(idx) = idx_str.parse::<usize>() {
-        if idx < total_chunks {
+    if let Some((idx_str, _)) = name.split_once('_')
+      && let Ok(idx) = idx_str.parse::<usize>()
+        && idx < total_chunks {
           found_chunks[idx] = Some(entry.path());
         }
-      }
-    }
   }
 
   if found_chunks.iter().all(|c| c.is_some()) {
