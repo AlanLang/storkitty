@@ -27,8 +27,8 @@ export interface MenuListProps {
   type: "context" | "dropdown";
   items: (MenuItem | MenuSeparator)[];
   children: React.ReactNode;
-  onClick?: () => void;
-  onDoubleClick?: () => void;
+  onClick?: (e: React.MouseEvent) => void;
+  onDoubleClick?: (e: React.MouseEvent) => void;
   className?: string;
 }
 
