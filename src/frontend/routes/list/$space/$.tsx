@@ -49,7 +49,7 @@ import {
   Trash2,
   UploadIcon,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { FetchingDrawer } from "./components/fetching-drawer";
 import { FileDropZone } from "./components/file-drop-zone";
@@ -367,27 +367,20 @@ function FileList({
     });
   };
 
-  // 记录每次双击中第一下 click 落在哪个条目上。
-  // 目录是单击进入的：双击目录时第一下就跳转了，新列表若在双击间隔内加载完，
-  // 第二下会落到新目录同位置的文件上，浏览器仍把它当成一次 dblclick 发给这个文件。
-  const firstClickKey = useRef<string | null>(null);
-
   const handleClick = (file: FileInfo, e: React.MouseEvent) => {
-    if (e.detail <= 1) {
-      firstClickKey.current = urlJoin(path, file.name);
+    // 只响应连击中的第一下：双击目录时第一下已进入目录，新列表若在双击间隔内加载完，
+    // 第二下（detail === 2）会落到新目录同位置的文件上，不能把它当成对该文件的单击
+    if (e.detail > 1) return;
+    if (file.fileType === "folder") {
+      if (!isPlaceholderData) {
+        navigate({
+          to: "/list/$space/$",
+          params: { space, _splat: `${_splat}/${file.name}` },
+        });
+      }
+      return;
     }
-    if (file.fileType === "folder" && !isPlaceholderData) {
-      navigate({
-        to: "/list/$space/$",
-        params: { space, _splat: `${_splat}/${file.name}` },
-      });
-    }
-  };
-
-  const handleDoubleClick = (file: FileInfo) => {
-    // 两下 click 不在同一个条目上（见 firstClickKey），不算对这个文件的双击
-    if (firstClickKey.current !== urlJoin(path, file.name)) return;
-    if (file.fileType !== "folder") onPreview(file);
+    onPreview(file);
   };
 
   if (isLoading) {
@@ -439,7 +432,6 @@ function FileList({
             key={file.name}
             file={file}
             onClick={handleClick}
-            onDoubleClick={handleDoubleClick}
             onDelete={onDelete}
             onRename={onRename}
             onEdit={onEdit}
@@ -469,7 +461,6 @@ interface FileListItemProps {
   onDelete: (file: FileInfo) => void;
   onRename: (file: FileInfo) => void;
   onClick: (file: FileInfo, e: React.MouseEvent) => void;
-  onDoubleClick: (file: FileInfo) => void;
   onEdit: (file: FileInfo) => void;
   onPreview: (file: FileInfo) => void;
   onCopy: (file: FileInfo) => void;
@@ -483,7 +474,6 @@ function FileListItem({
   path,
   file,
   onClick,
-  onDoubleClick,
   onDelete,
   onRename,
   onEdit,
@@ -592,7 +582,6 @@ function FileListItem({
       key={file.name}
       items={items}
       onClick={(e) => onClick(file, e)}
-      onDoubleClick={() => onDoubleClick(file)}
     >
       <div className="flex items-center justify-between p-3 hover:bg-muted/50 data-[state=open]:bg-muted/50 has-data-[[state=open]]:bg-muted/50 cursor-pointer group mt-0">
         <div className="flex items-center space-x-3 flex-1 min-w-0">

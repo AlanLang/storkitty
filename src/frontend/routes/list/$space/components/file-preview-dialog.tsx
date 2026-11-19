@@ -24,7 +24,7 @@ import {
   SquarePen,
   X,
 } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import { downloadFile } from "../utils/downloadFile";
 import { DIALOG_CONTENT_CLASSNAME } from "./constant";
 import { FileIcon } from "./file-icon";
@@ -56,6 +56,7 @@ export function FilePreviewDialog({
 }: FilePreviewDialogProps) {
   const [isMaximized, setIsMaximized] = useState(false);
   const [frameLoaded, setFrameLoaded] = useState(false);
+  const openedAt = useRef(0);
 
   const fileName = file?.name ?? "";
   const openUrl = createPreviewUrl(path, fileName);
@@ -86,8 +87,15 @@ export function FilePreviewDialog({
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent
         showCloseButton={false}
-        // 默认会聚焦第一个按钮，导致"编辑"的 tooltip 一打开就弹出来
-        onOpenAutoFocus={(e) => e.preventDefault()}
+        onOpenAutoFocus={(e) => {
+          // 默认会聚焦第一个按钮，导致"编辑"的 tooltip 一打开就弹出来
+          e.preventDefault();
+          openedAt.current = Date.now();
+        }}
+        onInteractOutside={(e) => {
+          // 单击文件即打开预览，习惯性双击时第二下可能落在遮罩上，别把刚打开的弹窗关掉
+          if (Date.now() - openedAt.current < 500) e.preventDefault();
+        }}
         className={cn(
           DIALOG_CONTENT_CLASSNAME,
           "sm:max-w-[90vw] sm:w-[90vw] sm:h-[90vh] w-full max-w-full h-full sm:rounded-lg rounded-none flex flex-col p-0 gap-0 overflow-hidden",
