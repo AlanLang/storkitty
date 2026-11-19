@@ -52,6 +52,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { FetchingDrawer } from "./components/fetching-drawer";
+import { FileDropZone } from "./components/file-drop-zone";
 import { FileIcon } from "./components/file-icon";
 import { FileListEmpty } from "./components/file-list-empty";
 import { ListContextMenu } from "./components/list-context-menu";
@@ -147,7 +148,7 @@ function FilePage() {
               }
             />
           </div>
-          <div className="flex-1 p-4 flex flex-col gap-4 relative">
+          <FileDropZone className="flex-1 p-4 flex flex-col gap-4">
             <FileBreadcrumb />
             <FileList
               onDelete={(file) => setOpen({ type: "delete", file })}
@@ -159,7 +160,7 @@ function FilePage() {
                 cloneFileMutation({ path, fileName: file.name })
               }
             />
-          </div>
+          </FileDropZone>
         </SidebarInset>
       </ListContextMenu>
       <ListDialog

@@ -92,25 +92,32 @@ export function useFileUpload(options: UseFileUploadOptions) {
     }
   }, []);
 
+  const uploadFiles = useCallback(
+    (files: File[]) => {
+      files.forEach((file) => {
+        addTask(file);
+        options.uploadFunc(
+          file,
+          (p) => {
+            updateTask(file, p);
+          },
+          () => {
+            failTask(file);
+          },
+        );
+      });
+    },
+    [options.uploadFunc, addTask, updateTask, failTask],
+  );
+
   const handleFileChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
       if (e.target.files && e.target.files.length > 0) {
-        Array.from(e.target.files).forEach((file) => {
-          addTask(file);
-          options.uploadFunc(
-            file,
-            (p) => {
-              updateTask(file, p);
-            },
-            () => {
-              failTask(file);
-            },
-          );
-        });
+        uploadFiles(Array.from(e.target.files));
         e.target.value = "";
       }
     },
-    [options.uploadFunc, addTask, updateTask, failTask],
+    [uploadFiles],
   );
 
   const getInputProps = useCallback(
@@ -146,6 +153,7 @@ export function useFileUpload(options: UseFileUploadOptions) {
   return {
     openFileDialog,
     getInputProps,
+    uploadFiles,
     tasks,
     cleanTasks,
     removeTask,

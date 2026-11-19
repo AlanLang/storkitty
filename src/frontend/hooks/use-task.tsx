@@ -60,6 +60,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const {
     openFileDialog,
     getInputProps,
+    uploadFiles,
     cleanTasks,
     removeTask,
     tasks: uploadTasks,
@@ -172,6 +173,11 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         value={{
           openFileDialog: () => {
             openFileDialog();
+            setOpen("upload-file");
+          },
+          uploadFiles: (files: File[]) => {
+            if (files.length === 0) return;
+            uploadFiles(files);
             setOpen("upload-file");
           },
         }}
@@ -473,8 +479,10 @@ const DrawerContext = createContext<{
 
 const FileUploadContext = createContext<{
   openFileDialog: () => void;
+  uploadFiles: (files: File[]) => void;
 }>({
   openFileDialog: () => {},
+  uploadFiles: () => {},
 });
 
 function formatNumber(num: number) {
