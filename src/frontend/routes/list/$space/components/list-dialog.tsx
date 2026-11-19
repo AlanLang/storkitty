@@ -3,6 +3,7 @@ import { FileCreateDialog } from "./file-create-dialog";
 import { FileDeleteDialog } from "./file-delete-dialog";
 import { FileEditDialog } from "./file-edit/file-edit-dialog";
 import { FileMoveDialog } from "./file-move-dialog";
+import { FilePreviewDialog } from "./file-preview-dialog";
 import { FileRenameDialog } from "./file-rename-dialog";
 import { FolderCreateDialog } from "./folder-create-dialog";
 import { FolderDeleteDialog } from "./folder-delete-dialog";
@@ -18,6 +19,7 @@ export interface ListDialogProps {
       | "create-folder"
       | "create-file"
       | "edit"
+      | "preview"
       | "remote-download"
       | "copy"
       | "move";
@@ -26,6 +28,7 @@ export interface ListDialogProps {
   } | null;
   onCancel: () => void;
   onFinish: () => void;
+  onEdit: (file: FileInfo) => void;
 }
 
 export function ListDialog({
@@ -33,6 +36,7 @@ export function ListDialog({
   open,
   onCancel,
   onFinish,
+  onEdit,
 }: ListDialogProps) {
   const file = open?.file;
 
@@ -93,6 +97,14 @@ export function ListDialog({
         isOpen={open?.type === "edit" && file?.fileType === FileType.File}
         onCancel={onCancel}
         onFinish={onFinish}
+      />
+
+      <FilePreviewDialog
+        path={path}
+        file={file ?? null}
+        isOpen={open?.type === "preview" && file?.fileType === FileType.File}
+        onCancel={onCancel}
+        onEdit={onEdit}
       />
 
       <RemoteDownloadDialog

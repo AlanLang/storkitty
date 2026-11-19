@@ -43,7 +43,7 @@ import {
   MoreHorizontalIcon,
   MoreVertical,
   SendToBack,
-  SquareArrowOutUpRight,
+  Eye,
   SquarePen,
   Timer,
   Trash2,
@@ -154,6 +154,7 @@ function FilePage() {
               onDelete={(file) => setOpen({ type: "delete", file })}
               onRename={(file) => setOpen({ type: "rename", file })}
               onEdit={(file) => setOpen({ type: "edit", file })}
+              onPreview={(file) => setOpen({ type: "preview", file })}
               onCopy={(file) => setOpen({ type: "copy", file })}
               onMove={(file) => setOpen({ type: "move", file })}
               onClone={(file) =>
@@ -167,6 +168,7 @@ function FilePage() {
         path={path}
         open={open}
         onCancel={() => setOpen(null)}
+        onEdit={(file) => setOpen({ type: "edit", file })}
         onFinish={() => {
           setOpen(null);
           queryClient.invalidateQueries({
@@ -320,6 +322,7 @@ function FileList({
   onDelete,
   onRename,
   onEdit,
+  onPreview,
   onCopy,
   onMove,
   onClone,
@@ -327,6 +330,7 @@ function FileList({
   onDelete: (file: FileInfo) => void;
   onRename: (file: FileInfo) => void;
   onEdit: (file: FileInfo) => void;
+  onPreview: (file: FileInfo) => void;
   onCopy: (file: FileInfo) => void;
   onMove: (file: FileInfo) => void;
   onClone: (file: FileInfo) => void;
@@ -424,6 +428,7 @@ function FileList({
             onDelete={onDelete}
             onRename={onRename}
             onEdit={onEdit}
+            onPreview={onPreview}
             onCopy={onCopy}
             onMove={onMove}
             onExtract={handleExtract}
@@ -450,6 +455,7 @@ interface FileListItemProps {
   onRename: (file: FileInfo) => void;
   onClick: (file: FileInfo) => void;
   onEdit: (file: FileInfo) => void;
+  onPreview: (file: FileInfo) => void;
   onCopy: (file: FileInfo) => void;
   onMove: (file: FileInfo) => void;
   onExtract: (file: FileInfo) => void;
@@ -464,6 +470,7 @@ function FileListItem({
   onDelete,
   onRename,
   onEdit,
+  onPreview,
   onCopy,
   onMove,
   onExtract,
@@ -522,11 +529,8 @@ function FileListItem({
     : [
         {
           label: "预览",
-          icon: <SquareArrowOutUpRight className="mr-2 h-4 w-4" />,
-          onClick: () => {
-            const url = urlJoin("/open", path, file.name);
-            window.open(url, "_blank");
-          },
+          icon: <Eye className="mr-2 h-4 w-4" />,
+          onClick: () => onPreview(file),
         },
         {
           label: "编辑",
@@ -571,7 +575,9 @@ function FileListItem({
       key={file.name}
       items={items}
       onClick={() => onClick(file)}
-      onDoubleClick={() => onEdit(file)}
+      onDoubleClick={() => {
+        if (!isFolder) onPreview(file);
+      }}
     >
       <div className="flex items-center justify-between p-3 hover:bg-muted/50 data-[state=open]:bg-muted/50 has-data-[[state=open]]:bg-muted/50 cursor-pointer group mt-0">
         <div className="flex items-center space-x-3 flex-1 min-w-0">
